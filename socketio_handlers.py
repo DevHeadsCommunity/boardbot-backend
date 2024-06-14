@@ -79,7 +79,8 @@ class SocketIOHandler:
                     response_message = self.openai_client.generate_response(data.get("message"), context)
                 elif user_route == "vague_Intent_product":
                     context = await self.weaviate_interface.product.search(
-                        data.get("message"), ["description", "price", "feature", "specification", "location", "summary"]
+                        data.get("message"),
+                        ["name", "description", "feature", "specification", "location", "summary"],
                     )
                     print(f"\n\nContext for {data.get('message')}: {context}\n\n")
                     response_message = self.openai_client.generate_response(data.get("message"), context)

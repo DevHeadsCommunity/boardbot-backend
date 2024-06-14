@@ -82,37 +82,37 @@
     },
     {
       "class": "Product",
-      "description": "A class representing a product with various attributes.",
+      "description": "A class representing products.",
       "properties": [
         {
           "name": "name",
-          "description": "The name of the product",
-          "dataType": ["text"]
+          "dataType": ["text"],
+          "description": "The name of the product."
         },
         {
           "name": "description",
-          "description": "The description of the product",
-          "dataType": ["text"]
+          "dataType": ["text"],
+          "description": "The description of the product."
         },
         {
           "name": "feature",
-          "description": "The feature of the product",
-          "dataType": ["text"]
+          "dataType": ["text"],
+          "description": "The feature of the product."
         },
         {
           "name": "specification",
-          "description": "The specification of the product",
-          "dataType": ["text"]
+          "dataType": ["text"],
+          "description": "The specification of the product."
         },
         {
           "name": "location",
-          "description": "The location related to the product",
-          "dataType": ["text"]
+          "dataType": ["text"],
+          "description": "The location related to the product."
         },
         {
           "name": "summary",
-          "description": "The summary of the product",
-          "dataType": ["text"]
+          "dataType": ["text"],
+          "description": "The summary of the product."
         }
       ],
       "vectorizer": "text2vec-openai"

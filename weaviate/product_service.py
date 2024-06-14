@@ -37,5 +37,5 @@ class ProductService(WeaviateService):
     async def delete(self, uuid: str) -> bool:
         return await self.client.delete_object(uuid, self.object_type)
 
-    async def search(self, query: str, fields: List[str], limit: int = 10) -> List[Dict[str, Any]]:
+    async def search(self, query: str, fields: List[str], limit: int = 3) -> List[Dict[str, Any]]:
         return await self.client.search(self.object_type, query, fields, limit)
