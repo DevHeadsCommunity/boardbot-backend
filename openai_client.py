@@ -35,7 +35,7 @@ class OpenAIClient:
             messages=[
                 {
                     "role": "system",
-                    "content": f"You are ThroughPut assistant. Your mane task is to help users with their queries about the product. Use the following context: {context}",
+                    "content": f"You are ThroughPut assistant. Your mane task is to help users with their queries about the product. The context that is provided is product data, in the form of name, description, feature, specification, location, and summary. In your response, synthesize the information from the context and clear, simple, and easy-to-understand response to the user. Use the following context: {context}",
                 },
                 {"role": "user", "content": user_message},
             ],

@@ -35,7 +35,7 @@ async def initialize_weaviate():
 
     # Load and insert products data
     products = pd.read_csv("data/clean_products.csv")
-    products = products.drop(columns=["raw_data", "id"])
+    products = products.drop(columns=["raw_data", "id", "raw_length"])
     products_data = products.to_dict(orient="records")
     await weaviate_interface.product.batch_upsert(products_data)
 
