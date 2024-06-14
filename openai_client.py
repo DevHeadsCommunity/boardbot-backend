@@ -29,6 +29,19 @@ class OpenAIClient:
         except Exception as e:
             raise ValueError(str(e))
 
+    def generate_response(self, user_message: str, context: str = None) -> str:
+        response = self._client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {
+                    "role": "system",
+                    "content": f"You are ThroughPut assistant. Your mane task is to help users with their queries about the product. Use the following context: {context}",
+                },
+                {"role": "user", "content": user_message},
+            ],
+        )
+        return response.choices[0].message.content
+
     def extract_data(self, text):
         system_message = """
             Extract name, description, feature, specification, location, and summary from the following raw product data. Make sure to include the name, description, feature, specification, location, and summary in the extracted data, and if the data is not present, please mention that it is not available.
