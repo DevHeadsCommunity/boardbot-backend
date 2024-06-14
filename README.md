@@ -62,7 +62,7 @@ Team-Mate is an independent company dedicated to helping students and trainees m
    ```
 5. Install the required packages:
    ```sh
-   pip install fastapi uvicorn python-socketio
+   pip install fastapi uvicorn python-socketio pandas numpy seaborn matplotlib openai
    ```
 6. Create a `.env` file in the project root directory with the following variables:
    ```env

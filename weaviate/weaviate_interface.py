@@ -1,3 +1,4 @@
+from weaviate.product_service import ProductService
 from weaviate.schema_manager import SchemaManager
 from weaviate.weaviate_client import WeaviateClient
 from .http_client import HttpClient, HttpHandler
@@ -8,6 +9,7 @@ class WeaviateInterface:
         self.http_handler = HttpHandler(HttpClient(url, {"X-OpenAI-Api-Key": openai_key}))
         self.client = WeaviateClient(self.http_handler)
         self.schema = SchemaManager(self.client, schema_file)
+        self.product = ProductService(self.client)
 
     async def async_init(self):
         """

@@ -49,3 +49,12 @@ class WeaviateClient:
 
     async def run_query(self, graphql_query: str) -> Dict[str, Any]:
         return await self.http_handler.get_json_response("POST", GRAPHQL_ENDPOINT, {"query": graphql_query})
+
+    async def semantic_search(
+        self, class_name: str, query: str, fields: List[str], limit: int = 10, offset: int = 0
+    ) -> List[Dict[str, Any]]:
+
+        res = self.query.get(class_name, fields)
+        res = res.near_text(query=query).with_limit(limit).with_offset(offset).do()
+
+        return res

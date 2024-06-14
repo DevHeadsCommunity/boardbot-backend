@@ -81,35 +81,38 @@
       "vectorizer": "text2vec-openai"
     },
     {
-      "class": "DocumentChunkReference",
-      "description": "Links DocumentChunk that was used for a Response",
+      "class": "Product",
+      "description": "A class representing a product with various attributes.",
       "properties": [
         {
-          "name": "document",
-          "dataType": ["DocumentChunk"],
-          "description": "Linked DocumentChunk"
+          "name": "name",
+          "description": "The name of the product",
+          "dataType": ["text"]
         },
         {
-          "name": "response",
-          "dataType": ["Response"],
-          "description": "The chatbot response"
-        }
-      ],
-      "vectorizer": "text2vec-openai"
-    },
-    {
-      "class": "ResponseReference",
-      "description": "Links previous Response that was used for a Response as an example response",
-      "properties": [
-        {
-          "name": "response",
-          "dataType": ["Response"],
-          "description": "The chatbot response"
+          "name": "description",
+          "description": "The description of the product",
+          "dataType": ["text"]
         },
         {
-          "name": "referenced_response",
-          "dataType": ["Response"],
-          "description": "The referenced chatbot response"
+          "name": "feature",
+          "description": "The feature of the product",
+          "dataType": ["text"]
+        },
+        {
+          "name": "specification",
+          "description": "The specification of the product",
+          "dataType": ["text"]
+        },
+        {
+          "name": "location",
+          "description": "The location related to the product",
+          "dataType": ["text"]
+        },
+        {
+          "name": "summary",
+          "description": "The summary of the product",
+          "dataType": ["text"]
         }
       ],
       "vectorizer": "text2vec-openai"

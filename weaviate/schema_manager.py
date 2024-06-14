@@ -1,6 +1,7 @@
 import json
 from typing import Any, Dict
 from .weaviate_client import WeaviateClient
+import logging
 
 
 class SchemaManager:
@@ -59,3 +60,25 @@ class SchemaManager:
             await self.initialize(self.read(self.schema_file))
         except Exception as e:
             raise e
+
+    async def info(self) -> str:
+        try:
+            schema = await self.client.get_schema()
+            info = "Weaviate Schema Information\n\n"
+            for class_info in schema["classes"]:
+                class_name = class_info["class"]
+                entry_count = await self.client.count_class_entries(class_name)
+                info += f"Class: {class_name} (Entries: {entry_count})\n"
+                info += "Properties:\n"
+                for prop in class_info["properties"]:
+                    description = prop.get("description", "No description")
+                    info += (
+                        f"  - Name: {prop['name']}, Type: {', '.join(prop['dataType'])}, Description: {description}\n"
+                    )
+                if "vectorizer" in class_info:
+                    info += f"  Vectorizer: {class_info['vectorizer']}\n"
+                info += "\n"
+            return info
+        except Exception as e:
+            logging.error(f"Failed to get schema info: {str(e)}")
+            return "Failed to retrieve schema information."
