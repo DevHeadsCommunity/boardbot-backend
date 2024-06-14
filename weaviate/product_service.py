@@ -1,8 +1,6 @@
-import asyncio
 from typing import Any, Dict, List
 from .weaviate_client import WeaviateClient
 from .weaviate_service import WeaviateService
-import logging
 
 
 class ProductService(WeaviateService):
@@ -39,5 +37,5 @@ class ProductService(WeaviateService):
     async def delete(self, uuid: str) -> bool:
         return await self.client.delete_object(uuid, self.object_type)
 
-    async def search(self, query: str, fields: List[str], limit: int = 10, offset: int = 0) -> List[Dict[str, Any]]:
-        return await self.client.semantic_search(self.object_type, query, fields, limit, offset)
+    async def search(self, query: str, fields: List[str], limit: int = 10) -> List[Dict[str, Any]]:
+        return await self.client.search(self.object_type, query, fields, limit)

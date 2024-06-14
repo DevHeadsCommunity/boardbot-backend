@@ -116,6 +116,23 @@
         }
       ],
       "vectorizer": "text2vec-openai"
+    },
+    {
+      "class": "Route",
+      "description": "A class representing a route with various attributes.",
+      "properties": [
+        {
+          "name": "prompt",
+          "description": "example prompts for a given route",
+          "dataType": ["text"]
+        },
+        {
+          "name": "route",
+          "description": "The route to follow",
+          "dataType": ["text"]
+        }
+      ],
+      "vectorizer": "text2vec-openai"
     }
   ]
 }

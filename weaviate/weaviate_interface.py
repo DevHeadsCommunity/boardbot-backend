@@ -1,4 +1,5 @@
 from weaviate.product_service import ProductService
+from weaviate.route_service import RouteService
 from weaviate.schema_manager import SchemaManager
 from weaviate.weaviate_client import WeaviateClient
 from .http_client import HttpClient, HttpHandler
@@ -10,6 +11,7 @@ class WeaviateInterface:
         self.client = WeaviateClient(self.http_handler)
         self.schema = SchemaManager(self.client, schema_file)
         self.product = ProductService(self.client)
+        self.route = RouteService(self.client)
 
     async def async_init(self):
         """
