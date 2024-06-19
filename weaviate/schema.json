@@ -90,9 +90,49 @@
           "description": "The name of the product."
         },
         {
-          "name": "description",
+          "name": "size",
           "dataType": ["text"],
-          "description": "The description of the product."
+          "description": "The size of the product."
+        },
+        {
+          "name": "form",
+          "dataType": ["text"],
+          "description": "The form of the product."
+        },
+        {
+          "name": "processor",
+          "dataType": ["text"],
+          "description": "The processor of the product."
+        },
+        {
+          "name": "core",
+          "dataType": ["text"],
+          "description": "The core of the product."
+        },
+        {
+          "name": "frequency",
+          "dataType": ["text"],
+          "description": "The frequency of the product."
+        },
+        {
+          "name": "memory",
+          "dataType": ["text"],
+          "description": "The memory of the product."
+        },
+        {
+          "name": "voltage",
+          "dataType": ["text"],
+          "description": "The voltage of the product."
+        },
+        {
+          "name": "io",
+          "dataType": ["text"],
+          "description": "The io of the product."
+        },
+        {
+          "name": "thermal",
+          "dataType": ["text"],
+          "description": "The thermal of the product."
         },
         {
           "name": "feature",
@@ -100,14 +140,29 @@
           "description": "The feature of the product."
         },
         {
+          "name": "type",
+          "dataType": ["text"],
+          "description": "The type of the product."
+        },
+        {
           "name": "specification",
           "dataType": ["text"],
           "description": "The specification of the product."
         },
         {
+          "name": "manufacturer",
+          "dataType": ["text"],
+          "description": "The manufacturer of the product."
+        },
+        {
           "name": "location",
           "dataType": ["text"],
           "description": "The location related to the product."
+        },
+        {
+          "name": "description",
+          "dataType": ["text"],
+          "description": "The description of the product."
         },
         {
           "name": "summary",

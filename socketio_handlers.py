@@ -1,21 +1,72 @@
 import socketio
-from typing import Dict, List
-from openai_client import OpenAIClient
+import operator
+from langchain import hub
+from langchain.tools import tool
+from langchain_openai import ChatOpenAI
+from langgraph.graph import StateGraph, END
+from langchain_core.messages import BaseMessage
 from weaviate.weaviate_interface import WeaviateInterface
+from langchain_core.agents import AgentAction, AgentFinish
+from typing import Dict, List, TypedDict, Union, Annotated
+from langchain.agents import create_openai_functions_agent
+from langgraph.prebuilt.tool_executor import ToolExecutor
+
+wi: WeaviateInterface = None
+
+
+class AgentState(TypedDict):
+    input: str
+    chat_history: list[BaseMessage]
+    agent_outcome: Union[AgentAction, AgentFinish, None]
+    intermediate_steps: Annotated[list[tuple[AgentAction, str]], operator.add]
+
+
+@tool("product_search", return_direct=True)
+async def product_search(message: str, features: List[str], limit: int) -> str:
+    """Search for products in Weaviate vector search
+    Args:
+        message (str): Reformated user message, to improve semantic search results
+        features (List[str]): the features to search for, all the available features are: ['name', 'size', 'form', 'processor', 'core', 'frequency', 'memory', 'voltage', 'io', 'thermal', 'feature', 'type', 'specification', 'manufacturer', 'location', 'description', 'summary']
+        limit (int): the number of results to return
+    """
+    context = await wi.product.search(message, features, limit)
+    print(f"Product Search Context: {context}")
+    return context
 
 
 class SocketIOHandler:
     def __init__(self, weaviate_interface: WeaviateInterface):
         # Dictionary to store session data
         self.sessions: Dict[str, List[Dict[str, str]]] = {}
-        self.weaviate_interface = weaviate_interface
-
-        # Weaviate Interface and OpenAI Client (initially set to None)
-        self.openai_client = OpenAIClient()
+        global wi
+        wi = weaviate_interface
 
         # Socket.io setup
         self.sio = socketio.AsyncServer(cors_allowed_origins="*", async_mode="asgi")
         self.socket_app = socketio.ASGIApp(self.sio)
+
+        tools = [product_search]
+        model = ChatOpenAI(model="gpt-4o", temperature=0)
+        prompt = hub.pull("hwchase17/openai-functions-agent")
+        self.agent_runnable = create_openai_functions_agent(model, tools, prompt)
+        self.tool_executor = ToolExecutor(tools)
+
+        workflow = StateGraph(AgentState)
+
+        # Define the two nodes we will cycle between
+        workflow.add_node("agent", self.run_agent)
+        workflow.add_node("action", self.execute_tools)
+        workflow.set_entry_point("agent")
+        workflow.add_conditional_edges(
+            "agent",
+            self.should_continue,
+            {
+                "continue": "action",
+                "end": END,
+            },
+        )
+        workflow.add_edge("action", "agent")
+        self.agent = workflow.compile()
 
         # Socket.io event handlers
         @self.sio.on("connect")
@@ -56,36 +107,19 @@ class SocketIOHandler:
                 }
                 self.sessions[session_id].append(received_message)
 
-                # route
-                route_query = data.get("message")
-                routes = await self.weaviate_interface.route.search(route_query, ["route"], limit=1)
-                if not routes:
-                    raise Exception(f"No route found for query: {route_query}")
-                print(f"Routes for query {route_query}: {routes}")
-                route = routes[0]
-                user_route = route.get("route")
-                print(f"Route for query {route_query}: {user_route}")
-
                 response_message = ""
 
-                if user_route == "politics":
-                    response_message = "I'm sorry, I'm not programmed to discuss politics."
-                elif user_route == "chitchat":
-                    response_message = self.openai_client.generate_response(data.get("message"))
-                elif user_route == "clear_Intent_product":
-                    context = await self.weaviate_interface.product.search(
-                        data.get("message"), ["description", "price", "feature", "specification", "location", "summary"]
-                    )
-                    response_message = self.openai_client.generate_response(data.get("message"), context)
-                elif user_route == "vague_Intent_product":
-                    context = await self.weaviate_interface.product.search(
-                        data.get("message"),
-                        ["name", "description", "feature", "specification", "location", "summary"],
-                    )
-                    print(f"\n\nContext for {data.get('message')}: {context}\n\n")
-                    response_message = self.openai_client.generate_response(data.get("message"), context)
-
-                print(f"Response for {data.get('message')}: {response_message}")
+                inputs = {"input": data.get("message"), "chat_history": []}
+                async for s in self.agent.astream(inputs):
+                    print("----")
+                    res = list(s.values())[0]
+                    print(res)
+                    print("----")
+                    # check if res has key `agent_outcome` and res['agent_outcome'] is an instance of AgentFinish
+                    if "agent_outcome" in res and isinstance(res["agent_outcome"], AgentFinish):
+                        response_message = res["agent_outcome"].return_values["output"]
+                        print(f"Final response: {res['agent_outcome'].return_values}")
+                print(f"Final response2: {response_message}")
 
                 response = {
                     "id": data.get("id") + "_response",
@@ -100,3 +134,18 @@ class SocketIOHandler:
                 print(f"Message from {sid} in session {session_id}: {data.get('message')}")
             else:
                 print(f"No session ID provided by {sid}")
+
+    async def run_agent(self, data):
+        agent_outcome = await self.agent_runnable.ainvoke(data)
+        return {"agent_outcome": agent_outcome}
+
+    async def execute_tools(self, data):
+        agent_action = data["agent_outcome"]
+        output = await self.tool_executor.ainvoke(agent_action)
+        return {"intermediate_steps": [(agent_action, str(output))]}
+
+    def should_continue(self, data):
+        if isinstance(data["agent_outcome"], AgentFinish):
+            return "end"
+        else:
+            return "continue"
