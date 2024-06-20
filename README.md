@@ -1,92 +1,151 @@
-# Team-Mate
+# ThroughPut
 
-Team-Mate is an independent company dedicated to helping students and trainees manage their time and focus more effectively. This project demonstrates a personalized LLM-enhanced agent designed to optimize schedules, facilitate collaboration, and provide tailored support for enhanced learning experiences.
+ThroughPut is a project designed to assist users with their queries about products using LLM and semantic search capabilities.
 
-## Repository Structure
+## Table of Contents
+
+- [ThroughPut](#throughput)
+  - [Table of Contents](#table-of-contents)
+  - [Project Overview](#project-overview)
+  - [Folder Structure](#folder-structure)
+  - [Setup Instructions](#setup-instructions)
+    - [Repository Clone](#repository-clone)
+    - [Weaviate Setup](#weaviate-setup)
+    - [Project Setup](#project-setup)
+  - [Running the Project](#running-the-project)
+  - [Schema Overview](#schema-overview)
+    - [Example Schema (schema.json)](#example-schema-schemajson)
+  - [Usage](#usage)
+    - [Example Query Handling](#example-query-handling)
+
+## Project Overview
+
+ThroughPut leverages OpenAI's language models and Weaviate's vector search capabilities to provide intelligent responses to user queries about various products. The system categorizes queries into different types such as politics, chitchat, vague intent, and clear intent, and processes them accordingly.
+
+## Folder Structure
+
+The project directory is organized as follows:
 
 ```
-.
+ThroughPut
+├── 1. munging.ipynb
+├── 2. exploration.ipynb
 ├── README.md
-├── __pycache__
-│   └── main.cpython-310.pyc
+├── config.py
+├── data
+│   ├── chitchat.csv
+│   ├── clean_products.csv
+│   ├── clear_intent.csv
+│   ├── final_products_data.json
+│   ├── politics.csv
+│   └── vague_intent.csv
 ├── main.py
+├── openai_client.py
+├── requirements.txt
+├── socketio_handlers.py
 └── weaviate
     ├── __init__.py
-    ├── __pycache__
-    │   ├── __init__.cpython-310.pyc
-    │   ├── http_client.cpython-310.pyc
-    │   ├── schema_manager.cpython-310.pyc
-    │   ├── weaviate_client.cpython-310.pyc
-    │   └── weaviate_interface.cpython-310.pyc
     ├── docker-compose.yml
     ├── http_client.py
+    ├── product_service.py
+    ├── route_service.py
     ├── schema.json
     ├── schema_manager.py
+    ├── utils
+    │   ├── graphql_query_builder.py
+    │   └── where_clause_builder.py
     ├── weaviate_client.py
-    └── weaviate_interface.py
+    ├── weaviate_interface.py
+    └── weaviate_service.py
 ```
 
-## Getting Started
+## Setup Instructions
+
+### Repository Clone
+
+First, clone the repository and navigate to the project directory:
+
+```sh
+git clone https://github.com/eandualem/ThroughPut
+cd ThroughPut
+```
 
 ### Weaviate Setup
 
-1. Fork the repository.
-2. Clone the repository:
-   ```sh
-   git clone https://github.com/your-username/team-mate.git
-   ```
-3. Navigate to the `weaviate` subfolder:
-   ```sh
-   cd team-mate/weaviate
-   ```
-4. Run the Weaviate Docker container:
-   ```sh
-   docker-compose up
-   ```
+To set up Weaviate, navigate to the `weaviate` directory and start the services using Docker Compose:
+
+```sh
+cd weaviate
+docker-compose up
+```
 
 ### Project Setup
 
-1. Fork the repository.
-2. Clone the repository:
-   ```sh
-   git clone https://github.com/your-username/team-mate.git
-   ```
-3. Navigate to the project directory:
-   ```sh
-   cd team-mate
-   ```
-4. Set up a virtual environment:
-   ```sh
-   python3 -m venv .venv
-   source .venv/bin/activate
-   ```
-5. Install the required packages:
-   ```sh
-   pip install fastapi uvicorn python-socketio pandas numpy seaborn matplotlib openai
-   ```
-6. Create a `.env` file in the project root directory with the following variables:
-   ```env
-   OPENAI_API_KEY=your_openai_api_key
-   WEAVIATE_URL=http://localhost:8080
-   ```
-7. Run the project:
-   ```sh
-   python main.py
-   ```
+Set up a virtual environment and install the required packages:
 
-## Important Notes
+```sh
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-- **Starter Project**: This project provides a basic structure and examples to help you get started. The schema and helper classes in the `weaviate` folder are just examples. You are encouraged to modify and extend them according to your needs.
-- **Flexibility**: You are not restricted to the current architecture or the packages used. Feel free to make any modifications to suit your approach to solving the challenge.
+Create a `.env` file in the project root directory with the following variables:
+
+```
+OPENAI_API_KEY=your_openai_api_key
+WEAVIATE_URL=http://localhost:8080
+```
+
+## Running the Project
+
+To run the project, execute the following command:
+
+```sh
+python main.py
+```
+
+This will start the FastAPI server and set up the necessary Socket.IO handlers.
 
 ## Schema Overview
 
-The provided schema includes classes for documents and chatbot responses, with properties to store relevant information. The helper classes demonstrate how to interact with the Weaviate instance.
+The schema defines the structure of the data stored in Weaviate. It includes definitions for various product attributes such as name, size, form, processor, core, frequency, memory, voltage, IO, thermal, feature, type, specification, manufacturer, location, description, and summary.
 
-## Contributions
+### Example Schema (schema.json)
 
-We welcome contributions and suggestions! Feel free to fork the repository, make improvements, and submit a pull request.
+```json
+{
+  "classes": [
+    {
+      "class": "Product",
+      "properties": [
+        {
+          "name": "name",
+          "dataType": ["string"]
+        },
+        {
+          "name": "size",
+          "dataType": ["string"]
+        }
+        // More properties here
+      ]
+    }
+  ]
+}
+```
 
-## License
+## Usage
 
-This project is licensed under the MIT License.
+Once the server is running, it will handle different types of user queries:
+
+- **Politics**: The system responds with a message that it cannot discuss politics.
+- **Chitchat**: The system uses OpenAI to generate a conversational response.
+- **Vague Intent Product**: The system performs a semantic search based on the user's vague query and provides relevant product information.
+- **Clear Intent Product**: The system refines the user's query and performs a detailed semantic search to find and present specific product information.
+
+### Example Query Handling
+
+- **Input**: "20 SBC's that perform better than Raspberry Pi."
+- **Refined Query**: "High performance SBC's"
+- **Output**: JSON formatted list of SBCs that meet the criteria.
+
+For more details on how to interact with the system and customize its behavior, refer to the individual scripts and their respective docstrings.
