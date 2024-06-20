@@ -35,7 +35,11 @@ class OpenAIClient:
             messages=[
                 {
                     "role": "system",
-                    "content": f"You are ThroughPut assistant. Your main task is to help users with their queries about the product. The context that is provided is product data, in the form of name, description, feature, specification, location, and summary. In your response, synthesize the information from the context into a clear, simple, and easy-to-understand response to the user. Use the following context: {context}",
+                    "content": f"""You are ThroughPut assistant. Your main task is to help users with their queries about the product.
+                                   The context that is provided is product data, in the form of name, size, form, processor, core, frequency, memory, voltage, io, thermal, feature, type, specification, manufacturer, location, description, and summary.
+                                   In your response, synthesize the information from the context into a clear, simple, and easy-to-understand response to the user.
+                                   make sure your response is in a JSON format.
+                                   Use the following context: {context}""",
                 },
                 {"role": "user", "content": user_message},
             ],

@@ -11,6 +11,7 @@ from langchain_core.agents import AgentAction, AgentFinish
 from typing import Dict, List, TypedDict, Union, Annotated
 from langchain.agents import create_openai_functions_agent
 from langgraph.prebuilt.tool_executor import ToolExecutor
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 wi: WeaviateInterface = None
 
@@ -49,7 +50,19 @@ class SocketIOHandler:
 
         tools = [product_search]
         model = ChatOpenAI(model="gpt-4o", temperature=0)
-        prompt = hub.pull("hwchase17/openai-functions-agent")
+        # prompt = hub.pull("hwchase17/openai-functions-agent")
+        assistant_system_message = """You are a helpful assistant. \
+        Use tools (only if necessary) to best answer the users questions. \
+        When giving a direct answer, respond in JSON format."""
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", assistant_system_message),
+                MessagesPlaceholder(variable_name="chat_history"),
+                ("user", "{input}"),
+                MessagesPlaceholder(variable_name="agent_scratchpad"),
+            ]
+        )
+
         self.agent_runnable = create_openai_functions_agent(model, tools, prompt)
         self.tool_executor = ToolExecutor(tools)
 
@@ -115,15 +128,17 @@ class SocketIOHandler:
                 response_message = ""
 
                 if user_route == "politics":
-                    response_message = "I'm sorry, I'm not programmed to discuss politics."
+                    response_message = """{"message": "I'm sorry, I'm not programmed to discuss politics."}"""
                 elif user_route == "chitchat":
-                    response_message = self.openai_client.generate_response(data.get("message"))
+                    res = self.openai_client.generate_response(data.get("message"))
+                    response_message = res.replace("```", "").replace("json", "").replace("\n", "").strip()
                 elif user_route == "vague_Intent_product":
                     context = await wi.product.search(
                         data.get("message"),
                         ["name", "description", "feature", "specification", "location", "summary"],
                     )
-                    response_message = self.openai_client.generate_response(data.get("message"), context)
+                    res = self.openai_client.generate_response(data.get("message"), context)
+                    response_message = res.replace("```", "").replace("json", "").replace("\n", "").strip()
                 elif user_route == "clear_Intent_product":
                     inputs = {"input": data.get("message"), "chat_history": []}
                     async for s in self.agent.astream(inputs):
@@ -133,7 +148,15 @@ class SocketIOHandler:
                         print("----")
                         # check if res has key `agent_outcome` and res['agent_outcome'] is an instance of AgentFinish
                         if "agent_outcome" in res and isinstance(res["agent_outcome"], AgentFinish):
-                            response_message = res["agent_outcome"].return_values["output"]
+                            response_message = (
+                                res["agent_outcome"]
+                                .return_values["output"]
+                                .replace("```", "")
+                                .replace("json", "")
+                                .replace("\n", "")
+                                .strip()
+                            )
+
                 print(f"Final response: {response_message}")
                 received_message = {
                     "id": data.get("id"),
