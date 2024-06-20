@@ -53,10 +53,11 @@ async def initialize_weaviate():
             "I'm going to vote for them",
         ],
         "chitchat": [
+            "hello",
+            "How are you?",
             "How are you doing today?",
             "What's your favorite color?",
-            "Hi, how are you?",
-            "hello",
+            "What can you do for me?",
             "Who let the dogs out?",
             "What is the purpose of life?",
             "how's the weather today?",

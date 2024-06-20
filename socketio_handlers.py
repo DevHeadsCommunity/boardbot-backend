@@ -2,6 +2,7 @@ import socketio
 import operator
 from langchain import hub
 from langchain.tools import tool
+from openai_client import OpenAIClient
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, END
 from langchain_core.messages import BaseMessage
@@ -44,6 +45,7 @@ class SocketIOHandler:
         # Socket.io setup
         self.sio = socketio.AsyncServer(cors_allowed_origins="*", async_mode="asgi")
         self.socket_app = socketio.ASGIApp(self.sio)
+        self.openai_client = OpenAIClient()
 
         tools = [product_search]
         model = ChatOpenAI(model="gpt-4o", temperature=0)
@@ -99,6 +101,40 @@ class SocketIOHandler:
             if session_id:
                 if session_id not in self.sessions:
                     raise Exception(f"Session {session_id} not found")
+
+                # route
+                route_query = data.get("message")
+                routes = await wi.route.search(route_query, ["route"], limit=1)
+                if not routes:
+                    raise Exception(f"No route found for query: {route_query}")
+
+                route = routes[0]
+                user_route = route.get("route")
+                print(f"Route for query {route_query}: {user_route}")
+
+                response_message = ""
+
+                if user_route == "politics":
+                    response_message = "I'm sorry, I'm not programmed to discuss politics."
+                elif user_route == "chitchat":
+                    response_message = self.openai_client.generate_response(data.get("message"))
+                elif user_route == "vague_Intent_product":
+                    context = await wi.product.search(
+                        data.get("message"),
+                        ["name", "description", "feature", "specification", "location", "summary"],
+                    )
+                    response_message = self.openai_client.generate_response(data.get("message"), context)
+                elif user_route == "clear_Intent_product":
+                    inputs = {"input": data.get("message"), "chat_history": []}
+                    async for s in self.agent.astream(inputs):
+                        print("----")
+                        res = list(s.values())[0]
+                        print(res)
+                        print("----")
+                        # check if res has key `agent_outcome` and res['agent_outcome'] is an instance of AgentFinish
+                        if "agent_outcome" in res and isinstance(res["agent_outcome"], AgentFinish):
+                            response_message = res["agent_outcome"].return_values["output"]
+                print(f"Final response: {response_message}")
                 received_message = {
                     "id": data.get("id"),
                     "message": data.get("message"),
@@ -106,20 +142,6 @@ class SocketIOHandler:
                     "timestamp": data.get("timestamp"),
                 }
                 self.sessions[session_id].append(received_message)
-
-                response_message = ""
-
-                inputs = {"input": data.get("message"), "chat_history": []}
-                async for s in self.agent.astream(inputs):
-                    print("----")
-                    res = list(s.values())[0]
-                    print(res)
-                    print("----")
-                    # check if res has key `agent_outcome` and res['agent_outcome'] is an instance of AgentFinish
-                    if "agent_outcome" in res and isinstance(res["agent_outcome"], AgentFinish):
-                        response_message = res["agent_outcome"].return_values["output"]
-                        print(f"Final response: {res['agent_outcome'].return_values}")
-                print(f"Final response2: {response_message}")
 
                 response = {
                     "id": data.get("id") + "_response",
