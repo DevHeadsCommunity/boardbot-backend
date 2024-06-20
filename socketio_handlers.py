@@ -1,6 +1,5 @@
 import socketio
 import operator
-from langchain import hub
 from langchain.tools import tool
 from openai_client import OpenAIClient
 from langchain_openai import ChatOpenAI
@@ -53,7 +52,9 @@ class SocketIOHandler:
         # prompt = hub.pull("hwchase17/openai-functions-agent")
         assistant_system_message = """You are a helpful assistant. \
         Use tools (only if necessary) to best answer the users questions. \
-        When giving a direct answer, respond in JSON format."""
+        When giving a direct answer, respond in JSON format.
+        When giving a direct answer, if the user asked for 5 products, in your response, provide the top 5 products. \
+        """
         prompt = ChatPromptTemplate.from_messages(
             [
                 ("system", assistant_system_message),
@@ -132,14 +133,14 @@ class SocketIOHandler:
                 elif user_route == "chitchat":
                     res = self.openai_client.generate_response(data.get("message"))
                     response_message = res.replace("```", "").replace("json", "").replace("\n", "").strip()
-                elif user_route == "vague_Intent_product":
+                elif user_route == "vague_intent_product":
                     context = await wi.product.search(
                         data.get("message"),
-                        ["name", "description", "feature", "specification", "location", "summary"],
+                        ["name", "type", "feature", "specification", "description", "summary"],
                     )
                     res = self.openai_client.generate_response(data.get("message"), context)
                     response_message = res.replace("```", "").replace("json", "").replace("\n", "").strip()
-                elif user_route == "clear_Intent_product":
+                elif user_route == "clear_intent_product":
                     inputs = {"input": data.get("message"), "chat_history": []}
                     async for s in self.agent.astream(inputs):
                         print("----")
