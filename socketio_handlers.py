@@ -26,7 +26,7 @@ class AgentState(TypedDict):
 async def product_search(message: str, features: List[str], limit: int) -> str:
     """Search for products in Weaviate vector search
     Args:
-        message (str): Reformated user message, to improve semantic search results
+        message (str): Reformated user message, to improve semantic search results. The user message should be reformated to include only the relevant information for the search, and words that are not relevant, or that may skew the search results should be removed. For example, if the user asks "20 SBC's that perform better than Raspberry Pi.", the message should be reformated to "High performance SBC's"
         features (List[str]): the features to search for, all the available features are: ['name', 'size', 'form', 'processor', 'core', 'frequency', 'memory', 'voltage', 'io', 'thermal', 'feature', 'type', 'specification', 'manufacturer', 'location', 'description', 'summary']
         limit (int): the number of results to return
     """
@@ -110,7 +110,7 @@ class SocketIOHandler:
 
         @self.sio.on("textMessage")
         async def handle_chat_message(sid, data):
-            print(f"Message from {sid}: {data}")
+            # print(f"Message from {sid}: {data}")
             session_id = data.get("sessionId")
             if session_id:
                 if session_id not in self.sessions:
@@ -124,7 +124,7 @@ class SocketIOHandler:
 
                 route = routes[0]
                 user_route = route.get("route")
-                print(f"Route for query {route_query}: {user_route}")
+                # print(f"Route for query {route_query}: {user_route}")
 
                 response_message = ""
 
@@ -143,10 +143,7 @@ class SocketIOHandler:
                 elif user_route == "clear_intent_product":
                     inputs = {"input": data.get("message"), "chat_history": []}
                     async for s in self.agent.astream(inputs):
-                        print("----")
                         res = list(s.values())[0]
-                        print(res)
-                        print("----")
                         # check if res has key `agent_outcome` and res['agent_outcome'] is an instance of AgentFinish
                         if "agent_outcome" in res and isinstance(res["agent_outcome"], AgentFinish):
                             response_message = (
