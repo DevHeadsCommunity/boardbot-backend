@@ -49,25 +49,22 @@ async def product_search(message: str, limit: int) -> str:
         "summary",
     ]
     context = await wi.product.search(message, features, limit)
-    print(f"Product Search Context: {context}")
+    # print(f"Product Search Context: {context}")
     return context
 
 
 class SocketIOHandler:
     def __init__(self, weaviate_interface: WeaviateInterface):
-        # Dictionary to store session data
         self.sessions: Dict[str, List[Dict[str, str]]] = {}
         global wi
         wi = weaviate_interface
 
-        # Socket.io setup
         self.sio = socketio.AsyncServer(cors_allowed_origins="*", async_mode="asgi")
         self.socket_app = socketio.ASGIApp(self.sio)
         self.openai_client = OpenAIClient()
 
         tools = [product_search]
         model = ChatOpenAI(model="gpt-4o", temperature=0)
-        # prompt = hub.pull("hwchase17/openai-functions-agent")
         assistant_system_message = """You are a helpful assistant. \
         Use tools (only if necessary) to best answer the users questions. \
         When giving a direct answer, respond in JSON format.
@@ -86,8 +83,6 @@ class SocketIOHandler:
         self.tool_executor = ToolExecutor(tools)
 
         workflow = StateGraph(AgentState)
-
-        # Define the two nodes we will cycle between
         workflow.add_node("agent", self.run_agent)
         workflow.add_node("action", self.execute_tools)
         workflow.set_entry_point("agent")
@@ -102,7 +97,6 @@ class SocketIOHandler:
         workflow.add_edge("action", "agent")
         self.agent = workflow.compile()
 
-        # Socket.io event handlers
         @self.sio.on("connect")
         async def connect(sid, env):
             print("New Client Connected to This id :" + " " + str(sid))
@@ -128,13 +122,21 @@ class SocketIOHandler:
 
         @self.sio.on("textMessage")
         async def handle_chat_message(sid, data):
-            # print(f"Message from {sid}: {data}")
             session_id = data.get("sessionId")
             if session_id:
                 if session_id not in self.sessions:
                     raise Exception(f"Session {session_id} not found")
 
-                # route
+                # Append the received message to the session chat history
+                received_message = {
+                    "id": data.get("id"),
+                    "message": data.get("message"),
+                    "isUserMessage": True,
+                    "timestamp": data.get("timestamp"),
+                }
+                self.sessions[session_id].append(received_message)
+
+                # Determine route and handle message based on route
                 route_query = data.get("message")
                 routes = await wi.route.search(route_query, ["route"], limit=1)
                 if not routes:
@@ -159,10 +161,19 @@ class SocketIOHandler:
                     res = self.openai_client.generate_response(data.get("message"), context, self.sessions[session_id])
                     response_message = res.replace("```", "").replace("json", "").replace("\n", "").strip()
                 elif user_route == "clear_intent_product":
-                    inputs = {"input": data.get("message"), "chat_history": []}
+                    inputs = {
+                        "input": data.get("message"),
+                        "chat_history": [
+                            (
+                                self.openai_client.format_user_message(msg["message"])
+                                if msg["isUserMessage"]
+                                else self.openai_client.format_system_message(msg["textResponse"])
+                            )
+                            for msg in self.sessions[session_id]
+                        ],
+                    }
                     async for s in self.agent.astream(inputs):
                         res = list(s.values())[0]
-                        # check if res has key `agent_outcome` and res['agent_outcome'] is an instance of AgentFinish
                         if "agent_outcome" in res and isinstance(res["agent_outcome"], AgentFinish):
                             response_message = (
                                 res["agent_outcome"]
@@ -174,13 +185,6 @@ class SocketIOHandler:
                             )
 
                 print(f"Final response: {response_message}")
-                received_message = {
-                    "id": data.get("id"),
-                    "message": data.get("message"),
-                    "isUserMessage": True,
-                    "timestamp": data.get("timestamp"),
-                }
-                self.sessions[session_id].append(received_message)
 
                 response = {
                     "id": data.get("id") + "_response",
