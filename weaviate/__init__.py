@@ -30,7 +30,7 @@ def setup_weaviate_interface():
 
 
 async def initialize_weaviate():
-    reset = False
+    reset = True
     weaviate_interface = await setup_weaviate_interface()
     if not (await weaviate_interface.schema.is_valid()) or reset:
         await weaviate_interface.schema.reset()

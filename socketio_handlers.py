@@ -23,13 +23,31 @@ class AgentState(TypedDict):
 
 
 @tool("product_search", return_direct=True)
-async def product_search(message: str, features: List[str], limit: int) -> str:
+async def product_search(message: str, limit: int) -> str:
     """Search for products in Weaviate vector search
     Args:
         message (str): Reformated user message, to improve semantic search results. The user message should be reformated to include only the relevant information for the search, and words that are not relevant, or that may skew the search results should be removed. For example, if the user asks "20 SBC's that perform better than Raspberry Pi.", the message should be reformated to "High performance SBC's"
-        features (List[str]): the features to search for, all the available features are: ['name', 'size', 'form', 'processor', 'core', 'frequency', 'memory', 'voltage', 'io', 'thermal', 'feature', 'type', 'specification', 'manufacturer', 'location', 'description', 'summary']
         limit (int): the number of results to return
     """
+    features = [
+        "name",
+        "size",
+        "form",
+        "processor",
+        "core",
+        "frequency",
+        "memory",
+        "voltage",
+        "io",
+        "thermal",
+        "feature",
+        "type",
+        "specification",
+        "manufacturer",
+        "location",
+        "description",
+        "summary",
+    ]
     context = await wi.product.search(message, features, limit)
     print(f"Product Search Context: {context}")
     return context
@@ -124,21 +142,21 @@ class SocketIOHandler:
 
                 route = routes[0]
                 user_route = route.get("route")
-                # print(f"Route for query {route_query}: {user_route}")
+                print(f"===:> Route for query {route_query}: {user_route}")
 
                 response_message = ""
 
                 if user_route == "politics":
                     response_message = """{"message": "I'm sorry, I'm not programmed to discuss politics."}"""
                 elif user_route == "chitchat":
-                    res = self.openai_client.generate_response(data.get("message"))
+                    res = self.openai_client.generate_response(data.get("message"), history=self.sessions[session_id])
                     response_message = res.replace("```", "").replace("json", "").replace("\n", "").strip()
                 elif user_route == "vague_intent_product":
                     context = await wi.product.search(
                         data.get("message"),
                         ["name", "type", "feature", "specification", "description", "summary"],
                     )
-                    res = self.openai_client.generate_response(data.get("message"), context)
+                    res = self.openai_client.generate_response(data.get("message"), context, self.sessions[session_id])
                     response_message = res.replace("```", "").replace("json", "").replace("\n", "").strip()
                 elif user_route == "clear_intent_product":
                     inputs = {"input": data.get("message"), "chat_history": []}

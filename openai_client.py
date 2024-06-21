@@ -29,7 +29,23 @@ class OpenAIClient:
         except Exception as e:
             raise ValueError(str(e))
 
-    def generate_response(self, user_message: str, context: str = None) -> str:
+    def generate_response(self, user_message: str, context: str = None, history: list = None) -> str:
+
+        if history is None:
+            history = []
+
+        formatted_chat_history = []
+        for message in history:
+            if message.get("isUserMessage"):
+                formatted_chat_history.append(self.format_user_message(message.get("message")))
+            else:
+                formatted_chat_history.append(self.format_system_message(message.get("textResponse")))
+
+        full_messages = formatted_chat_history + [self.format_user_message(user_message)]
+        # only keep the last 5 messages
+        if len(full_messages) > 5:
+            full_messages = full_messages[-5:]
+
         response = self._client.chat.completions.create(
             model="gpt-4o",
             messages=[
@@ -41,7 +57,7 @@ class OpenAIClient:
                                    make sure your response is in a JSON format.
                                    Use the following context: {context}""",
                 },
-                {"role": "user", "content": user_message},
+                *full_messages,
             ],
             max_tokens=3600,
         )
