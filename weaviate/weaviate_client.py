@@ -151,7 +151,7 @@ class WeaviateClient:
             query_builder.add_clause(LimitClauseBuilder(limit))
 
         graphql_query = query_builder.build()
-        print(f"===> Generated GraphQL Query: {graphql_query}")  # Print the generated query
+        # print(f"===> Generated GraphQL Query: {graphql_query}")  # Print the generated query
         return await self.run_query(graphql_query)
 
     async def search(
