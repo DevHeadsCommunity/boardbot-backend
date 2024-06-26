@@ -3,6 +3,7 @@ import asyncio
 import pandas as pd
 from dotenv import load_dotenv
 from .weaviate_interface import WeaviateInterface
+import logging
 
 load_dotenv()
 
@@ -30,7 +31,7 @@ def setup_weaviate_interface():
 
 
 async def initialize_weaviate():
-    reset = False
+    reset = True
     weaviate_interface = await setup_weaviate_interface()
     if not (await weaviate_interface.schema.is_valid()) or reset:
         await weaviate_interface.schema.reset()
@@ -73,7 +74,7 @@ async def initialize_weaviate():
 
     is_valid = await weaviate_interface.schema.is_valid()
     info = await weaviate_interface.schema.info()
-    print(f" Weaviate schema is valid: {is_valid}")
-    print(f" Weaviate schema info: {info}")
+    logging.info(f" Weaviate schema is valid: {is_valid}")
+    logging.info(f" Weaviate schema info: {info}")
 
     return weaviate_interface

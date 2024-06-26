@@ -1,0 +1,29 @@
+# Use an official Python runtime as a parent image
+FROM python:3.9-slim
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    python3-dev \
+    libc6-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy only the requirements file first to leverage Docker cache
+COPY backend/requirements.txt .
+
+# Install Python dependencies
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy the backend code and data
+COPY backend/ .
+COPY data/ ./data
+
+# Make port 6789 available to the world outside this container
+EXPOSE 6789
+
+# Run main.py when the container launches
+CMD ["python", "main.py"]
