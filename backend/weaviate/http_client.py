@@ -6,7 +6,7 @@ class HttpClient:
     def __init__(self, base_url: str, headers: Dict[str, str]) -> None:
         self.base_url = base_url
         self.headers = headers
-        self.client = httpx.AsyncClient()
+        self.client = httpx.AsyncClient(timeout=httpx.Timeout(60.0))
 
     async def __aenter__(self):
         return self
