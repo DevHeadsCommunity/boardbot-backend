@@ -1,35 +1,62 @@
 import useWebSocket from "@/hooks/useWebSocket";
-import { Test, TestCase, TestResult, TestStatus } from "@/types";
-import { Product } from "@/types/Product";
+import { Product, Test, TestCase, TestResult, TestStatus } from "@/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
 interface UseTestRunnerProps {
-  test?: Test;
+  test: Test;
   batchSize?: number;
   testTimeout?: number;
 }
 
-// Helper functions for product comparison and accuracy calculation
-function compareProducts(expected: Product[], actual: Product[]): boolean {
+// Utility functions
+const compareProducts = (expected: Product[], actual: Product[]): boolean => {
   if (expected.length !== actual.length) return false;
   return expected.every(
     (expectedProduct, index) =>
       JSON.stringify(expectedProduct) === JSON.stringify(actual[index])
   );
-}
+};
 
-function calculateAccuracyScore(
-  expected: Product[],
-  actual: Product[]
-): number {
+const calculateAccuracy = (expected: Product[], actual: Product[]): number => {
   if (expected.length === 0) return 0;
-  const matchingProducts = expected.filter(
+  const correctProducts = expected.filter(
     (expectedProduct, index) =>
       JSON.stringify(expectedProduct) === JSON.stringify(actual[index])
   );
-  return matchingProducts.length / expected.length;
-}
+  return correctProducts.length / expected.length;
+};
+
+const extractFeatures = (product: Product): (string | "NA")[] => {
+  return [
+    product.manufacturer || "NA",
+    product.form || "NA",
+    product.processor || "NA",
+    product.processorTDP || "NA",
+    product.memory || "NA",
+    product.io || "NA",
+    product.operatingSystem || "NA",
+    product.environmental || "NA",
+    product.certifications || "NA",
+  ];
+};
+
+const calculateFeatureAccuracy = (
+  expected: Product[],
+  actual: Product[]
+): number => {
+  const expectedFeatures = expected.flatMap(extractFeatures);
+  const actualFeatures = actual.flatMap(extractFeatures);
+
+  const nonNACount = expectedFeatures.filter(
+    (feature) => feature !== "NA"
+  ).length;
+  const correctlyExtractedCount = expectedFeatures.filter(
+    (feature, index) => feature !== "NA" && feature === actualFeatures[index]
+  ).length;
+
+  return nonNACount > 0 ? correctlyExtractedCount / nonNACount : 0;
+};
 
 const useTestRunner = ({
   test,
@@ -41,18 +68,19 @@ const useTestRunner = ({
   const [status, setStatus] = useState<TestStatus>(test?.status || "PENDING");
   const [progress, setProgress] = useState(0);
   const [currentTest, setCurrentTest] = useState<Test | undefined>(test);
-
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const processedMessageIds = useRef<Set<string>>(new Set());
+  const runningTestCase = useRef<TestCase | null>(null);
 
   const handleTestResult = useCallback(
     (testCase: TestCase, output: string, error?: Error) => {
-      console.log("Handling test result", testCase, output, error);
       if (currentTest === undefined) return;
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
+
+      console.log("Received output:", output);
 
       const responseTime = startTimeRef.current
         ? Date.now() - startTimeRef.current
@@ -60,12 +88,17 @@ const useTestRunner = ({
 
       let parsedOutput: Product[] = [];
       let isCorrect = false;
-      let accuracyScore = 0;
+      let productAccuracy = 0;
+      let featureAccuracy = 0;
 
       try {
         parsedOutput = JSON.parse(output) as Product[];
         isCorrect = compareProducts(testCase.expectedProducts, parsedOutput);
-        accuracyScore = calculateAccuracyScore(
+        productAccuracy = calculateAccuracy(
+          testCase.expectedProducts,
+          parsedOutput
+        );
+        featureAccuracy = calculateFeatureAccuracy(
           testCase.expectedProducts,
           parsedOutput
         );
@@ -77,7 +110,8 @@ const useTestRunner = ({
         ...testCase,
         actualOutput: output,
         isCorrect,
-        accuracyScore,
+        productAccuracy,
+        featureAccuracy,
         inputTokenCount: testCase.input.split(/\s+/).length,
         outputTokenCount: output.split(/\s+/).length,
         llmResponseTime: responseTime,
@@ -95,14 +129,14 @@ const useTestRunner = ({
       setProgress(
         ((currentTestIndex + 1) / currentTest.testCases.length) * 100
       );
+
+      runningTestCase.current = null;
     },
     [currentTest, currentTestIndex]
   );
 
   const runNextBatch = useCallback(() => {
-    console.log("Running next batch");
-    if (status !== "RUNNING") return;
-    if (currentTest === undefined) return;
+    if (status !== "RUNNING" || currentTest === undefined) return;
 
     const endIndex = Math.min(
       currentTestIndex + batchSize,
@@ -111,20 +145,24 @@ const useTestRunner = ({
 
     for (let i = currentTestIndex; i < endIndex; i++) {
       const testCase = currentTest.testCases[i];
-      try {
-        const messageId = uuidv4();
-        sendTextMessage(messageId, testCase.input);
-        console.log("Sent message", messageId, testCase.input);
-        startTimeRef.current = Date.now();
-        timeoutRef.current = setTimeout(() => {
-          handleTestResult(testCase, "", new Error("Test timed out"));
-        }, testTimeout);
-      } catch (error) {
-        handleTestResult(
-          testCase,
-          "",
-          error instanceof Error ? error : new Error("Unknown error")
-        );
+      if (runningTestCase.current === null) {
+        runningTestCase.current = testCase;
+        try {
+          const messageId = uuidv4();
+          sendTextMessage(messageId, testCase.input);
+          console.log("Sent message:", testCase.input);
+          startTimeRef.current = Date.now();
+          timeoutRef.current = setTimeout(() => {
+            handleTestResult(testCase, "", new Error("Test timed out"));
+          }, testTimeout);
+        } catch (error) {
+          handleTestResult(
+            testCase,
+            "",
+            error instanceof Error ? error : new Error("Unknown error")
+          );
+        }
+        break; // Only run one test case at a time
       }
     }
   }, [
@@ -158,21 +196,26 @@ const useTestRunner = ({
       !processedMessageIds.current.has(lastMessage.id)
     ) {
       processedMessageIds.current.add(lastMessage.id);
-      const testCase = currentTest.testCases[currentTestIndex - 1];
-      if (testCase) {
-        handleTestResult(testCase, lastMessage.message);
+      if (runningTestCase.current) {
+        handleTestResult(runningTestCase.current, lastMessage.message);
       }
     }
-  }, [chatHistory, currentTestIndex, currentTest, handleTestResult]);
+  }, [chatHistory, handleTestResult, currentTest]);
 
   const startTest = useCallback(() => {
     setStatus("RUNNING");
     setCurrentTestIndex(0);
     setProgress(0);
     setCurrentTest({ ...currentTest!, results: [] });
+    runningTestCase.current = null;
   }, [currentTest]);
 
-  const pauseTest = useCallback(() => setStatus("PAUSED"), []);
+  const pauseTest = useCallback(() => {
+    setStatus("PAUSED");
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+  }, []);
 
   const resumeTest = useCallback(() => setStatus("RUNNING"), []);
 
@@ -188,6 +231,7 @@ const useTestRunner = ({
         results: prev?.results?.filter((result) => result.isCorrect) || [],
       }));
       setCurrentTestIndex((prev) => prev - failedTests.length);
+      runningTestCase.current = null;
     }
   }, [currentTest]);
 

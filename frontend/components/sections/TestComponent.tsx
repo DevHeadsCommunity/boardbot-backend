@@ -63,10 +63,12 @@ export default function TestComponent() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <CreateTestCard addTest={addTest} />
           <TestListCard tests={tests} onTestSelect={setSelectedTest} />
-          <TestExecutionCard
-            test={selectedTest}
-            onTestComplete={onTestComplete}
-          />
+          {selectedTest && (
+            <TestExecutionCard
+              test={selectedTest}
+              onTestComplete={onTestComplete}
+            />
+          )}
         </div>
         <div className="mt-8">
           <Card className="bg-card p-6">

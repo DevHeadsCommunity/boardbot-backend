@@ -54,14 +54,14 @@ const TestListCard = ({ tests, onTestSelect }: TestListCardProps) => {
     { header: "Name", accessor: "name" },
     { header: "Created At", accessor: "createdAt" },
     { header: "No Test's", accessor: "numTest" },
-    { header: "Status", accessor: "status" },
+    { header: "Status", accessor: "statusComponent" },
   ];
 
   const transformedTests = tests.map((test) => ({
     ...test,
     numTest: test.testCases.length,
     createdAt: new Date(test.createdAt).toLocaleString(),
-    status: <TestStatus status={test.status} />,
+    statusComponent: <TestStatus status={test.status} />,
   }));
 
   return (

@@ -6,12 +6,12 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import useTestRunner from "@/hooks/useTestRunner";
-import { Test } from "@/types";
+import { Test, TestResult } from "@/types";
 import { PauseIcon, PlayIcon, RepeatIcon } from "lucide-react";
 import React, { useEffect } from "react";
 
 interface TestExecutionCardProps {
-  test?: Test;
+  test: Test;
   onTestComplete: (completedTest: Test) => void;
 }
 
@@ -36,20 +36,24 @@ const TestExecutionCard: React.FC<TestExecutionCardProps> = ({
     }
   }, [status, currentTest, onTestComplete]);
 
-  const passedCount =
-    currentTest?.results?.filter((result) => result.isCorrect).length || 0;
-  const failedCount =
-    currentTest?.results?.filter((result) => !result.isCorrect).length || 0;
-  const pendingCount =
-    currentTest?.testCases?.length! - (currentTest?.results?.length || 0);
-  const errorCount =
-    currentTest?.results?.filter((result) => result.error).length || 0;
+  const results = currentTest?.results || [];
 
-  const averageAccuracy =
-    currentTest?.results?.reduce(
-      (sum, result) => sum + result.accuracyScore,
+  const passedCount = results.filter((result) => result.isCorrect).length;
+  const failedCount = results.filter((result) => !result.isCorrect).length;
+  const pendingCount = (currentTest?.testCases?.length || 0) - results.length;
+  const errorCount = results.filter((result) => result.error).length;
+
+  const calculateAverage = (property: keyof TestResult): number => {
+    if (results.length === 0) return 0;
+    const sum = results.reduce(
+      (acc, result) => acc + (result[property] as number),
       0
-    ) / (currentTest?.results?.length || 1);
+    );
+    return sum / results.length;
+  };
+
+  const averageProductAccuracy = calculateAverage("productAccuracy");
+  const averageFeatureAccuracy = calculateAverage("featureAccuracy");
 
   return (
     <Card>
@@ -98,19 +102,27 @@ const TestExecutionCard: React.FC<TestExecutionCardProps> = ({
             <span className="font-medium">Pending: {pendingCount}</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-red-500 rounded-full" />
+            <div className="w-4 h-4 bg-gray-500 rounded-full" />
             <span className="font-medium">Errors: {errorCount}</span>
           </div>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="font-medium">Average Accuracy:</span>
-          <span className="font-medium">
-            {(averageAccuracy * 100).toFixed(2)}%
-          </span>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <span className="font-medium">Average Product Accuracy:</span>
+            <span className="font-medium">
+              {(averageProductAccuracy * 100).toFixed(2)}%
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="font-medium">Average Feature Accuracy:</span>
+            <span className="font-medium">
+              {(averageFeatureAccuracy * 100).toFixed(2)}%
+            </span>
+          </div>
         </div>
       </CardContent>
       <CardFooter>
-        <p className="text-sm text-muted-foreground">Status: {status}</p>
+        <div className="text-sm text-muted-foreground">Status: {status}</div>
       </CardFooter>
     </Card>
   );

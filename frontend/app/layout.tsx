@@ -19,10 +19,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <WebSocketProvider>
-        <body className={inter.className}>{children}</body>
-      </WebSocketProvider>
-      <ToastContainer />
+      <body className={inter.className}>
+        <WebSocketProvider>{children}</WebSocketProvider>
+        <ToastContainer />
+      </body>
     </html>
   );
 }

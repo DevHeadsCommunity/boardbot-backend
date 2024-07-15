@@ -8,7 +8,8 @@ export interface TestResult extends TestCase {
   backendProcessingTime: number;
   totalResponseTime: number;
   isCorrect: boolean;
-  accuracyScore: number;
+  productAccuracy: number;
+  featureAccuracy: number;
   error?: string;
   metadata?: Record<string, unknown>;
 }
