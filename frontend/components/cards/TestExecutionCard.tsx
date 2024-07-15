@@ -45,6 +45,12 @@ const TestExecutionCard: React.FC<TestExecutionCardProps> = ({
   const errorCount =
     currentTest?.results?.filter((result) => result.error).length || 0;
 
+  const averageAccuracy =
+    currentTest?.results?.reduce(
+      (sum, result) => sum + result.accuracyScore,
+      0
+    ) / (currentTest?.results?.length || 1);
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -95,6 +101,12 @@ const TestExecutionCard: React.FC<TestExecutionCardProps> = ({
             <div className="w-4 h-4 bg-red-500 rounded-full" />
             <span className="font-medium">Errors: {errorCount}</span>
           </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="font-medium">Average Accuracy:</span>
+          <span className="font-medium">
+            {(averageAccuracy * 100).toFixed(2)}%
+          </span>
         </div>
       </CardContent>
       <CardFooter>

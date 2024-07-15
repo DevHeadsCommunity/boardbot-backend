@@ -81,7 +81,7 @@ export default function TestComponent() {
               </div>
             </div>
             <div className="mt-4 overflow-auto">
-              {selectedTest && (
+              {selectedTest?.results && (
                 <TestResultCard
                   test={selectedTest}
                   onTestResultSelect={onTestResultSelect}

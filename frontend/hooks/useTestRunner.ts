@@ -1,5 +1,6 @@
 import useWebSocket from "@/hooks/useWebSocket";
 import { Test, TestCase, TestResult, TestStatus } from "@/types";
+import { Product } from "@/types/Product";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
@@ -7,6 +8,27 @@ interface UseTestRunnerProps {
   test?: Test;
   batchSize?: number;
   testTimeout?: number;
+}
+
+// Helper functions for product comparison and accuracy calculation
+function compareProducts(expected: Product[], actual: Product[]): boolean {
+  if (expected.length !== actual.length) return false;
+  return expected.every(
+    (expectedProduct, index) =>
+      JSON.stringify(expectedProduct) === JSON.stringify(actual[index])
+  );
+}
+
+function calculateAccuracyScore(
+  expected: Product[],
+  actual: Product[]
+): number {
+  if (expected.length === 0) return 0;
+  const matchingProducts = expected.filter(
+    (expectedProduct, index) =>
+      JSON.stringify(expectedProduct) === JSON.stringify(actual[index])
+  );
+  return matchingProducts.length / expected.length;
 }
 
 const useTestRunner = ({
@@ -26,6 +48,7 @@ const useTestRunner = ({
 
   const handleTestResult = useCallback(
     (testCase: TestCase, output: string, error?: Error) => {
+      console.log("Handling test result", testCase, output, error);
       if (currentTest === undefined) return;
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
@@ -35,15 +58,30 @@ const useTestRunner = ({
         ? Date.now() - startTimeRef.current
         : 0;
 
+      let parsedOutput: Product[] = [];
+      let isCorrect = false;
+      let accuracyScore = 0;
+
+      try {
+        parsedOutput = JSON.parse(output) as Product[];
+        isCorrect = compareProducts(testCase.expectedProducts, parsedOutput);
+        accuracyScore = calculateAccuracyScore(
+          testCase.expectedProducts,
+          parsedOutput
+        );
+      } catch (parseError) {
+        console.error("Failed to parse output:", parseError);
+      }
+
       const result: TestResult = {
         ...testCase,
         actualOutput: output,
-        isCorrect: testCase.expectedOutput === output && !error,
-        accuracyScore: testCase.expectedOutput === output ? 1 : 0,
+        isCorrect,
+        accuracyScore,
         inputTokenCount: testCase.input.split(/\s+/).length,
         outputTokenCount: output.split(/\s+/).length,
         llmResponseTime: responseTime,
-        backendProcessingTime: responseTime, // Assuming backend processing time is the same as response time
+        backendProcessingTime: responseTime,
         totalResponseTime: responseTime,
         error: error?.message,
       };
@@ -62,6 +100,7 @@ const useTestRunner = ({
   );
 
   const runNextBatch = useCallback(() => {
+    console.log("Running next batch");
     if (status !== "RUNNING") return;
     if (currentTest === undefined) return;
 
@@ -75,6 +114,7 @@ const useTestRunner = ({
       try {
         const messageId = uuidv4();
         sendTextMessage(messageId, testCase.input);
+        console.log("Sent message", messageId, testCase.input);
         startTimeRef.current = Date.now();
         timeoutRef.current = setTimeout(() => {
           handleTestResult(testCase, "", new Error("Test timed out"));

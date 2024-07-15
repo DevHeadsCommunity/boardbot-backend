@@ -1,7 +1,9 @@
+import { Product } from "./Product";
+
 export interface TestCase {
   id: string;
   input: string;
-  expectedOutput: string;
+  expectedProducts: Product[];
   metadata?: Record<string, unknown>;
   tags?: string[];
 }

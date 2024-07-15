@@ -42,7 +42,7 @@ async def initialize_weaviate():
         products_data = products.to_dict(orient="records")
 
         # loop through the products in batches of 20
-        for i in range(0, len(products_data), 20):
+        for i in range(0, len(products_data[:100]), 20):
             try:
                 await weaviate_interface.product.batch_upsert(products_data[i : i + 20])
             except Exception as e:
