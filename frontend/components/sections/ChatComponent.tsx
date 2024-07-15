@@ -1,33 +1,10 @@
+"use client";
+
+import { ChatMessage } from "@/hooks/useConsumer";
+import useWebSocket from "@/hooks/useWebSocket";
 import { useState } from "react";
 import ReactJson from "react-json-view";
 import { v4 as uuidv4 } from "uuid";
-import { ChatMessage } from "./hooks/useConsumer";
-import useWebSocket from "./hooks/useWebSocket";
-
-function App() {
-  const { chatHistory, sendTextMessage } = useWebSocket();
-  const [currentMessage, setCurrentMessage] = useState<string>("");
-
-  const handleSendMessage = () => {
-    const id = uuidv4();
-    sendTextMessage(id, currentMessage);
-    setCurrentMessage("");
-  };
-
-  return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
-      <h1 className="mb-5 text-2xl font-bold">ThroughPut</h1>
-      <ChatWindow chatHistory={chatHistory} />
-      <MessageInput
-        currentMessage={currentMessage}
-        setCurrentMessage={setCurrentMessage}
-        handleSendMessage={handleSendMessage}
-      />
-    </div>
-  );
-}
-
-export default App;
 
 interface ChatWindowProps {
   chatHistory: ChatMessage[];
@@ -119,3 +96,27 @@ const MessageInput: React.FC<MessageInputProps> = ({
     </div>
   );
 };
+
+const ChatComponent = () => {
+  const { chatHistory, sendTextMessage } = useWebSocket();
+  const [currentMessage, setCurrentMessage] = useState<string>("");
+
+  const handleSendMessage = () => {
+    const id = uuidv4();
+    sendTextMessage(id, currentMessage);
+    setCurrentMessage("");
+  };
+  return (
+    <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
+      <h1 className="mb-5 text-2xl font-bold">ThroughPut</h1>
+      <ChatWindow chatHistory={chatHistory} />
+      <MessageInput
+        currentMessage={currentMessage}
+        setCurrentMessage={setCurrentMessage}
+        handleSendMessage={handleSendMessage}
+      />
+    </div>
+  );
+};
+
+export default ChatComponent;

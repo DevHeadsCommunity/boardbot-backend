@@ -14,6 +14,6 @@ COPY frontend/ ./
 ENV NEXT_TELEMETRY_DISABLED 1
 
 # Expose the port the app runs on
-EXPOSE 5173
+EXPOSE 3001
 
-CMD ["bun", "run", "dev", "--host", "0.0.0.0"]
+CMD ["bun", "run", "dev", "--port", "3001"]

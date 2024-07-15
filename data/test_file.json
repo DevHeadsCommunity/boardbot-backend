@@ -1,0 +1,10 @@
+[
+  {
+    "input": "What are the top Computer on Modules available with high memory and I/O count?",
+    "expectedOutput": "{\"name\": \"Computer On Modules\"}"
+  },
+  {
+    "input": "Which development kits come with extensive wireless connectivity options?",
+    "expectedOutput": "{\"name\": \"Computer On Modules\"}"
+  }
+]

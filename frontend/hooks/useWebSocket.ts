@@ -1,5 +1,5 @@
+import { WebSocketContext } from "@/context/webSocketContext";
 import { useCallback, useContext } from "react";
-import { WebSocketContext } from "../context/webSocketContext";
 import { ChatMessage } from "./useConsumer";
 import { WebSocketMessage } from "./usePublisher";
 

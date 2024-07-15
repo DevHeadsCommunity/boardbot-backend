@@ -22,8 +22,8 @@ RUN pip install --upgrade pip && \
 COPY backend/ .
 COPY data/ ./data
 
-# Make port 6789 available to the world outside this container
-EXPOSE 6789
+# Make port 5678 available to the world outside this container
+EXPOSE 5678
 
 # Run main.py when the container launches
 CMD ["python", "main.py"]

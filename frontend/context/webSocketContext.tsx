@@ -1,3 +1,5 @@
+"use client";
+
 import React, {
   ReactNode,
   createContext,
@@ -36,6 +38,7 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({
   // Set up socket connection on component mount
   useEffect(() => {
     const newSocket = io("http://0.0.0.0:6789");
+    // const newSocket = io("http://18.204.9.187:6789");
 
     setSocket(newSocket);
 
