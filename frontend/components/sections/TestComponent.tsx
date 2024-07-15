@@ -4,16 +4,9 @@ import CreateTestCard from "@/components/cards/CreateTestCard";
 import TestExecutionCard from "@/components/cards/TestExecutionCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Test } from "@/types/Test";
 
+import { TestResult } from "@/types";
 import {
   ClipboardIcon,
   DownloadIcon,
@@ -22,6 +15,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import TestListCard from "../cards/TestListCard";
+import TestResultCard from "../cards/TestResultCard";
 
 export default function TestComponent() {
   const [tests, setTests] = useState<Test[]>([]);
@@ -40,6 +34,10 @@ export default function TestComponent() {
     setSelectedTest(undefined);
   };
 
+  const onTestResultSelect = (testResult: TestResult) => {
+    console.log(`Selected test result: ${testResult.id}`);
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="bg-card px-4 py-3 sm:px-6 flex items-center justify-between border-b">
@@ -52,6 +50,9 @@ export default function TestComponent() {
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon">
             <DownloadIcon className="w-5 h-5 text-card-foreground" />
+          </Button>
+          <Button variant="ghost" size="icon">
+            <ImportIcon className="w-5 h-5 text-card-foreground" />
           </Button>
           <Button variant="ghost" size="icon">
             <SettingsIcon className="w-5 h-5 text-card-foreground" />
@@ -77,76 +78,15 @@ export default function TestComponent() {
                 <Button variant="ghost" size="icon">
                   <DownloadIcon className="w-5 h-5 text-card-foreground" />
                 </Button>
-                <Button variant="ghost" size="icon">
-                  <ImportIcon className="w-5 h-5 text-card-foreground" />
-                </Button>
               </div>
             </div>
             <div className="mt-4 overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Test Name</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Duration</TableHead>
-                    <TableHead>Executed At</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell className="font-medium">
-                      Login Functionality
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-green-500 rounded-full" />
-                        <span>Passed</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>2.5 seconds</TableCell>
-                    <TableCell>2023-07-12 10:15 AM</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">
-                      Signup Functionality
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-red-500 rounded-full" />
-                        <span>Failed</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>3.2 seconds</TableCell>
-                    <TableCell>2023-07-12 10:20 AM</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">
-                      Forgot Password
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-yellow-500 rounded-full" />
-                        <span>Pending</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>1.8 seconds</TableCell>
-                    <TableCell>2023-07-12 10:25 AM</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">
-                      Logout Functionality
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-gray-500 rounded-full" />
-                        <span>Skipped</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>N/A</TableCell>
-                    <TableCell>2023-07-12 10:30 AM</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
+              {selectedTest && (
+                <TestResultCard
+                  test={selectedTest}
+                  onTestResultSelect={onTestResultSelect}
+                />
+              )}
             </div>
           </Card>
         </div>

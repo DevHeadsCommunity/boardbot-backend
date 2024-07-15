@@ -12,6 +12,7 @@ export interface Test {
   id: string;
   name: string;
   testCases: TestCase[];
+  createdAt: string;
   results?: TestResult[];
   status: TestStatus;
   startTimestamp?: number;

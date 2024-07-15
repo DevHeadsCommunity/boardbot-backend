@@ -42,6 +42,8 @@ const TestExecutionCard: React.FC<TestExecutionCardProps> = ({
     currentTest?.results?.filter((result) => !result.isCorrect).length || 0;
   const pendingCount =
     currentTest?.testCases?.length! - (currentTest?.results?.length || 0);
+  const errorCount =
+    currentTest?.results?.filter((result) => result.error).length || 0;
 
   return (
     <Card>
@@ -88,6 +90,10 @@ const TestExecutionCard: React.FC<TestExecutionCardProps> = ({
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-yellow-500 rounded-full" />
             <span className="font-medium">Pending: {pendingCount}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-red-500 rounded-full" />
+            <span className="font-medium">Errors: {errorCount}</span>
           </div>
         </div>
       </CardContent>

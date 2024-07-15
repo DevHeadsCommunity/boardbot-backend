@@ -99,6 +99,7 @@ const CreateTestCard: React.FC<CreateTestCardProps> = ({ addTest }) => {
         name: testName,
         testCases,
         status: "PENDING",
+        createdAt: new Date().toISOString(),
       };
 
       console.log(`Test: ${test}`);
