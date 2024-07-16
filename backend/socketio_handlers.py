@@ -151,14 +151,14 @@ class SocketIOHandler:
                 if user_route == "politics":
                     response_message = """{"message": "I'm sorry, I'm not programmed to discuss politics."}"""
                 elif user_route == "chitchat":
-                    res = self.openai_client.generate_response(data.get("message"), history=self.sessions[session_id])
+                    res, input_token_count, output_token_count, elapsed_time = self.openai_client.generate_response(data.get("message"), history=self.sessions[session_id])
                     response_message = res.replace("```", "").replace("json", "").replace("\n", "").strip()
                 elif user_route == "vague_intent_product":
                     context = await wi.product.search(
                         data.get("message"),
                         ["name", "type", "feature", "specification", "description", "summary"],
                     )
-                    res = self.openai_client.generate_response(data.get("message"), context, self.sessions[session_id])
+                    res, input_token_count, output_token_count, elapsed_time = self.openai_client.generate_response(data.get("message"), context, self.sessions[session_id])
                     response_message = res.replace("```", "").replace("json", "").replace("\n", "").strip()
                 elif user_route == "clear_intent_product":
                     inputs = {

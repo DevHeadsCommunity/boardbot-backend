@@ -1,70 +1,99 @@
+import tiktoken
+import datetime
+import logging
 from openai import OpenAI
 from config import Config
+from typing import List, Dict, Optional, Tuple
 
+
+logging.basicConfig(level=logging.INFO)
+
+
+class Message:
+    def __init__(self, role: str, content: str):
+        self.role = role
+        self.content = content
+
+    def to_dict(self) -> Dict[str, str]:
+        return {"role": self.role, "content": self.content}
 
 class OpenAIClient:
     def __init__(self):
-        self._client = OpenAI(api_key=Config.OPENAI_API_KEY)
+        self.config = Config()
+        self._client = OpenAI(api_key=self.config.OPENAI_API_KEY)
+        self.encoder = tiktoken.encoding_for_model(self.config.DEFAULT_MODEL)
 
-    def format_user_message(self, message: str) -> dict:
-        return {"role": "user", "content": message}
+    def format_message(self, role: str, message: str) -> Message:
+        return Message(role, message)
 
-    def format_system_message(
-        self,
-        message: str,
-    ) -> dict:
-        return {"role": "system", "content": message}
-
-    def get_response(self, messages, model, temperature=0, max_tokens=2400, top_p=1, stream=False):
+    def get_response(self, messages: List[Message], model: Optional[str] = None,
+                     temperature: Optional[float] = None, max_tokens: Optional[int] = None,
+                     top_p: Optional[float] = None, stream: bool = False):
         try:
             response = self._client.chat.completions.create(
-                model=model,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                top_p=top_p,
+                model=model or self.config.DEFAULT_MODEL,
+                messages=[msg.to_dict() for msg in messages],
+                temperature=temperature or self.config.DEFAULT_TEMPERATURE,
+                max_tokens=max_tokens or self.config.DEFAULT_MAX_TOKENS,
+                top_p=top_p or self.config.DEFAULT_TOP_P,
                 stream=stream,
             )
             return response
         except Exception as e:
-            raise ValueError(str(e))
+            raise ValueError(f"Error in OpenAI API call: {str(e)}")
 
-    def generate_response(self, user_message: str, context: str = None, history: list = None) -> str:
+    def generate_response(self, user_message: str, context: Optional[str] = None,
+                          history: Optional[List[Dict[str, str]]] = None) -> Tuple[str, int, int, float]:
+        messages = self._prepare_messages(user_message, context, history)
+        input_token_count = len(self.encoder.encode(str(messages)))
+        logging.info(f"Input token count: {input_token_count}")
 
-        if history is None:
-            history = []
+        sent_time = datetime.datetime.now()
+        response = self.get_response(messages)
+        elapsed_time = datetime.datetime.now() - sent_time
+        logging.info(f"Elapsed time: {elapsed_time}")
 
-        formatted_chat_history = []
-        for message in history:
-            if message.get("isUserMessage"):
-                formatted_chat_history.append(self.format_user_message(message.get("message")))
-            else:
-                formatted_chat_history.append(self.format_system_message(message.get("textResponse")))
+        output_token_count = len(self.encoder.encode(response.choices[0].message.content))
+        logging.info(f"Output token count: {output_token_count}")
 
-        full_messages = formatted_chat_history + [self.format_user_message(user_message)]
-        # only keep the last 5 messages
-        if len(full_messages) > 5:
-            full_messages = full_messages[-5:]
+        return response.choices[0].message.content, input_token_count, output_token_count, elapsed_time.total_seconds()
 
-        response = self._client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {
-                    "role": "system",
-                    "content": f"""You are ThroughPut assistant. Your main task is to help users with their queries about the product.
-                                   The context that is provided is product data, in the form of name, size, form, processor, core, frequency, memory, voltage, io, thermal, feature, type, specification, manufacturer, location, description, and summary.
-                                   In your response, synthesize the information from the context into a clear, simple, and easy-to-understand response to the user.
-                                   make sure your response is in a JSON format.
-                                   Use the following context: {context}""",
-                },
-                *full_messages,
-            ],
-            max_tokens=3600,
-        )
+    def _prepare_messages(self, user_message: str, context: Optional[str],
+                          history: Optional[List[Dict[str, str]]]) -> List[Message]:
+        messages = []
+
+        if context:
+            system_message = self._get_system_message_with_context(context)
+            messages.append(self.format_message("system", system_message))
+
+        if history:
+            for message in history[-5:]:  # Only keep the last 5 messages
+                role = "user" if message.get("isUserMessage") else "assistant"
+                content = message.get("message") if role == "user" else message.get("textResponse")
+                messages.append(self.format_message(role, content))
+
+        messages.append(self.format_message("user", user_message))
+        return messages
+
+    def _get_system_message_with_context(self, context: str) -> str:
+        return f"""You are ThroughPut assistant. Your main task is to help users with their queries about the product.
+                   The context that is provided is product data, in the form of name, size, form, processor, core, frequency, memory, voltage, io, thermal, feature, type, specification, manufacturer, location, description, and summary.
+                   In your response, synthesize the information from the context into a clear, simple, and easy-to-understand response to the user.
+                   make sure your response is in a JSON format.
+                   Use the following context: {context}"""
+
+    def extract_data(self, text: str) -> str:
+        system_message = self._get_data_extraction_system_message()
+        user_message = f"Raw product data: {text}"
+        messages = [
+            self.format_message("system", system_message),
+            self.format_message("user", user_message)
+        ]
+        response = self.get_response(messages, max_tokens=4096)
         return response.choices[0].message.content
 
-    def extract_data(self, text):
-        system_message = """
+    def _get_data_extraction_system_message(self) -> str:
+        return """
             You are an intelligent assistant specialized in extracting detailed information from raw product data. Your goal is to identify and extract specific attributes related to a product. For each attribute, if the information is not available, state 'Not available'. The attributes to be extracted are:
 
             - name: The name of the product.
@@ -109,7 +138,3 @@ class OpenAIClient:
 
             Please make sure the response is formatted as valid JSON.
         """
-        user_message = "Raw product data: " + text
-        messages = [self.format_system_message(system_message), self.format_user_message(user_message)]
-        response = self.get_response(messages, model="gpt-4o", max_tokens=4096)
-        return response.choices[0].message.content
