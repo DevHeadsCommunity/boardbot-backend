@@ -11,6 +11,9 @@ export interface ChatMessage {
   message: string;
   isUserMessage: boolean;
   isComplete?: boolean;
+  inputTokenCount?: number;
+  outputTokenCount?: number;
+  elapsedTime?: number;
 }
 
 // Define the ResponseData interface
@@ -21,6 +24,9 @@ export interface ResponseData {
   textResponse?: string;
   isComplete?: boolean;
   chatHistory?: ChatMessage[];
+  inputTokenCount?: number;
+  outputTokenCount?: number;
+  elapsedTime?: number;
 }
 
 /**
@@ -49,6 +55,7 @@ export const useConsumer = (
    * @returns Updated chat history array
    */
   const updatedChatHistory = (newMessage: ChatMessage) => {
+    console.log(`===> newMessage: ${JSON.stringify(newMessage)}`);
     setChatHistory((prev) => {
       const messageIndex = prev.findIndex((m) => m.id === newMessage.id);
       if (messageIndex !== -1) {
@@ -114,13 +121,23 @@ export const useConsumer = (
   );
 
   const handleTextResponse = useCallback((data: ResponseData) => {
-    const { id, textResponse, isComplete } = data;
+    const {
+      id,
+      textResponse,
+      isComplete,
+      inputTokenCount,
+      outputTokenCount,
+      elapsedTime,
+    } = data;
     const newMessage: ChatMessage = {
       id: id!,
       message: textResponse!,
       isComplete: isComplete!,
       timestamp: new Date(),
       isUserMessage: false,
+      inputTokenCount: inputTokenCount!,
+      outputTokenCount: outputTokenCount!,
+      elapsedTime: elapsedTime!,
     };
     updatedChatHistory(newMessage);
   }, []);

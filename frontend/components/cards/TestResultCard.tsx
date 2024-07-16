@@ -11,8 +11,10 @@ type TestResultCardProps = {
 const TestResultCard = ({ test, onTestResultSelect }: TestResultCardProps) => {
   const columns: TableColumn[] = [
     { header: "Name", accessor: "name" },
-    { header: "Status", accessor: "isCorrect" },
-    { header: "Duration", accessor: "totalResponseTime" },
+    { header: "Input token", accessor: "inputTokenCount" },
+    { header: "Output token", accessor: "outputTokenCount" },
+    { header: "LLM response time", accessor: "llmResponseTime" },
+    { header: "Total response time", accessor: "totalResponseTime" },
   ];
 
   return (

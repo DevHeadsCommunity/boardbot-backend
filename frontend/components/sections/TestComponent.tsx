@@ -31,7 +31,7 @@ export default function TestComponent() {
         test.id === completedTest.id ? completedTest : test
       )
     );
-    setSelectedTest(undefined);
+    // setSelectedTest(undefined);
   };
 
   const onTestResultSelect = (testResult: TestResult) => {

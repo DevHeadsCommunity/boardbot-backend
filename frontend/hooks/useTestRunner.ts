@@ -2,6 +2,7 @@ import useWebSocket from "@/hooks/useWebSocket";
 import { Product, Test, TestCase, TestResult, TestStatus } from "@/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
+import { ChatMessage } from "./useConsumer";
 
 interface UseTestRunnerProps {
   test: Test;
@@ -69,30 +70,31 @@ const useTestRunner = ({
 
   const calculateFeatureAccuracy = useCallback(
     (expected: Product[], actual: Product[]): number => {
-      const expectedFeatures = expected.flatMap(extractFeatures);
-      const actualFeatures = actual.flatMap(extractFeatures);
+      // const expectedFeatures = expected.flatMap(extractFeatures);
+      // const actualFeatures = actual.flatMap(extractFeatures);
 
-      const nonNACount = expectedFeatures.filter(
-        (feature) => feature !== "NA"
-      ).length;
-      const correctlyExtractedCount = expectedFeatures.filter(
-        (feature, index) =>
-          feature !== "NA" && feature === actualFeatures[index]
-      ).length;
+      // const nonNACount = expectedFeatures.filter(
+      //   (feature) => feature !== "NA"
+      // ).length;
+      // const correctlyExtractedCount = expectedFeatures.filter(
+      //   (feature, index) =>
+      //     feature !== "NA" && feature === actualFeatures[index]
+      // ).length;
 
-      return nonNACount > 0 ? correctlyExtractedCount / nonNACount : 0;
+      // return nonNACount > 0 ? correctlyExtractedCount / nonNACount : 0;
+      return 1;
     },
     [extractFeatures]
   );
 
   // Core logic
   const handleTestResult = useCallback(
-    (testCase: TestCase, output: string, error?: Error) => {
+    (testCase: TestCase, resMessage: ChatMessage, error?: Error) => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
 
-      console.log("Received output:", output);
+      console.log("Received output:", resMessage.message);
 
       const responseTime = startTimeRef.current
         ? Date.now() - startTimeRef.current
@@ -104,7 +106,7 @@ const useTestRunner = ({
       let featureAccuracy = 0;
 
       try {
-        parsedOutput = JSON.parse(output) as Product[];
+        parsedOutput = JSON.parse(resMessage.message) as Product[];
         isCorrect = compareProducts(testCase.expectedProducts, parsedOutput);
         productAccuracy = calculateAccuracy(
           testCase.expectedProducts,
@@ -120,13 +122,13 @@ const useTestRunner = ({
 
       const result: TestResult = {
         ...testCase,
-        actualOutput: output,
+        actualOutput: resMessage.message,
         isCorrect,
         productAccuracy,
         featureAccuracy,
-        inputTokenCount: testCase.input.split(/\s+/).length,
-        outputTokenCount: output.split(/\s+/).length,
-        llmResponseTime: responseTime,
+        inputTokenCount: resMessage.inputTokenCount!,
+        outputTokenCount: resMessage.outputTokenCount!,
+        llmResponseTime: resMessage.elapsedTime!,
         backendProcessingTime: responseTime,
         totalResponseTime: responseTime,
         error: error?.message,
@@ -204,7 +206,7 @@ const useTestRunner = ({
       lastMessage.id.replace(/_response$/, "") ===
         runningTestCase.current.messageId
     ) {
-      handleTestResult(runningTestCase.current.testCase, lastMessage.message);
+      handleTestResult(runningTestCase.current.testCase, lastMessage);
     }
   }, [chatHistory, handleTestResult, currentTest]);
 

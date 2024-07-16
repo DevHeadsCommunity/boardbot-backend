@@ -90,19 +90,19 @@ const TestExecutionCard: React.FC<TestExecutionCardProps> = ({
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-gray-500 rounded-full" />
+            <span className="font-medium">Pending: {pendingCount}</span>
+          </div>
+          <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-green-500 rounded-full" />
             <span className="font-medium">Passed: {passedCount}</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-red-500 rounded-full" />
+            <div className="w-4 h-4  bg-yellow-500 rounded-full" />
             <span className="font-medium">Failed: {failedCount}</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-yellow-500 rounded-full" />
-            <span className="font-medium">Pending: {pendingCount}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-gray-500 rounded-full" />
+            <div className="w-4 h-4 bg-red-500 rounded-full" />
             <span className="font-medium">Errors: {errorCount}</span>
           </div>
         </div>

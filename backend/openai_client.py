@@ -26,6 +26,15 @@ class OpenAIClient:
     def format_message(self, role: str, message: str) -> Message:
         return Message(role, message)
 
+    def format_user_message(self, message: str) -> dict:
+        return {"role": "user", "content": message}
+
+    def format_system_message(
+        self,
+        message: str,
+    ) -> dict:
+        return {"role": "system", "content": message}
+
     def get_response(self, messages: List[Message], model: Optional[str] = None,
                      temperature: Optional[float] = None, max_tokens: Optional[int] = None,
                      top_p: Optional[float] = None, stream: bool = False):
@@ -48,15 +57,11 @@ class OpenAIClient:
         input_token_count = len(self.encoder.encode(str(messages)))
         logging.info(f"Input token count: {input_token_count}")
 
-        sent_time = datetime.datetime.now()
         response = self.get_response(messages)
-        elapsed_time = datetime.datetime.now() - sent_time
-        logging.info(f"Elapsed time: {elapsed_time}")
-
         output_token_count = len(self.encoder.encode(response.choices[0].message.content))
         logging.info(f"Output token count: {output_token_count}")
 
-        return response.choices[0].message.content, input_token_count, output_token_count, elapsed_time.total_seconds()
+        return response.choices[0].message.content, input_token_count, output_token_count
 
     def _prepare_messages(self, user_message: str, context: Optional[str],
                           history: Optional[List[Dict[str, str]]]) -> List[Message]:
