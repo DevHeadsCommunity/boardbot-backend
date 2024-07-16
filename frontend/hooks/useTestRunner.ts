@@ -9,73 +9,85 @@ interface UseTestRunnerProps {
   testTimeout?: number;
 }
 
-// Utility functions
-const compareProducts = (expected: Product[], actual: Product[]): boolean => {
-  if (expected.length !== actual.length) return false;
-  return expected.every(
-    (expectedProduct, index) =>
-      JSON.stringify(expectedProduct) === JSON.stringify(actual[index])
-  );
-};
-
-const calculateAccuracy = (expected: Product[], actual: Product[]): number => {
-  if (expected.length === 0) return 0;
-  const correctProducts = expected.filter(
-    (expectedProduct, index) =>
-      JSON.stringify(expectedProduct) === JSON.stringify(actual[index])
-  );
-  return correctProducts.length / expected.length;
-};
-
-const extractFeatures = (product: Product): (string | "NA")[] => {
-  return [
-    product.manufacturer || "NA",
-    product.form || "NA",
-    product.processor || "NA",
-    product.processorTDP || "NA",
-    product.memory || "NA",
-    product.io || "NA",
-    product.operatingSystem || "NA",
-    product.environmental || "NA",
-    product.certifications || "NA",
-  ];
-};
-
-const calculateFeatureAccuracy = (
-  expected: Product[],
-  actual: Product[]
-): number => {
-  const expectedFeatures = expected.flatMap(extractFeatures);
-  const actualFeatures = actual.flatMap(extractFeatures);
-
-  const nonNACount = expectedFeatures.filter(
-    (feature) => feature !== "NA"
-  ).length;
-  const correctlyExtractedCount = expectedFeatures.filter(
-    (feature, index) => feature !== "NA" && feature === actualFeatures[index]
-  ).length;
-
-  return nonNACount > 0 ? correctlyExtractedCount / nonNACount : 0;
-};
+interface RunningTestCase {
+  testCase: TestCase;
+  messageId: string;
+}
 
 const useTestRunner = ({
   test,
   batchSize = 5,
-  testTimeout = 10000,
+  testTimeout = 180000, // 3 minutes
 }: UseTestRunnerProps) => {
   const { sendTextMessage, chatHistory } = useWebSocket();
   const [currentTestIndex, setCurrentTestIndex] = useState(0);
   const [status, setStatus] = useState<TestStatus>(test?.status || "PENDING");
   const [progress, setProgress] = useState(0);
-  const [currentTest, setCurrentTest] = useState<Test | undefined>(test);
+  const [currentTest, setCurrentTest] = useState<Test>(test);
+
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
-  const processedMessageIds = useRef<Set<string>>(new Set());
-  const runningTestCase = useRef<TestCase | null>(null);
+  const runningTestCase = useRef<RunningTestCase | null>(null);
 
+  // Utility functions
+  const compareProducts = useCallback(
+    (expected: Product[], actual: Product[]): boolean => {
+      if (expected.length !== actual.length) return false;
+      return expected.every(
+        (expectedProduct, index) =>
+          JSON.stringify(expectedProduct) === JSON.stringify(actual[index])
+      );
+    },
+    []
+  );
+
+  const calculateAccuracy = useCallback(
+    (expected: Product[], actual: Product[]): number => {
+      if (expected.length === 0) return 0;
+      const correctProducts = expected.filter(
+        (expectedProduct, index) =>
+          JSON.stringify(expectedProduct) === JSON.stringify(actual[index])
+      );
+      return correctProducts.length / expected.length;
+    },
+    []
+  );
+
+  const extractFeatures = useCallback((product: Product): (string | "NA")[] => {
+    return [
+      product.manufacturer || "NA",
+      product.form || "NA",
+      product.processor || "NA",
+      product.processorTDP || "NA",
+      product.memory || "NA",
+      product.io || "NA",
+      product.operatingSystem || "NA",
+      product.environmental || "NA",
+      product.certifications || "NA",
+    ];
+  }, []);
+
+  const calculateFeatureAccuracy = useCallback(
+    (expected: Product[], actual: Product[]): number => {
+      const expectedFeatures = expected.flatMap(extractFeatures);
+      const actualFeatures = actual.flatMap(extractFeatures);
+
+      const nonNACount = expectedFeatures.filter(
+        (feature) => feature !== "NA"
+      ).length;
+      const correctlyExtractedCount = expectedFeatures.filter(
+        (feature, index) =>
+          feature !== "NA" && feature === actualFeatures[index]
+      ).length;
+
+      return nonNACount > 0 ? correctlyExtractedCount / nonNACount : 0;
+    },
+    [extractFeatures]
+  );
+
+  // Core logic
   const handleTestResult = useCallback(
     (testCase: TestCase, output: string, error?: Error) => {
-      if (currentTest === undefined) return;
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
@@ -132,76 +144,71 @@ const useTestRunner = ({
 
       runningTestCase.current = null;
     },
-    [currentTest, currentTestIndex]
+    [
+      currentTest,
+      currentTestIndex,
+      compareProducts,
+      calculateAccuracy,
+      calculateFeatureAccuracy,
+    ]
   );
 
-  const runNextBatch = useCallback(() => {
-    if (status !== "RUNNING" || currentTest === undefined) return;
+  const runNextTestCase = useCallback(() => {
+    if (status !== "RUNNING") return;
+    if (currentTestIndex >= currentTest.testCases.length) {
+      setStatus("COMPLETED");
+      return;
+    }
 
-    const endIndex = Math.min(
-      currentTestIndex + batchSize,
-      currentTest.testCases.length
-    );
+    const testCase = currentTest.testCases[currentTestIndex];
+    const messageId = uuidv4();
+    runningTestCase.current = { testCase, messageId };
 
-    for (let i = currentTestIndex; i < endIndex; i++) {
-      const testCase = currentTest.testCases[i];
-      if (runningTestCase.current === null) {
-        runningTestCase.current = testCase;
-        try {
-          const messageId = uuidv4();
-          sendTextMessage(messageId, testCase.input);
-          console.log("Sent message:", testCase.input);
-          startTimeRef.current = Date.now();
-          timeoutRef.current = setTimeout(() => {
-            handleTestResult(testCase, "", new Error("Test timed out"));
-          }, testTimeout);
-        } catch (error) {
-          handleTestResult(
-            testCase,
-            "",
-            error instanceof Error ? error : new Error("Unknown error")
-          );
-        }
-        break; // Only run one test case at a time
-      }
+    try {
+      sendTextMessage(messageId, testCase.input);
+      console.log("Sent message:", testCase.input);
+      startTimeRef.current = Date.now();
+      timeoutRef.current = setTimeout(() => {
+        handleTestResult(testCase, "", new Error("Test timed out"));
+      }, testTimeout);
+    } catch (error) {
+      handleTestResult(
+        testCase,
+        "",
+        error instanceof Error ? error : new Error("Unknown error")
+      );
     }
   }, [
-    batchSize,
-    currentTestIndex,
-    handleTestResult,
-    sendTextMessage,
     status,
     currentTest,
+    currentTestIndex,
+    sendTextMessage,
+    handleTestResult,
     testTimeout,
   ]);
 
+  // Effects
   useEffect(() => {
-    if (currentTest === undefined) return;
-    if (
-      currentTestIndex < currentTest.testCases.length &&
-      status === "RUNNING"
-    ) {
-      runNextBatch();
-    } else if (currentTestIndex >= currentTest.testCases.length) {
-      setStatus("COMPLETED");
+    if (status === "RUNNING" && runningTestCase.current === null) {
+      runNextTestCase();
     }
-  }, [currentTestIndex, currentTest, status, runNextBatch]);
+  }, [status, runningTestCase, runNextTestCase]);
 
   useEffect(() => {
-    if (currentTest === undefined) return;
+    if (currentTest === undefined || runningTestCase.current === null) return;
+
     const lastMessage = chatHistory[chatHistory.length - 1];
     if (
       lastMessage &&
       !lastMessage.isUserMessage &&
-      !processedMessageIds.current.has(lastMessage.id)
+      lastMessage.id.replace(/_response$/, "") ===
+        runningTestCase.current.messageId
     ) {
-      processedMessageIds.current.add(lastMessage.id);
-      if (runningTestCase.current) {
-        handleTestResult(runningTestCase.current, lastMessage.message);
-      }
+      handleTestResult(runningTestCase.current.testCase, lastMessage.message);
     }
   }, [chatHistory, handleTestResult, currentTest]);
 
+  // Public methods
   const startTest = useCallback(() => {
     setStatus("RUNNING");
     setCurrentTestIndex(0);
