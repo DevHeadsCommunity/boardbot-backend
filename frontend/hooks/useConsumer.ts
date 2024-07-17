@@ -5,29 +5,8 @@ import { v4 as uuidv4 } from "uuid";
 import { WebSocketMessage } from "./usePublisher";
 
 // Define the ChatMessage interface
-export interface ChatMessage {
-  id: string;
-  timestamp: Date;
-  message: string;
-  isUserMessage: boolean;
-  isComplete?: boolean;
-  inputTokenCount?: number;
-  outputTokenCount?: number;
-  elapsedTime?: number;
-}
 
 // Define the ResponseData interface
-export interface ResponseData {
-  type: string;
-  sessionId?: string;
-  id?: string;
-  textResponse?: string;
-  isComplete?: boolean;
-  chatHistory?: ChatMessage[];
-  inputTokenCount?: number;
-  outputTokenCount?: number;
-  elapsedTime?: number;
-}
 
 /**
  * Custom hook to handle incoming messages and socket events.

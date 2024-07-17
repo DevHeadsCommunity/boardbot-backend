@@ -192,3 +192,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+exp.ts
+

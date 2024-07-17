@@ -22,7 +22,8 @@ export const webSocketMachine = setup({
       | { type: "listener.textResponseReceived" }
       | { type: "webSocket.sendMessage" }
       | { type: "listener.disconnected" }
-      | { type: "closer.connectionClosed" },
+      | { type: "closer.connectionClosed" }
+      | { type: "parentActor.disconnect" },
   },
   actions: {
     sendMessage: function ({ context, event }, params: RequestData) {
@@ -169,6 +170,9 @@ export const webSocketMachine = setup({
         "listener.disconnected": {
           target: "Disconnecting",
         },
+        "parentActor.disconnect": {
+          target: "Disconnecting",
+        },
       },
       invoke: {
         id: "listener",
@@ -201,12 +205,6 @@ export const webSocketMachine = setup({
         src: "closer",
       },
     },
-    Disconnected: {
-      after: {
-        "500": {
-          target: "Initializing",
-        },
-      },
-    },
+    Disconnected: {},
   },
 });
