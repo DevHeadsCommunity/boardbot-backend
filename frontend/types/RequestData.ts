@@ -1,8 +1,8 @@
 export interface RequestData {
   type: string;
   sessionId: string;
-  id: string;
+  messageId: string;
   message: string;
-  architecture?: string;
-  chatHistoryManagementChoice?: string;
+  architectureChoice?: string;
+  historyManagementChoice?: string;
 }

@@ -15,7 +15,8 @@ export const testRunnerMachine = setup({
     | { type: "test.startTest" }
     | { type: "test.continueTest" }
     | { type: "test.pauseTest" }
-      | { type: "test.stopTest" },
+    | { type: "test.stopTest" }
+    | { type: "test.messageResponse" },
   },
   actors: {
     testRunner: createMachine({
@@ -109,7 +110,7 @@ export const testRunnerMachine = setup({
       invoke: {
         id: "fullTestEvaluator",
         input: {},
-        src: "fullTestEvaluator.ts",
+        src: "fullTestEvaluator",
       },
     },
   },

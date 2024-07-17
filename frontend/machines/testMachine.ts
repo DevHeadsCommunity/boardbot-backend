@@ -1,63 +1,40 @@
-import { Test, TestCase, TestResult } from "@/types";
+import { RequestData, ResponseData, Test } from "@/types";
 import { assign, sendTo, setup } from "xstate";
+import { testRunnerMachine } from "./testRunnerMachine";
+import { webSocketMachine } from "./webSocketMachine";
 
-export const machine = setup({
+export const testMachine = setup({
   types: {
     context: {} as {
       webSocketRef: null;
-      currentTest: Test | null;
-      testCases: TestCase[];
-      results: TestResult[];
-      currentTestIndex: number;
-      progress: number;
-      batchSize: number;
-      resTimeOut: number;
-      architecture: string;
-      chatHistoryManagmentChoice: string;
+      selectedTest: Test | null;
+      tests: Test[];
+      architectureChoice: string;
+      historyManagementChoice: string;
     },
     events: {} as
       | { type: "app.startTest" }
-      | { type: "user.startTest" }
+      | { type: "app.stopTest" }
+      | { type: "webSocket.disconnected" }
+      | { type: "webSocket.connected" }
+      | { type: "webSocket.messageReceived", data: ResponseData }
+      | { type: "testRunner.sendMessage", data: RequestData }
+      | { type: "testRunner.complete" }
+      | { type: "user.createTest" }
+      | { type: "user.runTest" }
       | { type: "user.pauseTest" }
       | { type: "user.resumeTest" }
-      | { type: "user.retryFailedTests" }
-      | { type: "webSocket.disconnected" }
-      | { type: "app.stopTest" }
-      | { type: "webSocket.connected" }
-      | { type: "user.createTest" }
-      | { type: "user.selectTest" }
-      | { type: "testRunner.complete" }
-      | { type: "evaluator.complete" }
-      | { type: "user.updateSetting" }
-      | { type: "update.complete" }
-      | { type: "user.importState" }
-      | { type: "user.exportState" }
+      | { type: "user.selectTest", data: Test }
       | { type: "user.clickSingleTestResult" }
-      | { type: "user.closeTestResultModal" },
-  },
-  actors: {
-    testRunner: createMachine({
-      /* ... */
-    }),
-  },
-  guards: {
-    testComplete: function ({ context, event }) {
-      // Add your guard condition here
-      return true;
-    },
+      | { type: "user.closeTestResultModal" }
   },
 }).createMachine({
   context: {
     webSocketRef: null,
-    currentTest: null,
-    testCases: [],
-    results: [],
-    currentTestIndex: 0,
-    progress: 0,
-    batchSize: 10,
-    resTimeOut: 1000,
-    architecture: "agentic",
-    chatHistoryManagmentChoice: "1",
+    selectedTest: null,
+    tests: [],
+    architectureChoice: "semantic-router-v1",
+    historyManagementChoice: "keep-all",
   },
   id: "testActor",
   initial: "idle",
@@ -74,19 +51,9 @@ export const machine = setup({
       on: {
         "app.stopTest": {
           target: "idle",
-          actions: [
-            sendTo(({ context }) => context.webSocketRef!, {
-              type: "parentActor.disconnect",
-            } as any),
-            assign({
-              currentTest: null,
-              testCases: [],
-              results: [],
-              currentTestIndex: 0,
-              progress: 0,
-              status: "PENDING" as const,
-            }),
-          ],
+          actions: sendTo(({ context }) => context.webSocketRef!, {
+            type: "parentActor.disconnect",
+          } as any),
         },
         "webSocket.connected": {
           target: "#testActor.DisplayingTest.Connected",
@@ -100,120 +67,114 @@ export const machine = setup({
         Connected: {
           initial: "DisplayingTestPage",
           on: {
+            "user.createTest": {
+              target:
+                "#testActor.DisplayingTest.Connected.DisplayingTestDetails",
+            },
+            "user.selectTest": {
+              actions: assign({
+                selectedTest: ({event, spawn}) => {
+                  const selectedTest = event.data;
+                  if (!selectedTest.testRunnerRef) {
+                    selectedTest.testRunnerRef = spawn(testRunnerMachine);
+                  }
+                  return selectedTest;
+                },
+              }),
+              target:
+                "#testActor.DisplayingTest.Connected.DisplayingTestDetails",
+            },
             "webSocket.disconnected": {
               target: "Setup",
             },
-            "user.updateSetting": {
-              target: "#testActor.DisplayingTest.Connected.UpdattingSettings",
-            },
-            "user.exportState": {
-              target: "#testActor.DisplayingTest.Connected.ExportingState",
-            },
-            "user.importState": {
-              target: "#testActor.DisplayingTest.Connected.ImportingState",
-            },
-            "user.clickSingleTestResult": {
-              target:
-                "#testActor.DisplayingTest.Connected.DisplayingTestDetailsModal",
-            },
           },
           states: {
-            DisplayingTestPage: {
+            DisplayingTestPage: {},
+            DisplayingTestDetails: {
+              initial: "DisplayingSelectedTest",
               on: {
-                "user.createTest": {
-                  target: "TestReady",
+                "user.runTest": {
+                  target:
+                    "#testActor.DisplayingTest.Connected.DisplayingTestDetails.RunningTest",
+                  actions: sendTo(
+                    ({ context }) => context.selectedTest?.testRunnerRef!,
+                    {
+                      type: "test.startTest",
+                    } as any,
+                  ),
                 },
-                "user.selectTest": {
-                  target: "TestReady",
-                },
-              },
-            },
-            TestReady: {
-              on: {
-                "user.startTest": {
-                  target: "RunningTest",
-                  actions: assign({ status: "RUNNING" as const }),
-                },
-              },
-            },
-            RunningTest: {
-              initial: "RunningTestBatch",
-              on: {
-                "user.pauseTest": {
-                  target: "TestPaused",
-                  actions: assign({ status: "PAUSED" as const }),
+                "user.clickSingleTestResult": {
+                  target:
+                    "#testActor.DisplayingTest.Connected.DisplayingTestDetails.DisplayingTestDetailsModal",
                 },
               },
               states: {
-                RunningTestBatch: {
+                DisplayingSelectedTest: {},
+                RunningTest: {
                   on: {
+                    "user.pauseTest": {
+                      actions: sendTo(
+                        ({ context }) => context.selectedTest?.testRunnerRef!,
+                        {
+                          type: "test.pauseTest",
+                        } as any,
+                      ),
+                    },
+                    "user.resumeTest": {
+                      actions: sendTo(
+                        ({ context }) => context.selectedTest?.testRunnerRef!,
+                        {
+                          type: "test.resumeTest",
+                        } as any,
+                      ),
+                    },
                     "testRunner.complete": {
-                      target: "EvaluateBatchResult",
+                      target: "DisplayingSelectedTest",
+                    },
+                    "testRunner.sendMessage": {
+                      actions: sendTo(
+                          ({ context }) => context.webSocketRef!,
+                          ({ context, event }) => {
+                            return {
+                              type: "webSocket.sendMessage",
+                              data: {
+                                type: "textMessage",
+                                sessionId: context.selectedTest?.sessionId,
+                                messageId: (event as any).webSocketRef?.messageId,
+                                message: (event as any).data.message,
+                                architectureChoice: (event as any).architectureChoice,
+                                historyManagementChoice: (event as any).historyManagementChoice,
+                            } as RequestData
+                          }
+                        }) as any,
+                    },
+                    "webSocket.messageReceived": {
+                      actions: sendTo(
+                          ({ context }) => context.selectedTest?.testRunnerRef!,
+                          ({ context, event }) => {
+                            return {
+                              type: "testRunner.messageResponse",
+                              data: {
+                                type: "textMessage",
+                                sessionId: context.selectedTest?.sessionId,
+                                messageId: (event as any).data.messageId,
+                                textResponse: (event as any).data.textResponse,
+                                isComplete: (event as any).data.isComplete,
+                                inputTokenCount: (event as any).data.inputTokenCount,
+                                outputTokenCount: (event as any).data.outputTokenCount,
+                                elapsedTime: (event as any).data.elapsedTime,
+                              } as ResponseData
+                          }
+                        }) as any,
                     },
                   },
-                  invoke: {
-                    input: {},
-                    src: "testRunner",
-                  },
                 },
-                EvaluateBatchResult: {
+                DisplayingTestDetailsModal: {
                   on: {
-                    "evaluator.complete": [
-                      {
-                        target:
-                          "#testActor.DisplayingTest.Connected.TestCompleted",
-                        guard: {
-                          type: "testComplete",
-                        },
-                      },
-                      {
-                        target: "RunningTestBatch",
-                      },
-                    ],
+                    "user.closeTestResultModal": {
+                      target: "DisplayingSelectedTest",
+                    },
                   },
-                },
-              },
-            },
-            TestPaused: {
-              on: {
-                "user.resumeTest": {
-                  target: "RunningTest",
-                  actions: assign({ status: "RUNNING" as const }),
-                },
-              },
-            },
-            TestCompleted: {
-              on: {
-                "user.retryFailedTests": {
-                  target: "RunningTest",
-                  actions: assign({
-                    testCases: ({ context }) =>
-                      context.results
-                        .filter((result) => !result.isCorrect)
-                        .map((result) => result as TestCase),
-                    results: ({ context }) =>
-                      context.results.filter((result) => result.isCorrect),
-                    currentTestIndex: 0,
-                    progress: 0,
-                    status: "RUNNING" as const,
-                  }),
-                },
-              },
-              entry: assign({ status: "COMPLETED" as const }),
-            },
-            UpdattingSettings: {
-              on: {
-                "update.complete": {
-                  target: "DisplayingTestPage",
-                },
-              },
-            },
-            ExportingState: {},
-            ImportingState: {},
-            DisplayingTestDetailsModal: {
-              on: {
-                "user.closeTestResultModal": {
-                  target: "#testActor.DisplayingTest.Connected",
                 },
               },
             },

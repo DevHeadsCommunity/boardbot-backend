@@ -1,20 +1,11 @@
-import { TestCase } from "./TestCase";
-import { TestResult } from "./TestResult";
-
-export type TestStatus =
-  | "PENDING"
-  | "RUNNING"
-  | "COMPLETED"
-  | "FAILED"
-  | "PAUSED";
+import { ActorRef } from "xstate";
 
 export interface Test {
   id: string;
   name: string;
-  testCases: TestCase[];
   createdAt: string;
-  results?: TestResult[];
-  status: TestStatus;
+  sessionId: string;
+  testRunnerRef: ActorRef<any, any>;
   startTimestamp?: number;
   endTimestamp?: number;
   error?: string;
