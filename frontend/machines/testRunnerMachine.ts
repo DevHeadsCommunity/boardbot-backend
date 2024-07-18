@@ -1,5 +1,5 @@
 import { FullTestResult, TestCase, TestResult } from "@/types";
-import { setup } from "xstate";
+import { createMachine, setup } from "xstate";
 
 export const testRunnerMachine = setup({
   types: {

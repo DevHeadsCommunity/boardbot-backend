@@ -1,4 +1,4 @@
-import { WebSocketProvider } from "@/context/webSocketContext";
+import { AppContextProvider } from "@/context/appContext";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ToastContainer } from "react-toastify";
@@ -20,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <WebSocketProvider>{children}</WebSocketProvider>
+        <AppContextProvider>{children}</AppContextProvider>
         <ToastContainer />
       </body>
     </html>

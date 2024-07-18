@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-between ">
-      <Tabs defaultValue="chat" className="w-full">
+      <Tabs defaultValue="test" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="chat">Chat</TabsTrigger>
           <TabsTrigger value="test">Test</TabsTrigger>
