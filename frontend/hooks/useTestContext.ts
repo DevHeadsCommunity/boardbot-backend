@@ -1,79 +1,75 @@
 import { AppContext } from "@/context/appContext";
+import { Test } from "@/types";
 import { useSelector } from "@xstate/react";
-import { useEffect, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { useToast } from "./useToast";
 
 
+export enum TestState {
+  Idle = "Idle",
+  DisplayingTest = "DisplayingTest",
+  DisplayingTestPage = "DisplayingTestPage",
+  DisplayingSelectedTest = "DisplayingSelectedTest",
+  DisplayingTestDetailsModal = "DisplayingTestDetailsModal",
+  RunningTest = "RunningTest"
+}
+
 export const useTestContext = () => {
   const state = AppContext.useSelector((state) => state);
-  const testActorRef = AppContext.useActorRef();
+  const testActorRef = state.context.testRef;
+  const testActorState = useSelector(testActorRef, (state) => state);
   useToast(testActorRef);
-  const tests = useSelector(testActorRef, (state: any) => state.context.tests || []);
-  const selectedTest = useSelector(testActorRef, (state: any) => state.context.selectedTest || null);
-  const testActorState = useSelector(testActorRef, (state: any) => state);
-  const [testState, setTestState] = useState<"Idle" | "DisplayingTest" | "DisplayingTestPage"| "DisplayingSelectedTest" | "DisplayingTestDetailsModal" | "RunningTest" >("Idle");
 
-  useEffect(() => {
-    if (testActorState.matches("Idle" as any)) {
-      setTestState("Idle");
-    } else if (testActorState.matches("DisplayingTest")) {
-      setTestState("DisplayingTest");
-    } else if (testActorState.matches("DisplayingTest.Connected.DisplayingTestPage" as any)) {
-      setTestState("DisplayingTestPage");
-    } else if (testActorState.matches("DisplayingTest.Connected.DisplayingTestDetails.DisplayingSelectedTest" as any)) {
-      setTestState("DisplayingSelectedTest");
-    } else if (testActorState.matches("DisplayingTest.Connected.DisplayingTestDetails.DisplayingTestDetailsModal" as any)) {
-      setTestState("DisplayingTestDetailsModal");
-    } else if (testActorState.matches("DisplayingTest.Connected.DisplayingTestDetails.RunningTest" as any)) {
-      setTestState("RunningTest");
-    }
-  }
-  , [testActorState]);
+    const testState = useMemo(() => {
+      if (!testActorState) return TestState.Idle;
+      if (testActorState.matches('DisplayingTest')) return TestState.DisplayingTest;
+      if (testActorState.matches('DisplayingTest.Connected.DisplayingTestPage' as any)) return TestState.DisplayingTestPage;
+      if (testActorState.matches('DisplayingTest.Connected.DisplayingTestDetails.DisplayingSelectedTest' as any)) return TestState.DisplayingSelectedTest;
+      if (testActorState.matches('DisplayingTest.Connected.DisplayingTestDetails.DisplayingTestDetailsModal' as any)) return TestState.DisplayingTestDetailsModal;
+      if (testActorState.matches('DisplayingTest.Connected.DisplayingTestDetails.RunningTest' as any)) return TestState.RunningTest;
+    }, [testActorState]);
 
-  const handleStartTest = () => {
-    testActorRef.send({ type: "app.startTest" });
-  };
-  const handleStopTest = () => {
-    testActorRef.send({ type: "app.stopTest" });
-  };
-  const handleCreateTest = () => {
-    testActorRef.send({ type: "user.createTest" });
-  };
-  const handleRunTest = () => {
-    testActorRef.send({ type: "user.runTest" });
-  };
-  const handlePauseTest = () => {
-    testActorRef.send({ type: "user.pauseTest" });
-  };
-  const handleResumeTest = () => {
-    testActorRef.send({ type: "user.resumeTest" });
-  };
-  const handleClickSingleTestResult = () => {
-    testActorRef.send({ type: "user.clickSingleTestResult" });
-  };
-  const handleCloseTestResultModal = () => {
-    testActorRef.send({ type: "user.closeTestResultModal" });
-  };
-  const handleSelectTest = (test: any) => {
-    testActorRef.send({ type: "user.selectTest", data: test });
-  };
+
+  const handleStartTest = useCallback(() => {
+    testActorRef?.send({ type: "app.startTest" });
+  }, [testActorRef]);
+  const handleStopTest = useCallback(() => {
+    testActorRef?.send({ type: "app.stopTest" });
+  }, [testActorRef]);
+  const handleCreateTest = useCallback((data: Test) => {
+    testActorRef?.send({ type: "user.createTest", data });
+  }, [testActorRef]);
+  const handleSelectSingleTestResult = useCallback(() => {
+    testActorRef?.send({ type: "user.clickSingleTestResult" });
+  }, [testActorRef]);
+  const handleCloseTestResultModal = useCallback(() => {
+    testActorRef?.send({ type: "user.closeTestResultModal" });
+  }, [testActorRef]);
+  const handleSelectTest = useCallback((data: Test) => {
+    testActorRef?.send({ type: "user.selectTest", data });
+  }, [testActorRef]);
 
   return {
-    data: {
-      tests,
-      selectedTest,
+    state: {
       testState,
     },
+    data: {
+      tests: useSelector(testActorRef, (state) => state?.context.tests || []),
+      selectedTest: useSelector(testActorRef, (state) => state?.context.selectedTest || null),
+    },
     actions: {
-      handleStartTest,
-      handleStopTest,
-      handleCreateTest,
-      handleRunTest,
-      handlePauseTest,
-      handleResumeTest,
-      handleClickSingleTestResult,
-      handleCloseTestResultModal,
-      handleSelectTest,
+      click: {
+        startTest: handleStartTest,
+        stopTest: handleStopTest,
+        createTest: handleCreateTest,
+      },
+      select: {
+        test: handleSelectTest,
+        testResult: handleSelectSingleTestResult
+      },
+      close: {
+        testResultModal: handleCloseTestResultModal
+      }
     }
   }
 }

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Test } from "@/types/Test";
 
+import { useTestContext } from "@/hooks/useTestContext";
 import { TestResult } from "@/types";
 import {
   ClipboardIcon,
@@ -13,28 +14,18 @@ import {
   ImportIcon,
   SettingsIcon,
 } from "lucide-react";
-import { useState } from "react";
 import TestListCard from "../cards/TestListCard";
 import TestResultCard from "../cards/TestResultCard";
 
 export default function TestComponent() {
-  const [tests, setTests] = useState<Test[]>([]);
-  const [selectedTest, setSelectedTest] = useState<Test | undefined>(undefined);
+  const { state, data, actions} = useTestContext();
 
   const addTest = (test: Test) => {
-    setTests((prevTests) => [...prevTests, test]);
-  };
-
-  const onTestComplete = (completedTest: Test) => {
-    setTests((prevTests) =>
-      prevTests.map((test) =>
-        test.id === completedTest.id ? completedTest : test
-      )
-    );
-    // setSelectedTest(undefined);
+    actions.handleCreateTest(test);
   };
 
   const onTestResultSelect = (testResult: TestResult) => {
+    actions.handleClickSingleTestResult();
     console.log(`Selected test result: ${testResult.id}`);
   };
 
@@ -62,11 +53,12 @@ export default function TestComponent() {
       <main className="flex-1 px-4 py-8 sm:px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <CreateTestCard addTest={addTest} />
-          <TestListCard tests={tests} onTestSelect={setSelectedTest} />
-          {selectedTest && (
+          <TestListCard tests={data.tests} onTestSelect={actions.handleSelectTest} />
+          {data.selectedTest && (
             <TestExecutionCard
-              test={selectedTest}
-              onTestComplete={onTestComplete}
+              state={state.testExecutionState}
+              data={data}
+              actions={actions}
             />
           )}
         </div>
@@ -83,12 +75,11 @@ export default function TestComponent() {
               </div>
             </div>
             <div className="mt-4 overflow-auto">
-              {selectedTest?.results && (
                 <TestResultCard
-                  test={selectedTest}
-                  onTestResultSelect={onTestResultSelect}
+                  state={state.testExecutionState}
+                  data={data}
+                  actions={actions}
                 />
-              )}
             </div>
           </Card>
         </div>

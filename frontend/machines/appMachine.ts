@@ -1,11 +1,17 @@
-import { assign, createMachine, sendTo, setup } from "xstate";
+import { ActorRefFrom, assign, createMachine, sendTo, setup } from "xstate";
 import { chatMachine } from "./chatMachine";
 import { productMachine } from './productMachine';
 import { testMachine } from './testMachine';
 
 export const appMachine = setup({
   types: {
-    context: {} as { chatRef: null; testRef: null; prodRef: null },
+    context: {} as {
+      chatRef: ActorRefFrom<typeof chatMachine> | undefined;
+      testRef: ActorRefFrom<typeof testMachine> | undefined;
+      prodRef: ActorRefFrom<typeof productMachine> | undefined;
+      architectureChoice: string;
+      historyManagementChoice: string;
+    },
     events: {} as
       | { type: "user.selectTest" }
       | { type: "user.selectManageProducts" }
@@ -33,9 +39,11 @@ export const appMachine = setup({
   },
 }).createMachine({
   context: {
-    chatRef: null,
-    testRef: null,
-    prodRef: null,
+    chatRef: undefined,
+    testRef: undefined,
+    prodRef: undefined,
+    architectureChoice: "semantic-router-v1",
+    historyManagementChoice: "keep-all",
   },
   id: "appActor",
   initial: "Open",

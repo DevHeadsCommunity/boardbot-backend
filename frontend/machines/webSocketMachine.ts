@@ -20,7 +20,7 @@ export const webSocketMachine = setup({
     context: {} as { socket: Socket | null; sessionId: string | null },
     events: {} as
       | { type: "listener.textResponseReceived" }
-      | { type: "webSocket.sendMessage" }
+      | { type: "parentActor.sendMessage" }
       | { type: "listener.disconnected" }
       | { type: "closer.connectionClosed" }
       | { type: "parentActor.disconnect" },
@@ -161,7 +161,7 @@ export const webSocketMachine = setup({
             data: event.data,
           })),
         },
-        "webSocket.sendMessage": {
+        "parentActor.sendMessage": {
           actions: {
             type: "sendMessage",
             params: ({ event }: any) => event.data,
