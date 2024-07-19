@@ -1,8 +1,8 @@
 import time
 import socketio
 from typing import Dict, List
-from backend.agent_v1 import AgentV1
-from backend.agent_v2 import AgentV2
+from agent_v1 import AgentV1
+from agent_v2 import AgentV2
 from openai_client import OpenAIClient
 from tools import initialize_weaviate, product_search
 from weaviate.weaviate_interface import WeaviateInterface
