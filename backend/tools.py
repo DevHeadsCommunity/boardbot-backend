@@ -3,9 +3,11 @@ from weaviate.weaviate_interface import WeaviateInterface
 
 wi: WeaviateInterface = None
 
+
 def initialize_weaviate(weaviate_interface: WeaviateInterface):
     global wi
     wi = weaviate_interface
+
 
 @tool("product_search", return_direct=True)
 async def product_search(message: str, limit: int) -> str:
