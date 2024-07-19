@@ -2,18 +2,11 @@ import { RequestData, ResponseData } from "@/types";
 import Cookies from "js-cookie";
 import { Socket, io } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
-import {
-  EventObject,
-  assign,
-  emit,
-  fromCallback,
-  fromPromise,
-  sendParent,
-  setup,
-} from "xstate";
+import { EventObject, assign, emit, fromCallback, fromPromise, sendParent, setup } from "xstate";
 
 // const SOCKET_URL = "http://18.204.9.187:6789";
-const SOCKET_URL = "http://0.0.0.0:6789";
+// const SOCKET_URL = "http://0.0.0.0:6789";
+const SOCKET_URL = "http://0.0.0.0:5678";
 
 export const webSocketMachine = setup({
   types: {
@@ -53,12 +46,8 @@ export const webSocketMachine = setup({
           });
 
           return new Promise((resolve, reject) => {
-            socket.on("connect", () =>
-              socket.emit("chat_message", { type: "connectionInit" })
-            );
-            socket.on("connectionAck", () =>
-              socket.emit("chat_message", { type: "sessionInit", sessionId })
-            );
+            socket.on("connect", () => socket.emit("chat_message", { type: "connectionInit" }));
+            socket.on("connectionAck", () => socket.emit("chat_message", { type: "sessionInit", sessionId }));
             socket.on("sessionInit", (data: ResponseData) => {
               resolve({ socket, sessionId, data });
             });
@@ -69,44 +58,30 @@ export const webSocketMachine = setup({
         }
       }
     ),
-    listener: fromCallback<EventObject, { socket: Socket; sessionId: string }>(
-      ({ sendBack, receive, input }) => {
-        const socket = input.socket;
-        socket.on("textResponse", (data: ResponseData) =>
-          sendBack({ type: "listener.textResponseReceived", data })
-        );
-        socket.on("audioTranscription", (data: ResponseData) =>
-          sendBack({ type: "listener.transcriptionReceived", data })
-        );
-        socket.on("audioResponse", (data: ResponseData) =>
-          sendBack({ type: "listener.audioResponseReceived", data })
-        );
-        socket.on("scheduleMeeting", (data: ResponseData) =>
-          sendBack({ type: "listener.meetingDetailsReceived", data })
-        );
-        socket.on("disconnect", () =>
-          sendBack({ type: "listener.disconnected" })
-        );
+    listener: fromCallback<EventObject, { socket: Socket; sessionId: string }>(({ sendBack, receive, input }) => {
+      const socket = input.socket;
+      socket.on("textResponse", (data: ResponseData) => sendBack({ type: "listener.textResponseReceived", data }));
+      socket.on("audioTranscription", (data: ResponseData) => sendBack({ type: "listener.transcriptionReceived", data }));
+      socket.on("audioResponse", (data: ResponseData) => sendBack({ type: "listener.audioResponseReceived", data }));
+      socket.on("scheduleMeeting", (data: ResponseData) => sendBack({ type: "listener.meetingDetailsReceived", data }));
+      socket.on("disconnect", () => sendBack({ type: "listener.disconnected" }));
 
-        return () => {
-          socket.off("connect");
-          socket.off("connectionAck");
-          socket.off("sessionInit");
-          socket.off("textResponse");
-          socket.off("audioTranscription");
-          socket.off("audioResponse");
-          socket.off("scheduleMeeting");
-          socket.off("connect_error");
-        };
-      }
-    ),
-    closer: fromCallback<EventObject, { socket: Socket }>(
-      ({ sendBack, receive, input }) => {
-        const socket = input.socket;
-        socket.close();
-        sendBack({ type: "closer.connectionClosed" });
-      }
-    ),
+      return () => {
+        socket.off("connect");
+        socket.off("connectionAck");
+        socket.off("sessionInit");
+        socket.off("textResponse");
+        socket.off("audioTranscription");
+        socket.off("audioResponse");
+        socket.off("scheduleMeeting");
+        socket.off("connect_error");
+      };
+    }),
+    closer: fromCallback<EventObject, { socket: Socket }>(({ sendBack, receive, input }) => {
+      const socket = input.socket;
+      socket.close();
+      sendBack({ type: "closer.connectionClosed" });
+    }),
   },
 }).createMachine({
   context: {

@@ -1,9 +1,10 @@
 import { AppContext } from "@/context/appContext";
-import { Test } from "@/types";
+import { testMachine } from "@/machines/testMachine";
+import { Test, TestCase } from "@/types";
 import { useSelector } from "@xstate/react";
 import { useCallback, useMemo } from "react";
+import { StateFrom } from "xstate";
 import { useToast } from "./useToast";
-
 
 export enum TestState {
   Idle = "Idle",
@@ -14,21 +15,26 @@ export enum TestState {
   RunningTest = "RunningTest"
 }
 
+const testStateMap: Record<keyof StateFrom<typeof testMachine> | string, TestState> = {
+  'idle': TestState.Idle,
+  'DisplayingTest': TestState.DisplayingTest,
+  'DisplayingTest.Connected.DisplayingTestPage': TestState.DisplayingTestPage,
+  'DisplayingTest.Connected.DisplayingTestDetails.DisplayingSelectedTest': TestState.DisplayingSelectedTest,
+  'DisplayingTest.Connected.DisplayingTestDetails.DisplayingTestDetailsModal': TestState.DisplayingTestDetailsModal,
+  'DisplayingTest.Connected.DisplayingTestDetails.RunningTest': TestState.RunningTest,
+};
+
 export const useTestContext = () => {
   const state = AppContext.useSelector((state) => state);
   const testActorRef = state.context.testRef;
   const testActorState = useSelector(testActorRef, (state) => state);
   useToast(testActorRef);
 
-    const testState = useMemo(() => {
-      if (!testActorState) return TestState.Idle;
-      if (testActorState.matches('DisplayingTest')) return TestState.DisplayingTest;
-      if (testActorState.matches('DisplayingTest.Connected.DisplayingTestPage' as any)) return TestState.DisplayingTestPage;
-      if (testActorState.matches('DisplayingTest.Connected.DisplayingTestDetails.DisplayingSelectedTest' as any)) return TestState.DisplayingSelectedTest;
-      if (testActorState.matches('DisplayingTest.Connected.DisplayingTestDetails.DisplayingTestDetailsModal' as any)) return TestState.DisplayingTestDetailsModal;
-      if (testActorState.matches('DisplayingTest.Connected.DisplayingTestDetails.RunningTest' as any)) return TestState.RunningTest;
-    }, [testActorState]);
-
+  const testState = useMemo(() => {
+    if (!testActorState) return TestState.Idle;
+    const currentState = testActorState.value as string;
+    return testStateMap[currentState] || TestState.Idle;
+  }, [testActorState]);
 
   const handleStartTest = useCallback(() => {
     testActorRef?.send({ type: "app.startTest" });
@@ -36,8 +42,8 @@ export const useTestContext = () => {
   const handleStopTest = useCallback(() => {
     testActorRef?.send({ type: "app.stopTest" });
   }, [testActorRef]);
-  const handleCreateTest = useCallback((data: Test) => {
-    testActorRef?.send({ type: "user.createTest", data });
+  const handleCreateTest = useCallback(( data: { name: string, id: string, testCase: TestCase, createdAt: string }) => {
+    testActorRef?.send({ type: "user.createTest", data: data });
   }, [testActorRef]);
   const handleSelectSingleTestResult = useCallback(() => {
     testActorRef?.send({ type: "user.clickSingleTestResult" });

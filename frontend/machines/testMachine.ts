@@ -1,5 +1,5 @@
-import { RequestData, ResponseData, Test } from "@/types";
-import { ActorRefFrom, assign, sendTo, setup } from "xstate";
+import { RequestData, ResponseData, Test, TestCase } from "@/types";
+import { ActorRefFrom, assign, emit, sendTo, setup } from "xstate";
 import { testRunnerMachine } from "./testRunnerMachine";
 import { webSocketMachine } from "./webSocketMachine";
 
@@ -14,15 +14,15 @@ export const testMachine = setup({
       | { type: "app.startTest" }
       | { type: "app.stopTest" }
       | { type: "webSocket.connected" }
-      | { type: "webSocket.messageReceived", data: ResponseData }
+      | { type: "webSocket.messageReceived"; data: ResponseData }
       | { type: "webSocket.disconnected" }
       | { type: "testRunner.startTest" }
-      | { type: "testRunner.sendMessage", data: RequestData }
+      | { type: "testRunner.sendMessage"; data: RequestData }
       | { type: "testRunner.complete" }
-      | { type: "user.createTest", data: Test }
-      | { type: "user.selectTest", data: Test }
+      | { type: "user.createTest"; data: { name: string; id: string; testCase: TestCase; createdAt: string } }
+      | { type: "user.selectTest"; data: Test }
       | { type: "user.clickSingleTestResult" }
-      | { type: "user.closeTestResultModal" }
+      | { type: "user.closeTestResultModal" },
   },
 }).createMachine({
   context: {
@@ -62,12 +62,31 @@ export const testMachine = setup({
           initial: "DisplayingTestPage",
           on: {
             "user.createTest": {
-              target:
-                "#testActor.DisplayingTest.Connected.DisplayingTestDetails",
+              target: "#testActor.DisplayingTest.Connected.DisplayingTestDetails",
+              actions: [
+                assign({
+                  tests: ({ context, event, spawn }) => {
+                    const newTest = {
+                      id: event.data.id,
+                      name: event.data.name,
+                      createdAt: event.data.createdAt,
+                      sessionId: event.data.testCase.id,
+                      testRunnerRef: spawn(testRunnerMachine),
+                    } as Test;
+                    return [...context.tests, newTest];
+                  },
+                }),
+                emit({
+                  type: "notification",
+                  data: {
+                    type: "success",
+                    message: "Test created successfully",
+                  },
+                }),
+              ],
             },
             "user.selectTest": {
-              target:
-                "#testActor.DisplayingTest.Connected.DisplayingTestDetails",
+              target: "#testActor.DisplayingTest.Connected.DisplayingTestDetails",
               actions: assign({
                 selectedTest: ({ event, spawn }) => {
                   const selectedTest = event.data;
@@ -121,14 +140,12 @@ export const testMachine = setup({
                               messageId: (event as any).data.messageId,
                               textResponse: (event as any).data.textResponse,
                               isComplete: (event as any).data.isComplete,
-                              inputTokenCount: (event as any).data
-                                .inputTokenCount,
-                              outputTokenCount: (event as any).data
-                                .outputTokenCount,
+                              inputTokenCount: (event as any).data.inputTokenCount,
+                              outputTokenCount: (event as any).data.outputTokenCount,
                               elapsedTime: (event as any).data.elapsedTime,
                             } as ResponseData,
                           };
-                        },
+                        }
                       ) as any,
                     },
                     "testRunner.sendMessage": {
@@ -146,7 +163,7 @@ export const testMachine = setup({
                               historyManagementChoice: (event as any).data.historyManagementChoice,
                             } as RequestData,
                           };
-                        },
+                        }
                       ) as any,
                     },
                   },

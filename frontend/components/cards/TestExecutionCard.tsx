@@ -5,21 +5,17 @@ import {
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
-import { TestActions, TestData, TestExecutionState } from "@/hooks/useTestContext";
+import { useTestRunnerContext } from "@/hooks/useTestRunnerContext";
 import { PauseIcon, PlayIcon, RepeatIcon } from "lucide-react";
 import React from "react";
 
 interface TestExecutionCardProps {
-  state: TestExecutionState;
-  data: TestData;
-  actions: TestActions
+  architecture: string;
+  historyManagement: string;
 }
 
-const TestExecutionCard: React.FC<TestExecutionCardProps> = ({
-  state,
-  data,
-  actions,
-}) => {
+const TestExecutionCard: React.FC<TestExecutionCardProps> = ({ architecture, historyManagement }) => {
+  const {state, data, actions} = useTestRunnerContext();
   const passedCount = 1;
   const failedCount = 1;
   const pendingCount = 1;
@@ -29,24 +25,24 @@ const TestExecutionCard: React.FC<TestExecutionCardProps> = ({
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <h2 className="text-lg font-semibold">
-          Test Execution: {data.selectedTest.name}
+          Test Execution: {}
         </h2>
         <div className="flex items-center gap-2">
-          {state === "Running" && (
-            <Button variant="ghost" size="icon" onClick={actions.handlePauseTest}>
+          {state.testRunnerState === "Running" && (
+            <Button variant="ghost" size="icon" onClick={actions.click.pauseTest}>
               <PauseIcon className="w-5 h-5" />
             </Button>
           )}
-          {(state === "Paused") && (
+          {(state.testRunnerState  === "Paused") && (
             <Button
               variant="ghost"
               size="icon"
-              onClick={actions.handleResumeTest}
+              onClick={actions.click.resumeTest}
             >
               <PlayIcon className="w-5 h-5" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" onClick={actions.handleResumeTest}>
+          <Button variant="ghost" size="icon" onClick={actions.click.resumeTest}>
             <RepeatIcon className="w-5 h-5" />
           </Button>
         </div>
@@ -92,7 +88,7 @@ const TestExecutionCard: React.FC<TestExecutionCardProps> = ({
         </div>
       </CardContent>
       <CardFooter>
-        <div className="text-sm text-muted-foreground">Status: {state}</div>
+        <div className="text-sm text-muted-foreground">Status: {state.testRunnerState}</div>
       </CardFooter>
     </Card>
   );

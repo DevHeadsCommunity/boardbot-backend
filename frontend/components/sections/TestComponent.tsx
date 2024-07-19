@@ -4,10 +4,8 @@ import CreateTestCard from "@/components/cards/CreateTestCard";
 import TestExecutionCard from "@/components/cards/TestExecutionCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Test } from "@/types/Test";
-
 import { useTestContext } from "@/hooks/useTestContext";
-import { TestResult } from "@/types";
+import { TestCase, TestResult } from "@/types";
 import {
   ClipboardIcon,
   DownloadIcon,
@@ -15,17 +13,22 @@ import {
   SettingsIcon,
 } from "lucide-react";
 import TestListCard from "../cards/TestListCard";
-import TestResultCard from "../cards/TestResultCard";
 
-export default function TestComponent() {
+interface TestComponentProps {
+  architecture: string;
+  historyManagement: string;
+}
+
+
+export default function TestComponent({ architecture, historyManagement }: TestComponentProps) {
   const { state, data, actions} = useTestContext();
 
-  const addTest = (test: Test) => {
-    actions.handleCreateTest(test);
+  const addTest = (data: { name: string, id: string, testCase: TestCase, createdAt: string }) => {
+    actions.click.createTest(data)
   };
 
   const onTestResultSelect = (testResult: TestResult) => {
-    actions.handleClickSingleTestResult();
+    actions.select.testResult()
     console.log(`Selected test result: ${testResult.id}`);
   };
 
@@ -53,12 +56,11 @@ export default function TestComponent() {
       <main className="flex-1 px-4 py-8 sm:px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <CreateTestCard addTest={addTest} />
-          <TestListCard tests={data.tests} onTestSelect={actions.handleSelectTest} />
+          <TestListCard tests={data.tests} onTestSelect={actions.select.test} />
           {data.selectedTest && (
             <TestExecutionCard
-              state={state.testExecutionState}
-              data={data}
-              actions={actions}
+              architecture={architecture}
+              historyManagement={historyManagement}
             />
           )}
         </div>
@@ -75,11 +77,11 @@ export default function TestComponent() {
               </div>
             </div>
             <div className="mt-4 overflow-auto">
-                <TestResultCard
+                {/* <TestResultCard
                   state={state.testExecutionState}
                   data={data}
                   actions={actions}
-                />
+                /> */}
             </div>
           </Card>
         </div>
