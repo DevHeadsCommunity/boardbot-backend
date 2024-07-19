@@ -20,7 +20,6 @@ RUN pip install --upgrade pip && \
 
 # Copy the backend code and data
 COPY backend/ .
-COPY data/ ./data
 
 # Make port 5678 available to the world outside this container
 EXPOSE 5678

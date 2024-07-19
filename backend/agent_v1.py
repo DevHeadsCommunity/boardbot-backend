@@ -8,13 +8,15 @@ from typing import TypedDict, Union, Annotated
 from langchain_core.messages import BaseMessage
 import operator
 
+
 class AgentState(TypedDict):
     input: str
     chat_history: list[BaseMessage]
     agent_outcome: Union[AgentAction, AgentFinish, None]
     intermediate_steps: Annotated[list[tuple[AgentAction, str]], operator.add]
 
-class AgentManager:
+
+class AgentV1:
     def __init__(self, tools, model_name="gpt-4"):
         self.model = ChatOpenAI(model=model_name, temperature=0)
         self.tools = tools
@@ -26,12 +28,14 @@ class AgentManager:
         When giving a direct answer, respond in JSON format.
         When giving a direct answer, if the user asked for 5 products, in your response, provide the top 5 products."""
 
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", assistant_system_message),
-            MessagesPlaceholder(variable_name="chat_history"),
-            ("user", "{input}"),
-            MessagesPlaceholder(variable_name="agent_scratchpad"),
-        ])
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", assistant_system_message),
+                MessagesPlaceholder(variable_name="chat_history"),
+                ("user", "{input}"),
+                MessagesPlaceholder(variable_name="agent_scratchpad"),
+            ]
+        )
 
         self.agent_runnable = create_openai_functions_agent(self.model, self.tools, prompt)
         self.tool_executor = ToolExecutor(self.tools)

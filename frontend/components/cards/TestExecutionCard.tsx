@@ -5,78 +5,44 @@ import {
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
-import useTestRunner from "@/hooks/useTestRunner";
-import { Test, TestResult } from "@/types";
+import { useTestRunnerContext } from "@/hooks/useTestRunnerContext";
 import { PauseIcon, PlayIcon, RepeatIcon } from "lucide-react";
-import React, { useEffect } from "react";
+import React from "react";
 
 interface TestExecutionCardProps {
-  test: Test;
-  onTestComplete: (completedTest: Test) => void;
+  architecture: string;
+  historyManagement: string;
 }
 
-const TestExecutionCard: React.FC<TestExecutionCardProps> = ({
-  test,
-  onTestComplete,
-}) => {
-  const {
-    status,
-    currentTest,
-    progress,
-    startTest,
-    pauseTest,
-    resumeTest,
-    retryFailedTests,
-  } = useTestRunner({ test });
-
-  useEffect(() => {
-    if (currentTest === undefined) return;
-    if (status === "COMPLETED") {
-      onTestComplete(currentTest);
-    }
-  }, [status, currentTest, onTestComplete]);
-
-  const results = currentTest?.results || [];
-
-  const passedCount = results.filter((result) => result.isCorrect).length;
-  const failedCount = results.filter((result) => !result.isCorrect).length;
-  const pendingCount = (currentTest?.testCases?.length || 0) - results.length;
-  const errorCount = results.filter((result) => result.error).length;
-
-  const calculateAverage = (property: keyof TestResult): number => {
-    if (results.length === 0) return 0;
-    const sum = results.reduce(
-      (acc, result) => acc + (result[property] as number),
-      0
-    );
-    return sum / results.length;
-  };
-
-  const averageProductAccuracy = calculateAverage("productAccuracy");
-  const averageFeatureAccuracy = calculateAverage("featureAccuracy");
+const TestExecutionCard: React.FC<TestExecutionCardProps> = ({ architecture, historyManagement }) => {
+  const {state, data, actions} = useTestRunnerContext();
+  const passedCount = 1;
+  const failedCount = 1;
+  const pendingCount = 1;
+  const errorCount = 1;
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <h2 className="text-lg font-semibold">
-          Test Execution: {currentTest?.name}
+          Test Execution: {}
         </h2>
         <div className="flex items-center gap-2">
-          {status === "RUNNING" && (
-            <Button variant="ghost" size="icon" onClick={pauseTest}>
+          {state.testRunnerState === "Running" && (
+            <Button variant="ghost" size="icon" onClick={actions.click.pauseTest}>
               <PauseIcon className="w-5 h-5" />
             </Button>
           )}
-          {(status === "PAUSED" || status === "PENDING") && (
+          {(state.testRunnerState  === "Paused") && (
             <Button
               variant="ghost"
               size="icon"
-              onClick={status === "PAUSED" ? resumeTest : startTest}
+              onClick={actions.click.resumeTest}
             >
               <PlayIcon className="w-5 h-5" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" onClick={retryFailedTests}>
+          <Button variant="ghost" size="icon" onClick={actions.click.resumeTest}>
             <RepeatIcon className="w-5 h-5" />
           </Button>
         </div>
@@ -85,7 +51,7 @@ const TestExecutionCard: React.FC<TestExecutionCardProps> = ({
         <div className="relative w-full h-2 bg-muted rounded-full">
           <div
             className="absolute left-0 top-0 h-full bg-primary rounded-full"
-            style={{ width: `${progress}%` }}
+            style={{ width: `${data.progress}%` }}
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -110,19 +76,19 @@ const TestExecutionCard: React.FC<TestExecutionCardProps> = ({
           <div className="flex items-center justify-between">
             <span className="font-medium">Average Product Accuracy:</span>
             <span className="font-medium">
-              {(averageProductAccuracy * 100).toFixed(2)}%
+              {(1 * 100).toFixed(2)}%
             </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="font-medium">Average Feature Accuracy:</span>
             <span className="font-medium">
-              {(averageFeatureAccuracy * 100).toFixed(2)}%
+              {(1 * 100).toFixed(2)}%
             </span>
           </div>
         </div>
       </CardContent>
       <CardFooter>
-        <div className="text-sm text-muted-foreground">Status: {status}</div>
+        <div className="text-sm text-muted-foreground">Status: {state.testRunnerState}</div>
       </CardFooter>
     </Card>
   );

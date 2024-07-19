@@ -1,14 +1,14 @@
 import SortableTable, { TableColumn } from "@/components/blocks/SortableTable";
 import { Card } from "@/components/ui/card";
-import { Test } from "@/types";
-import { TestResult } from "@/types/TestResult";
+import { TestActions, TestData, TestExecutionState } from "@/hooks/useTestContext";
 
 type TestResultCardProps = {
-  test: Test;
-  onTestResultSelect: (test: TestResult) => void;
+  state: TestExecutionState;
+  data: TestData;
+  actions: TestActions
 };
 
-const TestResultCard = ({ test, onTestResultSelect }: TestResultCardProps) => {
+const TestResultCard = ({ state, data, actions }: TestResultCardProps) => {
   const columns: TableColumn[] = [
     { header: "Name", accessor: "name" },
     { header: "Input token", accessor: "inputTokenCount" },
@@ -26,8 +26,8 @@ const TestResultCard = ({ test, onTestResultSelect }: TestResultCardProps) => {
       </div>
       <SortableTable
         columns={columns}
-        data={test?.results!}
-        onRowClick={onTestResultSelect}
+        data={data.testResults}
+        onRowClick={actions.handleSelectTest}
       />
     </Card>
   );

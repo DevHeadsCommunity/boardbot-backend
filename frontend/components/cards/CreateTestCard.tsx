@@ -4,7 +4,7 @@ import {
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
-import { Test, TestCase } from "@/types";
+import { TestCase } from "@/types";
 import { Product } from "@/types/Product";
 import { UploadIcon } from "lucide-react";
 import Papa from "papaparse";
@@ -16,7 +16,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 
 interface CreateTestCardProps {
-  addTest: (test: Test) => void;
+  addTest: (data: { name: string, id: string, testCase: TestCase, createdAt: string }) => void;
 }
 
 interface FormData {
@@ -41,6 +41,7 @@ const CreateTestCard: React.FC<CreateTestCardProps> = ({ addTest }) => {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<FormData>();
 
@@ -97,6 +98,10 @@ const CreateTestCard: React.FC<CreateTestCardProps> = ({ addTest }) => {
             io: row.io,
             manufacturer: row.manufacturer,
             summary: row.summary,
+            processorTDP: "0",
+            operatingSystem: "0",
+            environmental: "0",
+            certifications: "0",
           };
 
           if (testCasesMap.has(row.prompt)) {
@@ -112,17 +117,15 @@ const CreateTestCard: React.FC<CreateTestCardProps> = ({ addTest }) => {
 
         const testCases = Array.from(testCasesMap.values());
 
-        const test: Test = {
-          id: uuidv4(),
+        addTest({
           name: data.testName,
-          testCases,
-          status: "PENDING",
+          id: uuidv4(),
+          testCase: testCases[0],
           createdAt: new Date().toISOString(),
-        };
+        });
 
-        addTest(test);
         setFile(null);
-        toast.success("Test created successfully.");
+        reset();
       },
       header: true,
       skipEmptyLines: true,

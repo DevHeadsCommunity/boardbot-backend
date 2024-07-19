@@ -126,7 +126,6 @@ The schema defines the structure of the data stored in Weaviate. It includes def
           "name": "size",
           "dataType": ["string"]
         }
-        // More properties here
       ]
     }
   ]
