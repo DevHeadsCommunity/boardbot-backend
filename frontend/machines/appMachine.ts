@@ -79,7 +79,8 @@ export const appMachine = setup({
       },
       entry: assign({
         chatRef: ({ spawn }) => spawn(chatMachine) as any,
-        testRef: ({ spawn }) => spawn(testMachine) as any,
+        testRef: ({ context, spawn }) =>
+          spawn(testMachine, { input: { model: context.model, architecture: context.architecture, historyManagement: context.historyManagement } }) as any,
         prodRef: ({ spawn }) => spawn(productMachine) as any,
       }),
       states: {

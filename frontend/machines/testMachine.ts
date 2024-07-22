@@ -1,35 +1,38 @@
-import { RequestData, ResponseData, Test, TestCase } from "@/types";
-import { ActorRefFrom, assign, emit, sendTo, setup } from "xstate";
+import { Test, TestCase } from "@/types";
+import { assign, emit, setup } from "xstate";
+import { Architecture, HistoryManagement, Model } from "./appMachine";
 import { testRunnerMachine } from "./testRunnerMachine";
-import { webSocketMachine } from "./webSocketMachine";
 
 export const testMachine = setup({
   types: {
     context: {} as {
-      webSocketRef: ActorRefFrom<typeof webSocketMachine> | undefined;
       selectedTest: Test | null;
       tests: Test[];
+      model: Model;
+      architecture: Architecture;
+      historyManagement: HistoryManagement;
+    },
+    input: {} as {
+      model: Model;
+      architecture: Architecture;
+      historyManagement: HistoryManagement;
     },
     events: {} as
       | { type: "app.startTest" }
       | { type: "app.stopTest" }
-      | { type: "webSocket.connected" }
-      | { type: "webSocket.messageReceived"; data: ResponseData }
-      | { type: "webSocket.disconnected" }
-      | { type: "testRunner.startTest" }
-      | { type: "testRunner.sendMessage"; data: RequestData }
-      | { type: "testRunner.complete" }
-      | { type: "user.createTest"; data: { name: string; id: string; testCase: TestCase; createdAt: string } }
-      | { type: "user.selectTest"; data: Test }
+      | { type: "user.createTest"; data: { name: string; id: string; testCase: TestCase[]; createdAt: string } }
+      | { type: "user.selectTest"; data: { testId: string } }
       | { type: "user.clickSingleTestResult" }
       | { type: "user.closeTestResultModal" },
   },
 }).createMachine({
-  context: {
-    webSocketRef: undefined,
+  context: ({ input }) => ({
     selectedTest: null,
     tests: [],
-  },
+    model: input.model,
+    architecture: input.architecture,
+    historyManagement: input.historyManagement,
+  }),
   id: "testActor",
   initial: "idle",
   states: {
@@ -41,132 +44,65 @@ export const testMachine = setup({
       },
     },
     DisplayingTest: {
-      initial: "Setup",
+      initial: "DisplayingTestPage",
       on: {
+        "user.createTest": {
+          target: "#testActor.DisplayingTest.DisplayingTestDetails",
+          actions: [
+            assign({
+              tests: ({ context, event, spawn }) => {
+                const newTest = {
+                  testId: event.data.id,
+                  name: event.data.name,
+                  createdAt: event.data.createdAt,
+                  testRunnerRef: spawn(testRunnerMachine, {
+                    input: {
+                      sessionId: event.data.id,
+                      testCases: event.data.testCase,
+                      model: context.model,
+                      architecture: context.architecture,
+                      historyManagement: context.historyManagement,
+                    },
+                  }),
+                } as Test;
+                return [...context.tests, newTest];
+              },
+            }),
+            emit({
+              type: "notification",
+              data: {
+                type: "success",
+                message: "Test created successfully",
+              },
+            }),
+          ],
+        },
+        "user.selectTest": {
+          target: "#testActor.DisplayingTest.DisplayingTestDetails",
+          actions: assign({
+            selectedTest: ({ context, event }) => context.tests.find((test) => test.testId === event.data.testId) || null,
+          }),
+        },
         "app.stopTest": {
           target: "idle",
-          actions: sendTo(({ context }) => context.webSocketRef!, {
-            type: "parentActor.disconnect",
-          } as any),
-        },
-        "webSocket.connected": {
-          target: "#testActor.DisplayingTest.Connected",
         },
       },
-      entry: assign({
-        webSocketRef: ({ spawn }) => spawn(webSocketMachine) as any,
-      }),
       states: {
-        Setup: {},
-        Connected: {
-          initial: "DisplayingTestPage",
-          on: {
-            "user.createTest": {
-              target: "#testActor.DisplayingTest.Connected.DisplayingTestDetails",
-              actions: [
-                assign({
-                  tests: ({ context, event, spawn }) => {
-                    const newTest = {
-                      id: event.data.id,
-                      name: event.data.name,
-                      createdAt: event.data.createdAt,
-                      sessionId: event.data.testCase.id,
-                      testRunnerRef: spawn(testRunnerMachine),
-                    } as Test;
-                    return [...context.tests, newTest];
-                  },
-                }),
-                emit({
-                  type: "notification",
-                  data: {
-                    type: "success",
-                    message: "Test created successfully",
-                  },
-                }),
-              ],
-            },
-            "user.selectTest": {
-              target: "#testActor.DisplayingTest.Connected.DisplayingTestDetails",
-              actions: assign({
-                selectedTest: ({ event, spawn }) => {
-                  const selectedTest = event.data;
-                  if (!selectedTest.testRunnerRef) {
-                    selectedTest.testRunnerRef = spawn(testRunnerMachine);
-                  }
-                  return selectedTest;
-                },
-              }),
-            },
-            "webSocket.disconnected": {
-              target: "Setup",
-            },
-          },
+        DisplayingTestPage: {},
+        DisplayingTestDetails: {
+          initial: "DisplayingSelectedTest",
           states: {
-            DisplayingTestPage: {},
-            DisplayingTestDetails: {
-              initial: "DisplayingSelectedTest",
-              states: {
-                DisplayingSelectedTest: {
-                  on: {
-                    "user.clickSingleTestResult": {
-                      target: "DisplayingTestDetailsModal",
-                    },
-                    "testRunner.startTest": {
-                      target: "RunningTest",
-                    },
-                  },
+            DisplayingSelectedTest: {
+              on: {
+                "user.clickSingleTestResult": {
+                  target: "DisplayingTestDetailsModal",
                 },
-                DisplayingTestDetailsModal: {
-                  on: {
-                    "user.closeTestResultModal": {
-                      target: "DisplayingSelectedTest",
-                    },
-                  },
-                },
-                RunningTest: {
-                  on: {
-                    "testRunner.complete": {
-                      target: "DisplayingSelectedTest",
-                    },
-                    "webSocket.messageReceived": {
-                      actions: sendTo(
-                        ({ context }) => context.selectedTest?.testRunnerRef!,
-                        ({ context, event }) => {
-                          return {
-                            type: "testRunner.messageResponse",
-                            data: {
-                              type: "textMessage",
-                              sessionId: context.selectedTest?.sessionId,
-                              messageId: (event as any).data.messageId,
-                              textResponse: (event as any).data.textResponse,
-                              isComplete: (event as any).data.isComplete,
-                              inputTokenCount: (event as any).data.inputTokenCount,
-                              outputTokenCount: (event as any).data.outputTokenCount,
-                              elapsedTime: (event as any).data.elapsedTime,
-                            } as ResponseData,
-                          };
-                        }
-                      ) as any,
-                    },
-                    "testRunner.sendMessage": {
-                      actions: sendTo(
-                        ({ context }) => context.webSocketRef!,
-                        ({ context, event }) => {
-                          return {
-                            type: "parentActor.sendMessage",
-                            data: {
-                              type: "textMessage",
-                              sessionId: context.selectedTest?.sessionId,
-                              messageId: (event as any).webSocketRef?.messageId,
-                              message: (event as any).data.message,
-                              architectureChoice: (event as any).data.architectureChoice,
-                              historyManagementChoice: (event as any).data.historyManagementChoice,
-                            } as RequestData,
-                          };
-                        }
-                      ) as any,
-                    },
-                  },
+              },
+            },
+            DisplayingTestDetailsModal: {
+              on: {
+                "user.closeTestResultModal": {
+                  target: "DisplayingSelectedTest",
                 },
               },
             },

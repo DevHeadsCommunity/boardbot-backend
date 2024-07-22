@@ -18,9 +18,10 @@ interface SettingsDropdownProps {
 }
 
 const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ data, actions }) => {
-  const handleSettingsChange = (type: string, value: string) => {
+  const handleSettingsChange = (type: keyof AppContextData, value: string) => {
     actions.submit.updateSetting({ ...data, [type]: value });
   };
+
   const handleOpenChange = (open: boolean) => {
     if (open) {
       actions.click.updateSetting();
@@ -28,6 +29,20 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ data, actions }) =>
       actions.cancel.updateSetting();
     }
   };
+
+  const renderRadioGroup = (label: string, currentValue: string, values: readonly string[], settingKey: keyof AppContextData) => (
+    <>
+      <DropdownMenuRadioGroup value={currentValue} onValueChange={(value) => handleSettingsChange(settingKey, value)}>
+        <DropdownMenuLabel className="font-normal">{label}</DropdownMenuLabel>
+        {values.map((value) => (
+          <DropdownMenuRadioItem key={value} value={value}>
+            {value}
+          </DropdownMenuRadioItem>
+        ))}
+      </DropdownMenuRadioGroup>
+      <DropdownMenuSeparator />
+    </>
+  );
 
   return (
     <DropdownMenu onOpenChange={handleOpenChange}>
@@ -40,43 +55,9 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ data, actions }) =>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>Settings</DropdownMenuLabel>
         <DropdownMenuSeparator />
-
-        <DropdownMenuRadioGroup value={data.model} onValueChange={(value) => handleSettingsChange("model", value)}>
-          <DropdownMenuLabel className="font-normal">Model Selection</DropdownMenuLabel>
-          {MODEL_VALUES.map((modelType, index) => {
-            return (
-              <DropdownMenuRadioItem key={index} value={modelType}>
-                {modelType}
-              </DropdownMenuRadioItem>
-            );
-          })}
-        </DropdownMenuRadioGroup>
-        <DropdownMenuSeparator />
-
-        <DropdownMenuRadioGroup value={data.architecture} onValueChange={(value) => handleSettingsChange("architecture", value)}>
-          <DropdownMenuLabel className="font-normal">Architecture Selection</DropdownMenuLabel>
-          {ARCHITECTURE_VALUES.map((architectureType, index) => {
-            return (
-              <DropdownMenuRadioItem key={index} value={architectureType}>
-                {architectureType}
-              </DropdownMenuRadioItem>
-            );
-          })}
-        </DropdownMenuRadioGroup>
-        <DropdownMenuSeparator />
-
-        <DropdownMenuRadioGroup value={data.historyManagement} onValueChange={(value) => handleSettingsChange("historyManagement", value)}>
-          <DropdownMenuLabel className="font-normal">History Management</DropdownMenuLabel>
-          {HISTORY_MANAGEMENT_VALUES.map((historyManagementType, index) => {
-            return (
-              <DropdownMenuRadioItem key={index} value={historyManagementType}>
-                {historyManagementType}
-              </DropdownMenuRadioItem>
-            );
-          })}
-        </DropdownMenuRadioGroup>
-        <DropdownMenuSeparator />
-
+        {renderRadioGroup("Model Selection", data.model, MODEL_VALUES, "model")}
+        {renderRadioGroup("Architecture Selection", data.architecture, ARCHITECTURE_VALUES, "architecture")}
+        {renderRadioGroup("History Management", data.historyManagement, HISTORY_MANAGEMENT_VALUES, "historyManagement")}
         <DropdownMenuLabel asChild>
           <Button variant="ghost" className="w-full justify-start" onClick={actions.submit.resetSettings}>
             Reset to Default

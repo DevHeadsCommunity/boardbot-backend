@@ -1,6 +1,7 @@
 import { FullTestResult, Product, RequestData, ResponseData, TestCase, TestResult } from "@/types";
-import { assign, fromPromise, sendParent, setup } from "xstate";
-
+import { ActorRefFrom, assign, fromPromise, sendTo, setup } from "xstate";
+import { Architecture, HistoryManagement, Model } from "./appMachine";
+import { webSocketMachine } from "./webSocketMachine";
 
 export function getProductAccuracy(expectedProducts: Product[], actualProducts: Product[]): number {
   if (expectedProducts.length === 0) return 0;
@@ -17,8 +18,17 @@ export function getFeatureAccuracy(expectedProducts: Product[], actualProducts: 
   if (expectedProducts.length === 0) return 0;
 
   const featureKeys: (keyof Product)[] = [
-    "name", "size", "form", "processor", "processorTDP", "memory", "io",
-    "manufacturer", "operatingSystem", "environmental", "certifications"
+    "name",
+    "size",
+    "form",
+    "processor",
+    "processorTDP",
+    "memory",
+    "io",
+    "manufacturer",
+    "operatingSystem",
+    "environmental",
+    "certifications",
   ];
 
   let totalFeatures = 0;
@@ -28,7 +38,7 @@ export function getFeatureAccuracy(expectedProducts: Product[], actualProducts: 
     const actual = actualProducts[productIndex];
     if (!actual) return;
 
-    featureKeys.forEach(key => {
+    featureKeys.forEach((key) => {
       if (expected[key] !== "NA" && expected[key] !== "") {
         totalFeatures++;
         if (expected[key] === actual[key]) {
@@ -41,27 +51,41 @@ export function getFeatureAccuracy(expectedProducts: Product[], actualProducts: 
   return totalFeatures > 0 ? correctFeatures / totalFeatures : 0;
 }
 
-
 export const testRunnerMachine = setup({
   types: {
     context: {} as {
+      webSocketRef: ActorRefFrom<typeof webSocketMachine> | undefined;
+      sessionId: string;
       testCases: TestCase[];
       testResults: TestResult[];
-      fullTestResult: FullTestResult| null;
+      fullTestResult: FullTestResult | null;
       currentTestIndex: number;
       batchSize: number;
       testTimeout: number;
       progress: number;
+      model: Model;
+      architecture: Architecture;
+      historyManagement: HistoryManagement;
+    },
+    input: {} as {
+      sessionId: string;
+      testCases: TestCase[];
+      model: Model;
+      architecture: Architecture;
+      historyManagement: HistoryManagement;
     },
     events: {} as
-      | { type: "test.messageReceived", data: ResponseData }
       | { type: "user.startTest" }
+      | { type: "user.pauseTest" }
       | { type: "user.stopTest" }
       | { type: "user.continueTest" }
-      | { type: "user.pauseTest" },
+      | { type: "webSocket.connected" }
+      | { type: "webSocket.messageReceived"; data: ResponseData }
+      | { type: "webSocket.disconnected" },
   },
   actors: {
-    fullTestEvaluator: fromPromise( async ({input}: {input: {testCases: TestCase[], testResults: TestResult[]}}) => {
+    fullTestEvaluator: fromPromise(async ({ input }: { input: { testCases: TestCase[]; testResults: TestResult[] } }) => {
+      console.log("===:> fullTestEvaluator", input);
       const { testCases, testResults } = input;
       const averageInputTokenCount = testResults.reduce((acc, result) => acc + result.inputTokenCount, 0) / testResults.length;
       const averageOutputTokenCount = testResults.reduce((acc, result) => acc + result.outputTokenCount, 0) / testResults.length;
@@ -82,39 +106,63 @@ export const testRunnerMachine = setup({
     testIsComplete: ({ context }) => context.currentTestIndex >= context.testCases.length,
   },
 }).createMachine({
-  context: {
-    testCases: [],
+  context: ({ input }) => ({
+    webSocketRef: undefined,
+    sessionId: input.sessionId,
+    testCases: input.testCases,
     testResults: [],
     fullTestResult: null,
     currentTestIndex: 0,
     batchSize: 1,
     progress: 0,
     testTimeout: 180000,
-  },
+    model: input.model,
+    architecture: input.architecture,
+    historyManagement: input.historyManagement,
+  }),
   id: "testRunnerActor",
   initial: "idle",
   states: {
     idle: {
+      entry: assign({
+        webSocketRef: ({ spawn }) => spawn(webSocketMachine) as any,
+      }),
       on: {
         "user.startTest": {
-          target: "RunningTest",
+          target: "Connecting",
         },
       },
     },
-    RunningTest: {
+    Connecting: {
+      entry: sendTo(
+        ({ context }) => context.webSocketRef!,
+        ({ context }) => ({
+          type: "parentActor.connect",
+          data: {
+            sessionId: context.sessionId,
+          },
+        })
+      ),
+      on: {
+        "webSocket.connected": {
+          target: "Connected",
+        },
+      },
+    },
+    Connected: {
       initial: "RunningBatchTest",
       on: {
         "user.stopTest": {
-          target: "idle",
+          target: "Disconnecting",
         },
       },
       states: {
         RunningBatchTest: {
           on: {
             "user.pauseTest": {
-              target: "#testRunnerActor.TestPaused",
+              target: "TestPaused",
             },
-            "test.messageReceived": [
+            "webSocket.messageReceived": [
               {
                 target: "EvaluatingFullTestResult",
                 actions: assign({
@@ -125,20 +173,11 @@ export const testRunnerMachine = setup({
                       inputTokenCount: (event as any).data.inputTokenCount,
                       outputTokenCount: (event as any).data.outputTokenCount,
                       llmResponseTime: (event as any).data.elapsedTime,
-                      productAccuracy: getProductAccuracy(
-                        (event as any).data.outputTokenCount,
-                        context.testCases[context.currentTestIndex]
-                          .expectedProducts,
-                      ),
-                      featureAccuracy: getFeatureAccuracy(
-                        (event as any).data.outputTokenCount,
-                        context.testCases[context.currentTestIndex]
-                          .expectedProducts,
-                      ),
+                      productAccuracy: getProductAccuracy((event as any).data.outputTokenCount, context.testCases[context.currentTestIndex].expectedProducts),
+                      featureAccuracy: getFeatureAccuracy((event as any).data.outputTokenCount, context.testCases[context.currentTestIndex].expectedProducts),
                     } as TestResult,
                   ],
-                  currentTestIndex: ({ context }) =>
-                    context.currentTestIndex + 1,
+                  progress: 100,
                 }),
                 guard: {
                   type: "testIsComplete",
@@ -146,35 +185,66 @@ export const testRunnerMachine = setup({
               },
               {
                 target: "RunningBatchTest",
+                actions: assign({
+                  progress: ({ context }) => (context.currentTestIndex / context.testCases.length) * 100,
+                  currentTestIndex: ({ context }) => context.currentTestIndex + 1,
+                  testResults: ({ context, event }) => [
+                    ...context.testResults,
+                    {
+                      messageId: (event as any).data.messageId,
+                      actualOutput: (event as any).data.textResponse,
+                      inputTokenCount: (event as any).data.inputTokenCount,
+                      outputTokenCount: (event as any).data.outputTokenCount,
+                      llmResponseTime: (event as any).data.elapsedTime,
+                      productAccuracy: getProductAccuracy((event as any).data.outputTokenCount, context.testCases[context.currentTestIndex].expectedProducts),
+                      featureAccuracy: getFeatureAccuracy((event as any).data.outputTokenCount, context.testCases[context.currentTestIndex].expectedProducts),
+                    } as TestResult,
+                  ],
+                }),
               },
             ],
           },
           entry: [
-            sendParent(({ context }) => ({
-              type: "testRunner.sendMessage",
-              data: {
-                type: "testRunner.sendMessage",
-                sessionId: context.testCases[context.currentTestIndex].id,
-                messageId: context.testCases[context.currentTestIndex].id,
-                message: context.testCases[context.currentTestIndex].input,
-                architectureChoice: "architectureChoice",
-                historyManagementChoice: "historyManagementChoice",
-              } as RequestData,
-            })),
+            sendTo(
+              ({ context }) => context.webSocketRef!,
+              ({ context }) => {
+                return {
+                  type: "parentActor.sendMessage",
+                  data: {
+                    type: "textMessage",
+                    sessionId: context.sessionId,
+                    messageId: context.testCases[context.currentTestIndex].messageId,
+                    message: context.testCases[context.currentTestIndex].input,
+                    model: context.model,
+                    architectureChoice: context.architecture,
+                    historyManagementChoice: context.historyManagement,
+                  } as RequestData,
+                };
+              }
+            ),
             assign({
               currentTestIndex: ({ context }) => context.currentTestIndex + 1,
             }),
           ],
         },
+        TestPaused: {
+          on: {
+            "user.continueTest": {
+              target: "RunningBatchTest",
+            },
+          },
+        },
         EvaluatingFullTestResult: {
           invoke: {
             id: "fullTestEvaluator",
-            input: ({ context }) => ({
-              testCases: context.testCases,
-              testResults: context.testResults,
-            }),
+            input: ({ context }) => {
+              return {
+                testCases: context.testCases,
+                testResults: context.testResults,
+              };
+            },
             onDone: {
-              target: "#testRunnerActor.TestCompleted",
+              target: "#testRunnerActor.Disconnecting",
               actions: assign({ fullTestResult: ({ event }) => event.output }),
             },
             src: "fullTestEvaluator",
@@ -182,15 +252,13 @@ export const testRunnerMachine = setup({
         },
       },
     },
-    TestPaused: {
+    Disconnecting: {
+      entry: sendTo(({ context }) => context.webSocketRef!, { type: "parentActor.disconnect" }),
       on: {
-        "user.continueTest": {
-          target: "#testRunnerActor.RunningTest.RunningBatchTest",
+        "webSocket.disconnected": {
+          target: "idle",
         },
       },
-    },
-    TestCompleted: {
-      type: "final",
     },
   },
 });

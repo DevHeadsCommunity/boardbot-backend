@@ -54,6 +54,7 @@ class SocketIOHandler:
         )
 
     async def process_message(self, sid, data):
+        print(f"Received message from {sid}: {data}")
         session_id = data.get("sessionId")
         if not session_id or session_id not in self.sessions:
             raise Exception(f"Invalid session: {session_id}")
@@ -64,18 +65,19 @@ class SocketIOHandler:
         architecture_choice = data.get("architectureChoice", "semantic_router")
         history_management_choice = data.get("historyManagementChoice", "all_history")
 
-        if architecture_choice == "semantic_router":
+        if received_message["architectureChoice"] == "semantic-router-v1":
             route = await self.determine_route(data.get("message"))
-            response_message, stats = await self.handle_route(route, data, session_id, history_management_choice)
-        elif architecture_choice == "agent":
+            response_message, stats = await self.handle_route(route, session_id, received_message)
+        elif received_message["architectureChoice"] == "agentic-v1":
             response_message, stats = await self.handle_agent(data, session_id, history_management_choice)
-        elif architecture_choice == "advanced_agent":
+        elif received_message["architectureChoice"] == "agentic-v2":
             response_message, stats = await self.handle_advanced_agent(data, session_id, history_management_choice)
         else:
             raise ValueError(f"Unknown architecture choice: {architecture_choice}")
 
         response = self.format_response(data, response_message, stats)
         await self.sio.emit("textResponse", response, room=sid)
+        print(f"Response sent to {sid}: {response}")
         self.sessions[session_id].append(response)
 
     async def handle_agent(self, data, session_id, history_management_choice):
@@ -93,11 +95,11 @@ class SocketIOHandler:
         return self.clean_response(response), stats
 
     def get_chat_history(self, session_id, history_management_choice):
-        if history_management_choice == "all_history":
+        if history_management_choice == "keep-all":
             return self.sessions[session_id]
-        elif history_management_choice == "last_5":
+        elif history_management_choice == "keep-none":
             return self.sessions[session_id][-5:]
-        elif history_management_choice == "no_history":
+        elif history_management_choice == "keep-last-5":
             return []
         else:
             raise ValueError(f"Unknown history management choice: {history_management_choice}")
@@ -108,6 +110,7 @@ class SocketIOHandler:
             "message": data.get("message"),
             "isUserMessage": True,
             "timestamp": data.get("timestamp"),
+            "model": data.get("model"),
             "architectureChoice": data.get("architectureChoice"),
             "historyManagementChoice": data.get("historyManagementChoice"),
         }
@@ -118,7 +121,7 @@ class SocketIOHandler:
             raise Exception(f"No route found for query: {query}")
         return routes[0].get("route")
 
-    async def handle_route(self, route, data, session_id):
+    async def handle_route(self, route, session_id, data):
         start_time = time.time()
         if route == "politics":
             response = """{"message": "I'm sorry, I'm not programmed to discuss politics."}"""
@@ -133,10 +136,10 @@ class SocketIOHandler:
             raise Exception(f"Unknown route: {route}")
         return response, stats
 
-    async def handle_chitchat(self, data, session_id, start_time, history_management_choice):
-        chat_history = self.get_chat_history(session_id, history_management_choice)
+    async def handle_chitchat(self, session_id, start_time, data):
+        chat_history = self.get_chat_history(session_id, data["historyManagementChoice"])
         response, input_tokens, output_tokens = self.openai_client.generate_response(
-            data.get("message"), history=chat_history
+            data["message"], history=chat_history
         )
         stats = self.calculate_stats(data.get("message"), response, start_time, input_tokens, output_tokens)
         return self.clean_response(response), stats
@@ -153,10 +156,10 @@ class SocketIOHandler:
         stats = self.calculate_stats(data.get("message"), response, start_time, input_tokens, output_tokens)
         return self.clean_response(response), stats
 
-    async def handle_clear_intent(self, data, session_id, start_time, history_management_choice):
-        chat_history = self.get_chat_history(session_id, history_management_choice)
-        response = await self.agent_manager.run(data.get("message"), chat_history)
-        stats = self.calculate_stats(data.get("message"), response, start_time)
+    async def handle_clear_intent(self, data, session_id, start_time):
+        chat_history = self.get_chat_history(session_id, data["historyManagementChoice"])
+        response = await self.agent_manager.run(data["message"], chat_history)
+        stats = self.calculate_stats(data["message"], response, start_time)
         return self.clean_response(response), stats
 
     def clean_response(self, response):

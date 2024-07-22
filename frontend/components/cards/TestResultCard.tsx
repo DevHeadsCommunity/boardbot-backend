@@ -1,34 +1,40 @@
 import SortableTable, { TableColumn } from "@/components/blocks/SortableTable";
 import { Card } from "@/components/ui/card";
-import { TestActions, TestData, TestExecutionState } from "@/hooks/useTestContext";
+import { useTestRunnerContext } from "@/hooks/useTestRunnerContext";
+import { TestCase, TestResult } from "@/types";
 
-type TestResultCardProps = {
-  state: TestExecutionState;
-  data: TestData;
-  actions: TestActions
-};
+const TestResultCard = () => {
+  const { state, data, actions } = useTestRunnerContext();
 
-const TestResultCard = ({ state, data, actions }: TestResultCardProps) => {
+  const transformedData = data.testResults.map((testResult: TestResult) => {
+    const testCase = data.testCases.find((testCase: TestCase) => testCase.messageId === testResult.messageId);
+    return {
+      ...testCase,
+      ...testResult,
+    };
+  });
+
   const columns: TableColumn[] = [
     { header: "Name", accessor: "name" },
     { header: "Input token", accessor: "inputTokenCount" },
     { header: "Output token", accessor: "outputTokenCount" },
     { header: "LLM response time", accessor: "llmResponseTime" },
     { header: "Total response time", accessor: "totalResponseTime" },
+    { header: "Product accuracy", accessor: "productAccuracy" },
+    { header: "Feature accuracy", accessor: "featureAccuracy" },
+    { header: "Status", accessor: "status" },
   ];
 
+  const onSelectTestResult = (testResult: TestResult & TestCase) => {
+    console.log(`Selected test result: ${testResult.messageId}`);
+  };
+
   return (
-    <Card className="bg-card p-6 flex flex-col gap-4">
+    <Card className="flex flex-col gap-4 bg-card p-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-card-foreground">
-          Test Results
-        </h2>
+        <h2 className="text-lg font-semibold text-card-foreground">Test Results</h2>
       </div>
-      <SortableTable
-        columns={columns}
-        data={data.testResults}
-        onRowClick={actions.handleSelectTest}
-      />
+      <SortableTable columns={columns} data={transformedData} onRowClick={onSelectTestResult} />
     </Card>
   );
 };

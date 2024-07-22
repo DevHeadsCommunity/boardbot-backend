@@ -1,6 +1,7 @@
 import { TestCase } from "./TestCase";
 
 export interface TestResult extends TestCase {
+  messageId: string;
   actualOutput: string;
   inputTokenCount: number;
   outputTokenCount: number;

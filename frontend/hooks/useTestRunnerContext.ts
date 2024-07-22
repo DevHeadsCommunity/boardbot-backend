@@ -1,14 +1,27 @@
 import { AppContext } from "@/context/appContext";
+import { testRunnerMachine } from "@/machines/testRunnerMachine";
 import { useSelector } from "@xstate/react";
 import { useCallback, useMemo } from "react";
+import { StateFrom } from "xstate";
 import { useToast } from "./useToast";
 
 export enum TestRunnerState {
   Idle = "Idle",
+  Connecting = "Connecting",
   Running = "Running",
   Paused = "Paused",
-  Completed = "Completed"
+  Evaluating = "Evaluating",
+  Disconnecting = "Disconnecting",
 }
+
+const testRunnerStateMap: Record<keyof StateFrom<typeof testRunnerMachine> | string, TestRunnerState> = {
+  idle: TestRunnerState.Idle,
+  Connecting: TestRunnerState.Connecting,
+  "Connected.RunningBatchTest": TestRunnerState.Running,
+  "Connected.TestPaused": TestRunnerState.Paused,
+  "Connected.EvaluatingFullTestResult": TestRunnerState.Evaluating,
+  Disconnecting: TestRunnerState.Disconnecting,
+};
 
 export const useTestRunnerContext = () => {
   const state = AppContext.useSelector((state) => state);
@@ -17,13 +30,14 @@ export const useTestRunnerContext = () => {
   const testRunnerActorRef = testActorState?.context.selectedTest?.testRunnerRef ?? undefined;
   const testRunnerActorState = useSelector(testRunnerActorRef, (state) => state);
   useToast(testRunnerActorRef);
+  const webSocketActorRef = testRunnerActorState?.context.webSocketRef ?? undefined;
+  const webSocketActorState = useSelector(webSocketActorRef, (state) => state);
+  useToast(webSocketActorRef);
 
   const testRunnerState = useMemo(() => {
     if (!testRunnerActorState) return TestRunnerState.Idle;
-    if (testRunnerActorState.matches('RunningTest')) return TestRunnerState.Running;
-    if (testRunnerActorState.matches('TestPaused')) return TestRunnerState.Paused;
-    if (testRunnerActorState.matches('TestCompleted')) return TestRunnerState.Completed;
-    return TestRunnerState.Idle;
+    const currentState = testRunnerActorState.value as string;
+    return testRunnerStateMap[currentState] || TestRunnerState.Idle;
   }, [testRunnerActorState]);
 
   const handleStartTest = useCallback(() => {
@@ -39,10 +53,9 @@ export const useTestRunnerContext = () => {
     testRunnerActorRef?.send({ type: "user.continueTest" });
   }, [testRunnerActorRef]);
 
-
   return {
     state: {
-      testRunnerState
+      testRunnerState,
     },
     data: {
       testCases: useSelector(testRunnerActorRef, (state: any) => state.context.testCases || []),
@@ -57,10 +70,10 @@ export const useTestRunnerContext = () => {
         stopTest: handleStopTest,
         pauseTest: handlePauseTest,
         resumeTest: handleResumeTest,
-      }
-    }
-  }
-}
+      },
+    },
+  };
+};
 
-export type TestRunnerData = ReturnType<typeof useTestRunnerContext>['data'];
-export type TestRunnerActions = ReturnType<typeof useTestRunnerContext>['actions'];
+export type TestRunnerData = ReturnType<typeof useTestRunnerContext>["data"];
+export type TestRunnerActions = ReturnType<typeof useTestRunnerContext>["actions"];
