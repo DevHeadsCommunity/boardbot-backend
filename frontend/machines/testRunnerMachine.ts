@@ -215,6 +215,7 @@ export const testRunnerMachine = setup({
                     sessionId: context.sessionId,
                     messageId: context.testCases[context.currentTestIndex].messageId,
                     message: context.testCases[context.currentTestIndex].input,
+                    timestamp: new Date().toISOString(),
                     model: context.model,
                     architectureChoice: context.architecture,
                     historyManagementChoice: context.historyManagement,

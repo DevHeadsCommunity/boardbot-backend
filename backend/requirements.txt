@@ -22,3 +22,4 @@ websockets==12.0
 pydantic
 pydantic-settings
 tavily-python
+dependency-injector
