@@ -1,7 +1,7 @@
 import { Product } from "./Product";
 
 export interface TestCase {
-  id: string;
+  messageId: string;
   input: string;
   expectedProducts: Product[];
   metadata?: Record<string, unknown>;

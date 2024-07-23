@@ -2,11 +2,10 @@ import { testRunnerMachine } from "@/machines/testRunnerMachine";
 import { ActorRefFrom } from "xstate";
 
 export interface Test {
-  id: string;
+  testId: string; // would be used as sessionId
   name: string;
   createdAt: string;
-  sessionId: string;
-  testRunnerRef: ActorRefFrom<typeof testRunnerMachine>
+  testRunnerRef: ActorRefFrom<typeof testRunnerMachine>;
   startTimestamp?: number;
   endTimestamp?: number;
   error?: string;

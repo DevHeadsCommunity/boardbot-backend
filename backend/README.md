@@ -1,110 +1,133 @@
 # ThroughPut
 
-ThroughPut is a project designed to assist users with their queries about products using LLM and semantic search capabilities.
+ThroughPut is an advanced AI-powered project designed to assist users with their queries about products using Large Language Models (LLMs) and semantic search capabilities.
 
 ## Table of Contents
 
 - [ThroughPut](#throughput)
   - [Table of Contents](#table-of-contents)
   - [Project Overview](#project-overview)
-  - [Folder Structure](#folder-structure)
+  - [Key Features](#key-features)
+  - [Project Structure](#project-structure)
   - [Setup Instructions](#setup-instructions)
-    - [Repository Clone](#repository-clone)
-    - [Weaviate Setup](#weaviate-setup)
-    - [Project Setup](#project-setup)
   - [Running the Project](#running-the-project)
+  - [Usage](#usage)
+  - [Architecture Choices](#architecture-choices)
   - [Schema Overview](#schema-overview)
     - [Example Schema (schema.json)](#example-schema-schemajson)
-  - [Usage](#usage)
-    - [Example Query Handling](#example-query-handling)
+  - [Contributing](#contributing)
+  - [License](#license)
 
 ## Project Overview
 
-ThroughPut leverages OpenAI's language models and Weaviate's vector search capabilities to provide intelligent responses to user queries about various products. The system categorizes queries into different types such as politics, chitchat, vague intent, and clear intent, and processes them accordingly.
+ThroughPut leverages OpenAI's language models, Weaviate's vector search capabilities, and Tavily's internet search to provide intelligent responses to user queries about various products. The system categorizes queries into different types and processes them using flexible agent architectures.
 
-## Folder Structure
+## Key Features
 
-The project directory is organized as follows:
+- Real-time communication using Socket.IO
+- Semantic search capabilities with Weaviate
+- Integration with OpenAI's GPT models
+- Internet search validation using Tavily
+- Flexible agent architectures for query processing
+- Session management and chat history handling
+- Modular and extensible design
+
+## Project Structure
+
+The project is organized into the following main directories:
 
 ```
-ThroughPut
-├── 1. munging.ipynb
-├── 2. exploration.ipynb
-├── README.md
+ThroughPut/
+├── api/
+│   ├── routes.py
+│   └── socketio_handlers.py
+├── core/
+│   ├── message_processor.py
+│   └── session_manager.py
+├── generators/
+│   ├── semantic_router_v1.py
+│   ├── agent_v1.py
+│   └── agent_v2.py
+├── services/
+│   ├── openai_service.py
+│   ├── tavily_service.py
+│   └── weaviate_service.py
+├── agents/
+│   ├── base_agent.py
+│   ├── agent_v1.py
+│   └── agent_v2.py
+├── models/
+│   └── message.py
+├── notebooks/
+├── weaviate/
 ├── config.py
-├── data
-│   ├── chitchat.csv
-│   ├── clean_products.csv
-│   ├── clear_intent.csv
-│   ├── final_products_data.json
-│   ├── politics.csv
-│   └── vague_intent.csv
+├── dependencies.py
 ├── main.py
-├── openai_client.py
 ├── requirements.txt
-├── socketio_handlers.py
-└── weaviate
-    ├── __init__.py
-    ├── docker-compose.yml
-    ├── http_client.py
-    ├── product_service.py
-    ├── route_service.py
-    ├── schema.json
-    ├── schema_manager.py
-    ├── utils
-    │   ├── graphql_query_builder.py
-    │   └── where_clause_builder.py
-    ├── weaviate_client.py
-    ├── weaviate_interface.py
-    └── weaviate_service.py
+└── README.md
 ```
 
 ## Setup Instructions
 
-### Repository Clone
+1. Clone the repository:
 
-First, clone the repository and navigate to the project directory:
+   ```
+   git clone https://github.com/eandualem/ThroughPut
+   cd ThroughPut
+   ```
 
-```sh
-git clone https://github.com/eandualem/ThroughPut
-cd ThroughPut
-```
+2. Set up a virtual environment:
 
-### Weaviate Setup
+   ```
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
 
-To set up Weaviate, navigate to the `weaviate` directory and start the services using Docker Compose:
+3. Install dependencies:
 
-```sh
-cd weaviate
-docker-compose up
-```
+   ```
+   pip install -r requirements.txt
+   ```
 
-### Project Setup
+4. Set up environment variables:
+   Create a `.env` file in the project root with the following variables:
 
-Set up a virtual environment and install the required packages:
+   ```
+   OPENAI_API_KEY=your_openai_api_key
+   WEAVIATE_URL=your_weaviate_url
+   TAVILY_API_KEY=your_tavily_api_key
+   ```
 
-```sh
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-Create a `.env` file in the project root directory with the following variables:
-
-```
-OPENAI_API_KEY=your_openai_api_key
-WEAVIATE_URL=http://localhost:8080
-```
+5. Initialize Weaviate (if not already set up):
+   Follow Weaviate's documentation to set up and run a Weaviate instance.
 
 ## Running the Project
 
-To run the project, execute the following command:
+To run the project, execute:
 
-```sh
+```
 python main.py
 ```
 
-This will start the FastAPI server and set up the necessary Socket.IO handlers.
+This will start the FastAPI server with Socket.IO support.
+
+## Usage
+
+The system handles different types of user queries:
+
+- Product information requests
+- Chitchat conversations
+- Queries requiring internet validation
+
+Clients can connect to the server using Socket.IO and send messages with specified architecture choices and history management options.
+
+## Architecture Choices
+
+The project supports multiple architecture choices:
+
+1. `semantic-router-v1`: Uses a semantic router to categorize queries and process them accordingly.
+2. `agentic-v1`: Employs a basic agent architecture for product searches and response generation.
+3. `agentic-v2`: Utilizes an advanced agent with multiple tools, including internet search validation.
 
 ## Schema Overview
 
@@ -132,19 +155,10 @@ The schema defines the structure of the data stored in Weaviate. It includes def
 }
 ```
 
-## Usage
+## Contributing
 
-Once the server is running, it will handle different types of user queries:
+Contributions to ThroughPut are welcome! Please refer to the `CONTRIBUTING.md` file for guidelines on how to contribute to this project.
 
-- **Politics**: The system responds with a message that it cannot discuss politics.
-- **Chitchat**: The system uses OpenAI to generate a conversational response.
-- **Vague Intent Product**: The system performs a semantic search based on the user's vague query and provides relevant product information.
-- **Clear Intent Product**: The system refines the user's query and performs a detailed semantic search to find and present specific product information.
+## License
 
-### Example Query Handling
-
-- **Input**: "20 SBC's that perform better than Raspberry Pi."
-- **Refined Query**: "High performance SBC's"
-- **Output**: JSON formatted list of SBCs that meet the criteria.
-
-For more details on how to interact with the system and customize its behavior, refer to the individual scripts and their respective docstrings.
+This project is licensed under the MIT License. See the `LICENSE` file for details.

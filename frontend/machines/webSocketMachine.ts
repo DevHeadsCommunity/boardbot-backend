@@ -1,22 +1,22 @@
 import { RequestData, ResponseData } from "@/types";
-import Cookies from "js-cookie";
 import { Socket, io } from "socket.io-client";
-import { v4 as uuidv4 } from "uuid";
 import { EventObject, assign, emit, fromCallback, fromPromise, sendParent, setup } from "xstate";
 
 // const SOCKET_URL = "http://18.204.9.187:6789";
 // const SOCKET_URL = "http://0.0.0.0:6789";
-const SOCKET_URL = "http://0.0.0.0:5678";
+// const SOCKET_URL = "http://0.0.0.0:5678";
+const SOCKET_URL = "http://192.168.188.59:5678";
 
 export const webSocketMachine = setup({
   types: {
     context: {} as { socket: Socket | null; sessionId: string | null },
     events: {} as
+      | { type: "parentActor.connect"; data: { sessionId: string } }
+      | { type: "parentActor.sendMessage"; data: RequestData }
+      | { type: "parentActor.disconnect" }
       | { type: "listener.textResponseReceived" }
-      | { type: "parentActor.sendMessage" }
       | { type: "listener.disconnected" }
-      | { type: "closer.connectionClosed" }
-      | { type: "parentActor.disconnect" },
+      | { type: "closer.connectionClosed" },
   },
   actions: {
     sendMessage: function ({ context, event }, params: RequestData) {
@@ -24,32 +24,32 @@ export const webSocketMachine = setup({
         ...params,
         sessionId: context.sessionId,
       };
-      context.socket?.emit("chat_message", message);
+      context.socket?.emit("textMessage", message);
     },
   },
   actors: {
     initializeSocket: fromPromise(
-      async (): Promise<{
+      async ({
+        input,
+      }: {
+        input: { sessionId: string };
+      }): Promise<{
         socket: Socket;
-        sessionId: string;
         data: ResponseData;
       }> => {
+        const sessionId = input.sessionId;
+        console.log("===:> sessionId", sessionId);
         try {
-          const sessionId = Cookies.get("sessionId") || uuidv4();
-          if (!Cookies.get("sessionId")) {
-            Cookies.set("sessionId", sessionId);
-          }
-
           const socket = io(SOCKET_URL, {
             reconnectionAttempts: 5,
             reconnectionDelay: 2000,
           });
 
           return new Promise((resolve, reject) => {
-            socket.on("connect", () => socket.emit("chat_message", { type: "connectionInit" }));
-            socket.on("connectionAck", () => socket.emit("chat_message", { type: "sessionInit", sessionId }));
+            socket.on("connect", () => socket.emit("connectionInit"));
+            socket.on("connectionAck", () => socket.emit("sessionInit", { sessionId }));
             socket.on("sessionInit", (data: ResponseData) => {
-              resolve({ socket, sessionId, data });
+              resolve({ socket, data });
             });
             socket.on("connect_error", reject);
           });
@@ -89,18 +89,32 @@ export const webSocketMachine = setup({
     sessionId: null,
   },
   id: "webSocketActor",
-  initial: "Initializing",
+  initial: "idle",
   states: {
+    idle: {
+      on: {
+        "parentActor.connect": {
+          target: "Initializing",
+          actions: assign({
+            sessionId: ({ event }) => event.data.sessionId,
+          }),
+        },
+      },
+    },
     Initializing: {
       invoke: {
         id: "initializeSocket",
-        input: {},
+        input: ({ context }) => {
+          if (!context.sessionId) {
+            throw new Error("No session id provided");
+          }
+          return { sessionId: context.sessionId };
+        },
         onDone: {
           target: "Connected",
           actions: [
             assign({
               socket: ({ event }) => event.output.socket,
-              sessionId: ({ event }) => event.output.sessionId,
             }),
             sendParent(({ event }) => ({
               type: "webSocket.connected",
@@ -180,6 +194,10 @@ export const webSocketMachine = setup({
         src: "closer",
       },
     },
-    Disconnected: {},
+    Disconnected: {
+      always: {
+        target: "idle",
+      },
+    },
   },
 });

@@ -1,10 +1,10 @@
 "use client";
 
 import { useToast } from "@/hooks/useToast";
-import { appMachine } from "@/machines/appMachine";
+import { appMachine, Architecture, HistoryManagement, Model } from "@/machines/appMachine";
 import { createBrowserInspector } from "@statelyai/inspect";
 import { createActorContext, useSelector } from "@xstate/react";
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from "react";
 
 const { inspect } = createBrowserInspector();
 
@@ -22,7 +22,7 @@ export enum ChatState {
   Chatting = "Chatting",
   ImportingState = "ImportingState",
   ExportingState = "ExportingState",
-  UpdatingSettings = "UpdatingSettings"
+  UpdatingSettings = "UpdatingSettings",
 }
 
 export const useAppContext = () => {
@@ -31,14 +31,13 @@ export const useAppContext = () => {
   useToast(appActorRef);
 
   const chatState = useMemo(() => {
-    if (state.matches('Open.Testing' as any)) return ChatState.Testing;
-    if (state.matches('Open.ManagingProducts' as any)) return ChatState.ManagingProducts;
-    if (state.matches('Open.Chatting' as any)) return ChatState.Chatting;
-    if (state.matches('ImportingState')) return ChatState.ImportingState;
-    if (state.matches('ExportingState')) return ChatState.ExportingState;
-    if (state.matches('UpdatingSettings')) return ChatState.UpdatingSettings;
+    if (state.matches("Open.Testing" as any)) return ChatState.Testing;
+    if (state.matches("Open.ManagingProducts" as any)) return ChatState.ManagingProducts;
+    if (state.matches("Open.Chatting" as any)) return ChatState.Chatting;
+    if (state.matches("ImportingState")) return ChatState.ImportingState;
+    if (state.matches("ExportingState")) return ChatState.ExportingState;
+    if (state.matches("UpdatingSettings")) return ChatState.UpdatingSettings;
   }, [state]);
-
 
   const handleSelectTest = useCallback(() => {
     appActorRef.send({ type: "user.selectTest" });
@@ -64,8 +63,14 @@ export const useAppContext = () => {
   const handleSubmitExportStateForm = useCallback(() => {
     appActorRef.send({ type: "user.submitExportStateForm" });
   }, [appActorRef]);
-  const handleSubmitUpdateSettingForm = useCallback(() => {
-    appActorRef.send({ type: "user.submitUpdateSettingForm" });
+  const handleSubmitUpdateSettingForm = useCallback(
+    (data: { model: Model; architecture: Architecture; historyManagement: HistoryManagement }) => {
+      appActorRef.send({ type: "user.submitUpdateSettingForm", data });
+    },
+    [appActorRef]
+  );
+  const handleSubmitResetSettings = useCallback(() => {
+    appActorRef.send({ type: "user.submitResetSettings" });
   }, [appActorRef]);
   const handleCancelImportState = useCallback(() => {
     appActorRef.send({ type: "user.cancelImportState" });
@@ -82,8 +87,9 @@ export const useAppContext = () => {
       chatState,
     },
     data: {
-      architecture: useSelector(appActorRef, (state) => state.context.architectureChoice),
-      historyManagement: useSelector(appActorRef, (state) => state.context.historyManagementChoice),
+      model: useSelector(appActorRef, (state) => state.context.model),
+      architecture: useSelector(appActorRef, (state) => state.context.architecture),
+      historyManagement: useSelector(appActorRef, (state) => state.context.historyManagement),
     },
     actions: {
       select: {
@@ -100,6 +106,7 @@ export const useAppContext = () => {
         importState: handleSubmitImportStateForm,
         exportState: handleSubmitExportStateForm,
         updateSetting: handleSubmitUpdateSettingForm,
+        resetSettings: handleSubmitResetSettings,
       },
       cancel: {
         importState: handleCancelImportState,
@@ -108,6 +115,7 @@ export const useAppContext = () => {
       },
     },
   };
-}
+};
 
+export type AppContextData = ReturnType<typeof useAppContext>["data"];
 export type AppContextActions = ReturnType<typeof useAppContext>["actions"];

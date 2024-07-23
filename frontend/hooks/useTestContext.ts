@@ -1,6 +1,6 @@
 import { AppContext } from "@/context/appContext";
 import { testMachine } from "@/machines/testMachine";
-import { Test, TestCase } from "@/types";
+import { TestCase } from "@/types";
 import { useSelector } from "@xstate/react";
 import { useCallback, useMemo } from "react";
 import { StateFrom } from "xstate";
@@ -12,16 +12,16 @@ export enum TestState {
   DisplayingTestPage = "DisplayingTestPage",
   DisplayingSelectedTest = "DisplayingSelectedTest",
   DisplayingTestDetailsModal = "DisplayingTestDetailsModal",
-  RunningTest = "RunningTest"
+  RunningTest = "RunningTest",
 }
 
 const testStateMap: Record<keyof StateFrom<typeof testMachine> | string, TestState> = {
-  'idle': TestState.Idle,
-  'DisplayingTest': TestState.DisplayingTest,
-  'DisplayingTest.Connected.DisplayingTestPage': TestState.DisplayingTestPage,
-  'DisplayingTest.Connected.DisplayingTestDetails.DisplayingSelectedTest': TestState.DisplayingSelectedTest,
-  'DisplayingTest.Connected.DisplayingTestDetails.DisplayingTestDetailsModal': TestState.DisplayingTestDetailsModal,
-  'DisplayingTest.Connected.DisplayingTestDetails.RunningTest': TestState.RunningTest,
+  idle: TestState.Idle,
+  DisplayingTest: TestState.DisplayingTest,
+  "DisplayingTest.Connected.DisplayingTestPage": TestState.DisplayingTestPage,
+  "DisplayingTest.Connected.DisplayingTestDetails.DisplayingSelectedTest": TestState.DisplayingSelectedTest,
+  "DisplayingTest.Connected.DisplayingTestDetails.DisplayingTestDetailsModal": TestState.DisplayingTestDetailsModal,
+  "DisplayingTest.Connected.DisplayingTestDetails.RunningTest": TestState.RunningTest,
 };
 
 export const useTestContext = () => {
@@ -42,18 +42,24 @@ export const useTestContext = () => {
   const handleStopTest = useCallback(() => {
     testActorRef?.send({ type: "app.stopTest" });
   }, [testActorRef]);
-  const handleCreateTest = useCallback(( data: { name: string, id: string, testCase: TestCase, createdAt: string }) => {
-    testActorRef?.send({ type: "user.createTest", data: data });
-  }, [testActorRef]);
+  const handleCreateTest = useCallback(
+    (data: { name: string; id: string; testCase: TestCase[]; createdAt: string }) => {
+      testActorRef?.send({ type: "user.createTest", data: data });
+    },
+    [testActorRef]
+  );
   const handleSelectSingleTestResult = useCallback(() => {
     testActorRef?.send({ type: "user.clickSingleTestResult" });
   }, [testActorRef]);
   const handleCloseTestResultModal = useCallback(() => {
     testActorRef?.send({ type: "user.closeTestResultModal" });
   }, [testActorRef]);
-  const handleSelectTest = useCallback((data: Test) => {
-    testActorRef?.send({ type: "user.selectTest", data });
-  }, [testActorRef]);
+  const handleSelectTest = useCallback(
+    (testId: string) => {
+      testActorRef?.send({ type: "user.selectTest", data: { testId } });
+    },
+    [testActorRef]
+  );
 
   return {
     state: {
@@ -71,14 +77,14 @@ export const useTestContext = () => {
       },
       select: {
         test: handleSelectTest,
-        testResult: handleSelectSingleTestResult
+        testResult: handleSelectSingleTestResult,
       },
       close: {
-        testResultModal: handleCloseTestResultModal
-      }
-    }
-  }
-}
+        testResultModal: handleCloseTestResultModal,
+      },
+    },
+  };
+};
 
 export type TestData = ReturnType<typeof useTestContext>["data"];
 export type TestActions = ReturnType<typeof useTestContext>["actions"];

@@ -1,9 +1,4 @@
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { TestCase } from "@/types";
 import { Product } from "@/types/Product";
 import { UploadIcon } from "lucide-react";
@@ -16,7 +11,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 
 interface CreateTestCardProps {
-  addTest: (data: { name: string, id: string, testCase: TestCase, createdAt: string }) => void;
+  addTest: (data: { name: string; id: string; testCase: TestCase[]; createdAt: string }) => void;
 }
 
 interface FormData {
@@ -46,17 +41,7 @@ const CreateTestCard: React.FC<CreateTestCardProps> = ({ addTest }) => {
   } = useForm<FormData>();
 
   const validateCSVData = (data: CSVRow[]): string | null => {
-    const requiredFields = [
-      "prompt",
-      "name",
-      "size",
-      "form",
-      "processor",
-      "memory",
-      "io",
-      "manufacturer",
-      "summary",
-    ];
+    const requiredFields = ["prompt", "name", "size", "form", "processor", "memory", "io", "manufacturer", "summary"];
 
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
@@ -108,7 +93,7 @@ const CreateTestCard: React.FC<CreateTestCardProps> = ({ addTest }) => {
             testCasesMap.get(row.prompt)!.expectedProducts.push(product);
           } else {
             testCasesMap.set(row.prompt, {
-              id: uuidv4(),
+              messageId: uuidv4(),
               input: row.prompt,
               expectedProducts: [product],
             });
@@ -120,7 +105,7 @@ const CreateTestCard: React.FC<CreateTestCardProps> = ({ addTest }) => {
         addTest({
           name: data.testName,
           id: uuidv4(),
-          testCase: testCases[0],
+          testCase: testCases,
           createdAt: new Date().toISOString(),
         });
 
@@ -154,44 +139,25 @@ const CreateTestCard: React.FC<CreateTestCardProps> = ({ addTest }) => {
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-4">
           <div>
-            <label
-              htmlFor="testName"
-              className="block text-sm font-medium text-muted-foreground mb-1"
-            >
+            <label htmlFor="testName" className="mb-1 block text-sm font-medium text-muted-foreground">
               Test Name
             </label>
-            <Input
-              id="testName"
-              {...register("testName", { required: "Test name is required" })}
-              placeholder="Enter test name"
-            />
-            {errors.testName && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.testName.message}
-              </p>
-            )}
+            <Input id="testName" {...register("testName", { required: "Test name is required" })} placeholder="Enter test name" />
+            {errors.testName && <p className="mt-1 text-sm text-red-500">{errors.testName.message}</p>}
           </div>
           <div>
-            <p className="text-sm font-medium text-muted-foreground mb-1">
-              Upload the test document (CSV)
-            </p>
+            <p className="mb-1 text-sm font-medium text-muted-foreground">Upload the test document (CSV)</p>
             <div
-              className="flex-1 border-2 border-dashed border-muted rounded-md flex flex-col items-center justify-center p-6 text-muted-foreground hover:border-primary-foreground transition-colors cursor-pointer"
+              className="flex flex-1 cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed border-muted p-6 text-muted-foreground transition-colors hover:border-primary-foreground"
               onClick={() => fileInputRef.current?.click()}
               role="button"
               tabIndex={0}
               aria-label="Upload test file"
             >
-              <UploadIcon className="w-8 h-8 mb-2" />
+              <UploadIcon className="mb-2 h-8 w-8" />
               <p>{file ? file.name : "Click or drag file to upload"}</p>
             </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv"
-              onChange={handleFileChange}
-              className="hidden"
-            />
+            <input ref={fileInputRef} type="file" accept=".csv" onChange={handleFileChange} className="hidden" />
           </div>
         </CardContent>
         <CardFooter>

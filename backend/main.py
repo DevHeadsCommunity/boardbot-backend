@@ -1,36 +1,33 @@
-import uvicorn
 from fastapi import FastAPI
-from weaviate import initialize_weaviate
 from contextlib import asynccontextmanager
-from socketio_handlers import SocketIOHandler
+from api import SocketIOHandler, api_router
+from containers import Container
+from config import Config
 
-# FastAPI application with Lifespan context
+container = Container()
+container.config.from_dict(Config().dict())
+
 app = FastAPI()
-
-# Define global variables
-socket_handler = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global socket_handler
-    # Startup tasks
-    weaviate_interface = await initialize_weaviate()
-    socket_handler = SocketIOHandler(weaviate_interface)
-    app.mount("/", socket_handler.socket_app)
+    weaviate_service = container.weaviate_service()
+    await weaviate_service.initialize_weaviate(
+        container.config.OPENAI_API_KEY(), container.config.WEAVIATE_URL(), container.config.RESET_WEAVIATE()
+    )
+    session_manager = container.session_manager()
+    message_processor = container.message_processor()
+    socket_handler = SocketIOHandler(session_manager, message_processor)
+    app.mount("/socket.io", socket_handler.socket_app)
     yield
-    # Shutdown tasks (Add any cleanup code here if needed)
 
 
-# Assign the lifespan to the app
 app.router.lifespan_context = lifespan
 
-
-# Print {"Hello":"World"} on localhost:7777
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
-
+app.include_router(api_router)
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=5678, lifespan="on", reload=True)
+    import uvicorn
+
+    uvicorn.run("main:app", host="0.0.0.0", port=5678, reload=True)

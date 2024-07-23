@@ -1,7 +1,14 @@
 import { ActorRefFrom, assign, createMachine, sendTo, setup } from "xstate";
 import { chatMachine } from "./chatMachine";
-import { productMachine } from './productMachine';
-import { testMachine } from './testMachine';
+import { productMachine } from "./productMachine";
+import { testMachine } from "./testMachine";
+
+export const MODEL_VALUES = ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"] as const;
+export type Model = (typeof MODEL_VALUES)[number];
+export const ARCHITECTURE_VALUES = ["semantic-router-v1", "agentic-v1", "agentic-v2"] as const;
+export type Architecture = (typeof ARCHITECTURE_VALUES)[number];
+export const HISTORY_MANAGEMENT_VALUES = ["keep-all", "keep-none", "keep-last-5"] as const;
+export type HistoryManagement = (typeof HISTORY_MANAGEMENT_VALUES)[number];
 
 export const appMachine = setup({
   types: {
@@ -9,22 +16,24 @@ export const appMachine = setup({
       chatRef: ActorRefFrom<typeof chatMachine> | undefined;
       testRef: ActorRefFrom<typeof testMachine> | undefined;
       prodRef: ActorRefFrom<typeof productMachine> | undefined;
-      architectureChoice: string;
-      historyManagementChoice: string;
+      model: Model;
+      architecture: Architecture;
+      historyManagement: HistoryManagement;
     },
     events: {} as
       | { type: "user.selectTest" }
-      | { type: "user.selectManageProducts" }
       | { type: "user.selectChat" }
+      | { type: "user.selectManageProducts" }
       | { type: "user.importState" }
       | { type: "user.exportState" }
-      | { type: "user.submitImportStateForm" }
-      | { type: "user.cancelImportState" }
-      | { type: "user.submitExportStateForm" }
-      | { type: "user.cancelExportState" }
       | { type: "user.updateSetting" }
-      | { type: "user.cancelUpdateSetting" }
-      | { type: "user.submitUpdateSettingForm" },
+      | { type: "user.submitImportStateForm" }
+      | { type: "user.submitExportStateForm" }
+      | { type: "user.submitResetSettings" }
+      | { type: "user.submitUpdateSettingForm"; data: { model: Model; architecture: Architecture; historyManagement: HistoryManagement } }
+      | { type: "user.cancelImportState" }
+      | { type: "user.cancelExportState" }
+      | { type: "user.cancelUpdateSetting" },
   },
   actors: {
     importState: createMachine({
@@ -33,17 +42,15 @@ export const appMachine = setup({
     exportState: createMachine({
       /* ... */
     }),
-    updateSettings: createMachine({
-      /* ... */
-    }),
   },
 }).createMachine({
   context: {
     chatRef: undefined,
     testRef: undefined,
     prodRef: undefined,
-    architectureChoice: "semantic-router-v1",
-    historyManagementChoice: "keep-all",
+    model: "gpt-4o",
+    architecture: "semantic-router-v1",
+    historyManagement: "keep-all",
   },
   id: "appActor",
   initial: "Open",
@@ -72,7 +79,8 @@ export const appMachine = setup({
       },
       entry: assign({
         chatRef: ({ spawn }) => spawn(chatMachine) as any,
-        testRef: ({ spawn }) => spawn(testMachine) as any,
+        testRef: ({ context, spawn }) =>
+          spawn(testMachine, { input: { model: context.model, architecture: context.architecture, historyManagement: context.historyManagement } }) as any,
         prodRef: ({ spawn }) => spawn(productMachine) as any,
       }),
       states: {
@@ -100,13 +108,17 @@ export const appMachine = setup({
             type: "app.stopManagingProducts",
           } as any),
         },
+        History: {
+          type: "history",
+          history: "shallow",
+        },
       },
     },
     ImportingState: {
       initial: "DisplayingImportStateForm",
       on: {
         "user.cancelImportState": {
-          target: "Open",
+          target: "#appActor.Open.History",
         },
       },
       states: {
@@ -122,7 +134,7 @@ export const appMachine = setup({
             id: "importState",
             input: {},
             onDone: {
-              target: "#appActor.Open",
+              target: "#appActor.Open.History",
             },
             onError: {
               target: "DisplayingImportStateForm",
@@ -136,7 +148,7 @@ export const appMachine = setup({
       initial: "DisplayingExportStateForm",
       on: {
         "user.cancelExportState": {
-          target: "Open",
+          target: "#appActor.Open.History",
         },
       },
       states: {
@@ -152,7 +164,7 @@ export const appMachine = setup({
             id: "exportState",
             input: {},
             onDone: {
-              target: "#appActor.Open",
+              target: "#appActor.Open.History",
             },
             onError: {
               target: "DisplayingExportStateForm",
@@ -166,28 +178,28 @@ export const appMachine = setup({
       initial: "DisplayingUpdateSettingForm",
       on: {
         "user.cancelUpdateSetting": {
-          target: "Open",
+          target: "#appActor.Open.History",
         },
       },
       states: {
         DisplayingUpdateSettingForm: {
           on: {
             "user.submitUpdateSettingForm": {
-              target: "UpdatingSettings",
+              target: "#appActor.Open.History",
+              actions: assign({
+                model: ({ event }) => event.data.model,
+                architecture: ({ event }) => event.data.architecture,
+                historyManagement: ({ event }) => event.data.historyManagement,
+              }),
             },
-          },
-        },
-        UpdatingSettings: {
-          invoke: {
-            id: "updateSettings",
-            input: {},
-            onDone: {
-              target: "#appActor.Open",
+            "user.submitResetSettings": {
+              target: "#appActor.Open.History",
+              actions: assign({
+                model: "gpt-4o",
+                architecture: "semantic-router-v1",
+                historyManagement: "keep-all",
+              }),
             },
-            onError: {
-              target: "DisplayingUpdateSettingForm",
-            },
-            src: "updateSettings",
           },
         },
       },
