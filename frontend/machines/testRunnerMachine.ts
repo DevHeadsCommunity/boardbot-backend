@@ -3,19 +3,38 @@ import { ActorRefFrom, assign, fromPromise, sendTo, setup } from "xstate";
 import { Architecture, HistoryManagement, Model } from "./appMachine";
 import { webSocketMachine } from "./webSocketMachine";
 
-export function getProductAccuracy(expectedProducts: Product[], actualProducts: Product[]): number {
-  if (expectedProducts.length === 0) return 0;
-
-  const correctProducts = expectedProducts.filter((expected, index) => {
-    const actual = actualProducts[index];
-    return actual && JSON.stringify(expected) === JSON.stringify(actual);
-  });
-
-  return correctProducts.length / expectedProducts.length;
+// Parse expectedProducts if it's a string
+function parseExpectedProducts(expectedProducts: string | Product[]): Product[] {
+  if (typeof expectedProducts === "string") {
+    try {
+      return JSON.parse(expectedProducts)["products"];
+    } catch (error) {
+      console.error("Error parsing expectedProducts:", error);
+      return [];
+    }
+  }
+  return expectedProducts;
 }
 
-export function getFeatureAccuracy(expectedProducts: Product[], actualProducts: Product[]): number {
-  if (expectedProducts.length === 0) return 0;
+export function getProductAccuracy(expectedProducts: string | Product[], actualProducts: Product[]): number {
+  const parsedExpectedProducts = parseExpectedProducts(expectedProducts);
+  console.log("===:> parsedExpectedProducts", parsedExpectedProducts);
+  console.log("===:> actualProducts", actualProducts);
+
+  if (parsedExpectedProducts.length === 0) return 0;
+
+  const correctProducts = parsedExpectedProducts.filter((expected, index) => {
+    const actual = actualProducts[index];
+    return actual && expected.name.toLowerCase() === actual.name.toLowerCase();
+  });
+
+  return correctProducts.length / parsedExpectedProducts.length;
+}
+
+export function getFeatureAccuracy(expectedProducts: string | Product[], actualProducts: Product[]): number {
+  const parsedExpectedProducts = parseExpectedProducts(expectedProducts);
+
+  if (parsedExpectedProducts.length === 0) return 0;
 
   const featureKeys: (keyof Product)[] = [
     "name",
@@ -34,7 +53,7 @@ export function getFeatureAccuracy(expectedProducts: Product[], actualProducts: 
   let totalFeatures = 0;
   let correctFeatures = 0;
 
-  expectedProducts.forEach((expected, productIndex) => {
+  parsedExpectedProducts.forEach((expected, productIndex) => {
     const actual = actualProducts[productIndex];
     if (!actual) return;
 
@@ -103,7 +122,10 @@ export const testRunnerMachine = setup({
     }),
   },
   guards: {
-    testIsComplete: ({ context }) => context.currentTestIndex >= context.testCases.length,
+    testIsComplete: ({ context }) => {
+      console.log("===:> testIsComplete", context.currentTestIndex, context.testCases.length);
+      return context.currentTestIndex >= context.testCases.length;
+    },
   },
 }).createMachine({
   context: ({ input }) => ({
@@ -165,42 +187,70 @@ export const testRunnerMachine = setup({
             "webSocket.messageReceived": [
               {
                 target: "EvaluatingFullTestResult",
-                actions: assign({
-                  testResults: ({ context, event }) => [
-                    ...context.testResults,
-                    {
-                      actualOutput: (event as any).data.textResponse,
-                      inputTokenCount: (event as any).data.inputTokenCount,
-                      outputTokenCount: (event as any).data.outputTokenCount,
-                      llmResponseTime: (event as any).data.elapsedTime,
-                      productAccuracy: getProductAccuracy((event as any).data.outputTokenCount, context.testCases[context.currentTestIndex].expectedProducts),
-                      featureAccuracy: getFeatureAccuracy((event as any).data.outputTokenCount, context.testCases[context.currentTestIndex].expectedProducts),
-                    } as TestResult,
-                  ],
-                  progress: 100,
-                }),
+                actions: [
+                  assign({
+                    testResults: ({ context, event }) => [
+                      ...context.testResults,
+                      {
+                        actualOutput: (event as any).data.textResponse,
+                        inputTokenCount: (event as any).data.inputTokenCount,
+                        outputTokenCount: (event as any).data.outputTokenCount,
+                        llmResponseTime: (event as any).data.elapsedTime,
+                        productAccuracy: getProductAccuracy((event as any).data.textResponse, context.testCases[context.currentTestIndex].expectedProducts),
+                        featureAccuracy: getFeatureAccuracy((event as any).data.textResponse, context.testCases[context.currentTestIndex].expectedProducts),
+                      } as TestResult,
+                    ],
+                    progress: 100,
+                  }),
+                  ({ context, event }) => {
+                    console.log("===:> webSocket.messageReceived: if", event);
+                  },
+                ],
                 guard: {
                   type: "testIsComplete",
                 },
               },
               {
                 target: "RunningBatchTest",
-                actions: assign({
-                  progress: ({ context }) => (context.currentTestIndex / context.testCases.length) * 100,
-                  currentTestIndex: ({ context }) => context.currentTestIndex + 1,
-                  testResults: ({ context, event }) => [
-                    ...context.testResults,
-                    {
-                      messageId: (event as any).data.messageId,
-                      actualOutput: (event as any).data.textResponse,
-                      inputTokenCount: (event as any).data.inputTokenCount,
-                      outputTokenCount: (event as any).data.outputTokenCount,
-                      llmResponseTime: (event as any).data.elapsedTime,
-                      productAccuracy: getProductAccuracy((event as any).data.outputTokenCount, context.testCases[context.currentTestIndex].expectedProducts),
-                      featureAccuracy: getFeatureAccuracy((event as any).data.outputTokenCount, context.testCases[context.currentTestIndex].expectedProducts),
-                    } as TestResult,
-                  ],
-                }),
+                actions: [
+                  ({ context, event }) => {
+                    console.log("===:> webSocket.messageReceived: else", event);
+                  },
+                  sendTo(
+                    ({ context }) => context.webSocketRef!,
+                    ({ context }) => {
+                      return {
+                        type: "parentActor.sendMessage",
+                        data: {
+                          type: "textMessage",
+                          sessionId: context.sessionId,
+                          messageId: context.testCases[context.currentTestIndex].messageId,
+                          message: context.testCases[context.currentTestIndex].input,
+                          timestamp: new Date().toISOString(),
+                          model: context.model,
+                          architectureChoice: context.architecture,
+                          historyManagementChoice: context.historyManagement,
+                        } as RequestData,
+                      };
+                    }
+                  ),
+                  assign({
+                    progress: ({ context }) => (context.currentTestIndex / context.testCases.length) * 100,
+                    currentTestIndex: ({ context }) => context.currentTestIndex + 1,
+                    testResults: ({ context, event }) => [
+                      ...context.testResults,
+                      {
+                        messageId: (event as any).data.messageId,
+                        actualOutput: (event as any).data.textResponse,
+                        inputTokenCount: (event as any).data.inputTokenCount,
+                        outputTokenCount: (event as any).data.outputTokenCount,
+                        llmResponseTime: (event as any).data.elapsedTime,
+                        productAccuracy: getProductAccuracy((event as any).data.message, context.testCases[context.currentTestIndex].expectedProducts),
+                        featureAccuracy: getFeatureAccuracy((event as any).data.message, context.testCases[context.currentTestIndex].expectedProducts),
+                      } as TestResult,
+                    ],
+                  }),
+                ],
               },
             ],
           },

@@ -24,11 +24,12 @@ class MessageProcessor:
             raise ValueError(f"Unknown architecture choice: {message.architecture_choice}")
 
         elapsed_time = str(time.time() - start_time)
+        response_message = response_content.replace("```", "").replace("json", "").replace("\n", "").strip()
 
         return ResponseMessage(
             session_id=message.session_id,
             id=f"{message.id}_response",
-            content=response_content,
+            content=response_message,
             timestamp=elapsed_time,
             is_complete=True,
             input_token_count=stats["input_token_count"],

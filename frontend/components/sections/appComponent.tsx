@@ -35,7 +35,7 @@ const AppComponent: React.FC = () => {
         <ChatComponent />
       </TabsContent>
       <TabsContent value="test">
-        <TestComponent architecture={data.architecture} historyManagement={data.historyManagement} />
+        <TestComponent />
       </TabsContent>
       <TabsContent value="products">
         <ProductComponent />

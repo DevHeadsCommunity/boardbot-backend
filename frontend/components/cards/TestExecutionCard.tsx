@@ -80,8 +80,8 @@ const TestExecutionCard: React.FC = () => {
         <Progress value={data.progress} className="w-full" />
         <div className="grid grid-cols-2 gap-4">
           <StatusItem color="gray" label="Pending" count={pendingCount} />
-          <StatusItem color="green" label="Passed" count={passedCount} />
-          <StatusItem color="yellow" label="Failed" count={failedCount} />
+          <StatusItem color="green" label="Passed" count={failedCount} />
+          <StatusItem color="yellow" label="Failed" count={passedCount} />
           <StatusItem color="red" label="Errors" count={errorCount} />
         </div>
         <AccuracyItem label="Average Product Accuracy" value={averageProductAccuracy} />
@@ -117,7 +117,8 @@ interface AccuracyItemProps {
 const AccuracyItem: React.FC<AccuracyItemProps> = ({ label, value }) => (
   <div className="flex items-center justify-between">
     <span className="font-medium">{label}:</span>
-    <span className="font-medium">{(value * 100).toFixed(2)}%</span>
+    {/* <span className="font-medium">{(value * 100).toFixed(2)}%</span> */}
+    <span className="font-medium">TBD</span>
   </div>
 );
 

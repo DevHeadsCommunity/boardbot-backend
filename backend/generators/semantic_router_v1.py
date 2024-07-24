@@ -50,10 +50,10 @@ class SemanticRouterV1:
         return response, {"input_token_count": input_tokens, "output_token_count": output_tokens}
 
     async def handle_vague_intent(self, message: Message, chat_history: list[Message]):
-        context = await self.agent_v1.weaviate_service.search_products(
+        context = await self.weaviate_service.search_products(
             message.content,
-            ["name", "type", "feature", "specification", "description", "summary"],
         )
+        print(f"Found context: {context}")
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
             message.content, context, chat_history, model=message.model
         )
