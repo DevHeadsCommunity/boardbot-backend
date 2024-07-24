@@ -60,6 +60,7 @@ class WeaviateService:
 
     async def search_routes(self, query: str) -> List[Dict[str, Any]]:
         routes = await self.wi.route.search(query, ["route"], limit=1)
+        print(f"Found routes: {routes}")
         return routes[0].get("route")
 
     async def search_products(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:

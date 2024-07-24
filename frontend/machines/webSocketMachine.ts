@@ -2,10 +2,10 @@ import { RequestData, ResponseData } from "@/types";
 import { Socket, io } from "socket.io-client";
 import { EventObject, assign, emit, fromCallback, fromPromise, sendParent, setup } from "xstate";
 
-// const SOCKET_URL = "http://18.204.9.187:6789";
+const SOCKET_URL = "http://18.204.9.187:6789";
 // const SOCKET_URL = "http://0.0.0.0:6789";
 // const SOCKET_URL = "http://0.0.0.0:5678";
-const SOCKET_URL = "http://192.168.188.59:5678";
+// const SOCKET_URL = "http://192.168.204.59:5678";
 
 export const webSocketMachine = setup({
   types: {
@@ -61,9 +61,6 @@ export const webSocketMachine = setup({
     listener: fromCallback<EventObject, { socket: Socket; sessionId: string }>(({ sendBack, receive, input }) => {
       const socket = input.socket;
       socket.on("textResponse", (data: ResponseData) => sendBack({ type: "listener.textResponseReceived", data }));
-      socket.on("audioTranscription", (data: ResponseData) => sendBack({ type: "listener.transcriptionReceived", data }));
-      socket.on("audioResponse", (data: ResponseData) => sendBack({ type: "listener.audioResponseReceived", data }));
-      socket.on("scheduleMeeting", (data: ResponseData) => sendBack({ type: "listener.meetingDetailsReceived", data }));
       socket.on("disconnect", () => sendBack({ type: "listener.disconnected" }));
 
       return () => {
@@ -71,9 +68,6 @@ export const webSocketMachine = setup({
         socket.off("connectionAck");
         socket.off("sessionInit");
         socket.off("textResponse");
-        socket.off("audioTranscription");
-        socket.off("audioResponse");
-        socket.off("scheduleMeeting");
         socket.off("connect_error");
       };
     }),
@@ -146,7 +140,7 @@ export const webSocketMachine = setup({
       on: {
         "listener.textResponseReceived": {
           actions: sendParent(({ event }: any) => ({
-            type: "webSocket.textMessageReceived",
+            type: "webSocket.messageReceived",
             data: event.data,
           })),
         },

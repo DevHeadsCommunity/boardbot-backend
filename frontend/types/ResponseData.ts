@@ -4,7 +4,7 @@ export interface ResponseData {
   type: string;
   sessionId: string;
   messageId: string;
-  textResponse: string;
+  message: string;
   isComplete: boolean;
   chatHistory?: ChatMessage[];
   inputTokenCount?: number;
