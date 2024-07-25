@@ -3,77 +3,57 @@ import { ActorRefFrom, assign, fromPromise, sendTo, setup } from "xstate";
 import { Architecture, HistoryManagement, Model } from "./appMachine";
 import { webSocketMachine } from "./webSocketMachine";
 
-// Parse expectedProducts if it's a string
-function parseExpectedProducts(expectedProducts: string | Product[]): Product[] {
-  if (typeof expectedProducts === "string") {
+function parseActualProducts(actualProducts: string | Product[]): Product[] {
+  console.log("===:> actualProducts p", actualProducts);
+  if (typeof actualProducts === "string") {
     try {
-      return JSON.parse(expectedProducts)["products"];
+      return JSON.parse(actualProducts)["products"];
     } catch (error) {
       console.error("Error parsing expectedProducts:", error);
       return [];
     }
   }
-  return expectedProducts;
+  return actualProducts;
 }
 
-export function getProductAccuracy(expectedProducts: string | Product[], actualProducts: Product[]): number {
-  const parsedExpectedProducts = parseExpectedProducts(expectedProducts);
-  console.log("===:> parsedExpectedProducts", parsedExpectedProducts);
-  console.log("===:> actualProducts", actualProducts);
+export function getProductAccuracy(actualProducts: string | Product[], expectedProducts: Product[]): number {
+  const parsedActualProducts = parseActualProducts(actualProducts);
+  console.log("===:> parsedActualProducts", parsedActualProducts);
+  console.log("===:> expectedProducts", expectedProducts);
 
-  if (parsedExpectedProducts.length === 0) return 0;
+  if (parsedActualProducts.length === 0) return 0;
 
-  const correctProducts = parsedExpectedProducts.filter((expected, index) => {
-    const actual = actualProducts[index];
+  const correctProducts = parsedActualProducts.filter((actual, index) => {
+    const expected = expectedProducts[index];
     return actual && expected.name.toLowerCase() === actual.name.toLowerCase();
   });
 
-  return correctProducts.length / parsedExpectedProducts.length;
+  return correctProducts.length / parsedActualProducts.length;
 }
 
-export function getFeatureAccuracy(expectedProducts: string | Product[], actualProducts: Product[]): number {
-  const parsedExpectedProducts = parseExpectedProducts(expectedProducts);
+export function getFeatureAccuracy(actualProducts: string | Product[]): number {
+  const parsedActualProducts = parseActualProducts(actualProducts);
 
-  if (parsedExpectedProducts.length === 0) return 0;
+  if (parsedActualProducts.length === 0) return 0;
 
-  const featureKeys: (keyof Product)[] = [
-    "name",
-    "size",
-    "form",
-    "processor",
-    "processorTDP",
-    "memory",
-    "io",
-    "manufacturer",
-    "operatingSystem",
-    "environmental",
-    "certifications",
-  ];
+  const features: (keyof Product)[] = ["name", "size", "form", "processor", "processorTDP", "memory", "io", "manufacturer", "operatingSystem", "environmental", "certifications"];
 
-  let totalFeatures = 0;
-  let correctFeatures = 0;
+  const featureAccuracy = parsedActualProducts.reduce((acc, actual) => {
+    const expectedFeatures = Object.keys(actual);
+    const correctFeatures = expectedFeatures.filter((feature) => features.includes(feature as keyof Product));
+    const correctFeaturesCount = correctFeatures.length;
+    const totalFeaturesCount = expectedFeatures.length;
+    return acc + correctFeaturesCount / totalFeaturesCount;
+  }, 0);
 
-  parsedExpectedProducts.forEach((expected, productIndex) => {
-    const actual = actualProducts[productIndex];
-    if (!actual) return;
-
-    featureKeys.forEach((key) => {
-      if (expected[key] !== "NA" && expected[key] !== "") {
-        totalFeatures++;
-        if (expected[key] === actual[key]) {
-          correctFeatures++;
-        }
-      }
-    });
-  });
-
-  return totalFeatures > 0 ? correctFeatures / totalFeatures : 0;
+  return featureAccuracy / parsedActualProducts.length;
 }
 
 export const testRunnerMachine = setup({
   types: {
     context: {} as {
       webSocketRef: ActorRefFrom<typeof webSocketMachine> | undefined;
+      name: string;
       sessionId: string;
       testCases: TestCase[];
       testResults: TestResult[];
@@ -87,6 +67,7 @@ export const testRunnerMachine = setup({
       historyManagement: HistoryManagement;
     },
     input: {} as {
+      name: string;
       sessionId: string;
       testCases: TestCase[];
       model: Model;
@@ -121,6 +102,52 @@ export const testRunnerMachine = setup({
       } as FullTestResult;
     }),
   },
+  actions: {
+    sendNextMessage: sendTo(
+      ({ context }) => context.webSocketRef!,
+      ({ context }) => ({
+        type: "parentActor.sendMessage",
+        data: {
+          type: "textMessage",
+          sessionId: context.sessionId,
+          messageId: context.testCases[context.currentTestIndex].messageId,
+          message: context.testCases[context.currentTestIndex].input,
+          timestamp: new Date().toISOString(),
+          model: context.model,
+          architectureChoice: context.architecture,
+          historyManagementChoice: context.historyManagement,
+        } as RequestData,
+      })
+    ),
+    updateTestResults: assign({
+      testResults: ({ context, event }) => {
+        const currentTest = context.testCases[context.currentTestIndex - 1];
+        console.log("Current test case:", currentTest);
+        console.log("Expected products:", currentTest.expectedProducts);
+        console.log("Actual products:", (event as any).data.textResponse);
+        console.log("Data:", (event as any).data);
+
+        return [
+          ...context.testResults,
+          {
+            messageId: (event as any).data.messageId.replace("_response", ""),
+            actualOutput: (event as any).data.message,
+            inputTokenCount: (event as any).data.inputTokenCount,
+            outputTokenCount: (event as any).data.outputTokenCount,
+            llmResponseTime: (event as any).data.elapsedTime,
+            productAccuracy: getProductAccuracy((event as any).data.message, currentTest.expectedProducts),
+            featureAccuracy: getFeatureAccuracy((event as any).data.message),
+          } as TestResult,
+        ];
+      },
+    }),
+    increaseProgress: assign({
+      progress: ({ context }) => (context.currentTestIndex / context.testCases.length) * 100,
+    }),
+    increaseCurrentTestIndex: assign({
+      currentTestIndex: ({ context }) => context.currentTestIndex + 1,
+    }),
+  },
   guards: {
     testIsComplete: ({ context }) => {
       console.log("===:> testIsComplete", context.currentTestIndex, context.testCases.length);
@@ -130,6 +157,7 @@ export const testRunnerMachine = setup({
 }).createMachine({
   context: ({ input }) => ({
     webSocketRef: undefined,
+    name: input.name,
     sessionId: input.sessionId,
     testCases: input.testCases,
     testResults: [],
@@ -180,6 +208,13 @@ export const testRunnerMachine = setup({
       },
       states: {
         RunningBatchTest: {
+          entry: [
+            "sendNextMessage",
+            "increaseCurrentTestIndex",
+            ({ context, event }) => {
+              console.log("===:> RunningBatchTest", event);
+            },
+          ],
           on: {
             "user.pauseTest": {
               target: "TestPaused",
@@ -188,23 +223,11 @@ export const testRunnerMachine = setup({
               {
                 target: "EvaluatingFullTestResult",
                 actions: [
-                  assign({
-                    testResults: ({ context, event }) => [
-                      ...context.testResults,
-                      {
-                        actualOutput: (event as any).data.textResponse,
-                        inputTokenCount: (event as any).data.inputTokenCount,
-                        outputTokenCount: (event as any).data.outputTokenCount,
-                        llmResponseTime: (event as any).data.elapsedTime,
-                        productAccuracy: getProductAccuracy((event as any).data.textResponse, context.testCases[context.currentTestIndex].expectedProducts),
-                        featureAccuracy: getFeatureAccuracy((event as any).data.textResponse, context.testCases[context.currentTestIndex].expectedProducts),
-                      } as TestResult,
-                    ],
-                    progress: 100,
-                  }),
                   ({ context, event }) => {
                     console.log("===:> webSocket.messageReceived: if", event);
                   },
+                  "updateTestResults",
+                  "increaseProgress",
                 ],
                 guard: {
                   type: "testIsComplete",
@@ -216,67 +239,14 @@ export const testRunnerMachine = setup({
                   ({ context, event }) => {
                     console.log("===:> webSocket.messageReceived: else", event);
                   },
-                  sendTo(
-                    ({ context }) => context.webSocketRef!,
-                    ({ context }) => {
-                      return {
-                        type: "parentActor.sendMessage",
-                        data: {
-                          type: "textMessage",
-                          sessionId: context.sessionId,
-                          messageId: context.testCases[context.currentTestIndex].messageId,
-                          message: context.testCases[context.currentTestIndex].input,
-                          timestamp: new Date().toISOString(),
-                          model: context.model,
-                          architectureChoice: context.architecture,
-                          historyManagementChoice: context.historyManagement,
-                        } as RequestData,
-                      };
-                    }
-                  ),
-                  assign({
-                    progress: ({ context }) => (context.currentTestIndex / context.testCases.length) * 100,
-                    currentTestIndex: ({ context }) => context.currentTestIndex + 1,
-                    testResults: ({ context, event }) => [
-                      ...context.testResults,
-                      {
-                        messageId: (event as any).data.messageId,
-                        actualOutput: (event as any).data.textResponse,
-                        inputTokenCount: (event as any).data.inputTokenCount,
-                        outputTokenCount: (event as any).data.outputTokenCount,
-                        llmResponseTime: (event as any).data.elapsedTime,
-                        productAccuracy: getProductAccuracy((event as any).data.message, context.testCases[context.currentTestIndex].expectedProducts),
-                        featureAccuracy: getFeatureAccuracy((event as any).data.message, context.testCases[context.currentTestIndex].expectedProducts),
-                      } as TestResult,
-                    ],
-                  }),
+                  "sendNextMessage",
+                  "increaseCurrentTestIndex",
+                  "updateTestResults",
+                  "increaseProgress",
                 ],
               },
             ],
           },
-          entry: [
-            sendTo(
-              ({ context }) => context.webSocketRef!,
-              ({ context }) => {
-                return {
-                  type: "parentActor.sendMessage",
-                  data: {
-                    type: "textMessage",
-                    sessionId: context.sessionId,
-                    messageId: context.testCases[context.currentTestIndex].messageId,
-                    message: context.testCases[context.currentTestIndex].input,
-                    timestamp: new Date().toISOString(),
-                    model: context.model,
-                    architectureChoice: context.architecture,
-                    historyManagementChoice: context.historyManagement,
-                  } as RequestData,
-                };
-              }
-            ),
-            assign({
-              currentTestIndex: ({ context }) => context.currentTestIndex + 1,
-            }),
-          ],
         },
         TestPaused: {
           on: {
