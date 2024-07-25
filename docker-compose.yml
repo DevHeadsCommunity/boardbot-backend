@@ -33,7 +33,7 @@ services:
       dockerfile: dockerfile.frontend
     ports:
       # - "3000:3001"
-      - "5180:5173" # Map container port 5173 to host port 5180
+      - "5180:3001" # Map container port 5173 to host port 5180
     depends_on:
       - backend
     environment:

@@ -23,7 +23,8 @@ export const testMachine = setup({
       | { type: "user.createTest"; data: { name: string; id: string; testCase: TestCase[]; createdAt: string } }
       | { type: "user.selectTest"; data: { testId: string } }
       | { type: "user.clickSingleTestResult" }
-      | { type: "user.closeTestResultModal" },
+      | { type: "user.closeTestResultModal" }
+      | { type: "test.restoreState"; state: { selectedTest: Test | null; tests: Test[] } },
   },
 }).createMachine({
   context: ({ input }) => ({
@@ -35,6 +36,14 @@ export const testMachine = setup({
   }),
   id: "testActor",
   initial: "idle",
+  on: {
+    "test.restoreState": {
+      actions: assign({
+        selectedTest: ({ context, event }) => event.state.selectedTest,
+        tests: ({ context, event }) => event.state.tests,
+      }),
+    },
+  },
   states: {
     idle: {
       on: {
@@ -57,6 +66,7 @@ export const testMachine = setup({
                   createdAt: event.data.createdAt,
                   testRunnerRef: spawn(testRunnerMachine, {
                     input: {
+                      name: event.data.name,
                       sessionId: event.data.id,
                       testCases: event.data.testCase,
                       model: context.model,

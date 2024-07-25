@@ -2,11 +2,9 @@
 
 import CreateTestCard from "@/components/cards/CreateTestCard";
 import TestExecutionCard from "@/components/cards/TestExecutionCard";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { useTestContext } from "@/hooks/useTestContext";
 import { Test, TestCase } from "@/types";
-import { DownloadIcon, FlaskConical } from "lucide-react";
+import { FlaskConical } from "lucide-react";
 import TestListCard from "../cards/TestListCard";
 import TestResultCard from "../cards/TestResultCard";
 
@@ -36,23 +34,7 @@ export default function TestComponent() {
           <TestListCard tests={data.tests} onTestSelect={handleSelectTest} />
           {data.selectedTest && <TestExecutionCard />}
         </div>
-        {data.selectedTest && (
-          <div className="mt-8">
-            <Card className="bg-card p-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-card-foreground">Test Results</h2>
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon">
-                    <DownloadIcon className="h-5 w-5 text-card-foreground" />
-                  </Button>
-                </div>
-              </div>
-              <div className="mt-4 overflow-auto">
-                <TestResultCard />
-              </div>
-            </Card>
-          </div>
-        )}
+        {data.selectedTest && <TestResultCard />}
       </main>
     </div>
   );

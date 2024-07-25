@@ -1,4 +1,4 @@
-import { ActorRefFrom, assign, createMachine, sendTo, setup } from "xstate";
+import { ActorRefFrom, assign, emit, fromPromise, sendTo, setup } from "xstate";
 import { chatMachine } from "./chatMachine";
 import { productMachine } from "./productMachine";
 import { testMachine } from "./testMachine";
@@ -13,9 +13,9 @@ export type HistoryManagement = (typeof HISTORY_MANAGEMENT_VALUES)[number];
 export const appMachine = setup({
   types: {
     context: {} as {
-      chatRef: ActorRefFrom<typeof chatMachine> | undefined;
-      testRef: ActorRefFrom<typeof testMachine> | undefined;
-      prodRef: ActorRefFrom<typeof productMachine> | undefined;
+      chatRef: ActorRefFrom<typeof chatMachine>;
+      testRef: ActorRefFrom<typeof testMachine>;
+      prodRef: ActorRefFrom<typeof productMachine>;
       model: Model;
       architecture: Architecture;
       historyManagement: HistoryManagement;
@@ -27,8 +27,8 @@ export const appMachine = setup({
       | { type: "user.importState" }
       | { type: "user.exportState" }
       | { type: "user.updateSetting" }
-      | { type: "user.submitImportStateForm" }
-      | { type: "user.submitExportStateForm" }
+      | { type: "user.submitImportStateForm"; data: { importKey: string } }
+      | { type: "user.submitExportStateForm"; data: { exportKey: string } }
       | { type: "user.submitResetSettings" }
       | { type: "user.submitUpdateSettingForm"; data: { model: Model; architecture: Architecture; historyManagement: HistoryManagement } }
       | { type: "user.cancelImportState" }
@@ -36,22 +36,41 @@ export const appMachine = setup({
       | { type: "user.cancelUpdateSetting" },
   },
   actors: {
-    importState: createMachine({
-      /* ... */
+    importState: fromPromise(async ({ input }: { input: { importKey: string } }) => {
+      try {
+        const data = localStorage.getItem(input.importKey);
+        if (!data) {
+          throw new Error("No saved state found with the given key");
+        }
+        return JSON.parse(data);
+      } catch (error) {
+        throw new Error(`Failed to import state: ${error}`);
+      }
     }),
-    exportState: createMachine({
-      /* ... */
+    exportState: fromPromise(async ({ input }: { input: { exportKey: string; state: any } }) => {
+      try {
+        localStorage.setItem(input.exportKey, JSON.stringify(input.state));
+        return { success: true };
+      } catch (error) {
+        throw new Error(`Failed to export state: ${error}`);
+      }
     }),
   },
 }).createMachine({
-  context: {
-    chatRef: undefined,
-    testRef: undefined,
-    prodRef: undefined,
+  context: ({ spawn }) => ({
+    chatRef: spawn(chatMachine),
+    testRef: spawn(testMachine, {
+      input: {
+        model: "gpt-4o",
+        architecture: "semantic-router-v1",
+        historyManagement: "keep-all",
+      },
+    }),
+    prodRef: spawn(productMachine),
     model: "gpt-4o",
     architecture: "semantic-router-v1",
     historyManagement: "keep-all",
-  },
+  }),
   id: "appActor",
   initial: "Open",
   states: {
@@ -77,12 +96,6 @@ export const appMachine = setup({
           target: "UpdatingSettings",
         },
       },
-      entry: assign({
-        chatRef: ({ spawn }) => spawn(chatMachine) as any,
-        testRef: ({ context, spawn }) =>
-          spawn(testMachine, { input: { model: context.model, architecture: context.architecture, historyManagement: context.historyManagement } }) as any,
-        prodRef: ({ spawn }) => spawn(productMachine) as any,
-      }),
       states: {
         Testing: {
           entry: sendTo(({ context }) => context.testRef!, {
@@ -110,7 +123,7 @@ export const appMachine = setup({
         },
         History: {
           type: "history",
-          history: "shallow",
+          history: "deep",
         },
       },
     },
@@ -132,9 +145,56 @@ export const appMachine = setup({
         ImportingState: {
           invoke: {
             id: "importState",
-            input: {},
+            input: ({ event }) => {
+              if (event.type !== "user.submitImportStateForm") {
+                throw new Error("Invalid event");
+              }
+              return { importKey: event.data.importKey };
+            },
             onDone: {
               target: "#appActor.Open.History",
+              actions: [
+                assign(({ context, event }) => ({
+                  ...event.output,
+                  chatRef: context.chatRef,
+                  testRef: context.testRef,
+                  prodRef: context.prodRef,
+                })),
+                sendTo(
+                  ({ context }) => context.chatRef,
+                  ({ event }) => {
+                    return {
+                      type: "test.restoreState",
+                      state: (event as any).output.chatState,
+                    };
+                  }
+                ) as any,
+                sendTo(
+                  ({ context }) => context.testRef,
+                  ({ event }) => {
+                    return {
+                      type: "test.restoreState",
+                      state: (event as any).output.testState,
+                    };
+                  }
+                ) as any,
+                sendTo(
+                  ({ context }) => context.prodRef,
+                  ({ event }) => {
+                    return {
+                      type: "test.restoreState",
+                      state: (event as any).output.prodState,
+                    };
+                  }
+                ) as any,
+                emit({
+                  type: "notification",
+                  data: {
+                    type: "success",
+                    message: "Connected to the server",
+                  },
+                }),
+              ],
             },
             onError: {
               target: "DisplayingImportStateForm",
@@ -162,9 +222,33 @@ export const appMachine = setup({
         ExportingState: {
           invoke: {
             id: "exportState",
-            input: {},
+            input: ({ context, event }) => {
+              if (event.type !== "user.submitExportStateForm") {
+                throw new Error("Invalid event");
+              }
+              return {
+                exportKey: event.data.exportKey,
+                state: {
+                  model: context.model,
+                  architecture: context.architecture,
+                  historyManagement: context.historyManagement,
+                  chatState: context.chatRef.getSnapshot(),
+                  testState: context.testRef.getSnapshot(),
+                  prodState: context.prodRef.getSnapshot(),
+                },
+              };
+            },
             onDone: {
               target: "#appActor.Open.History",
+              actions: [
+                emit({
+                  type: "notification",
+                  data: {
+                    type: "success",
+                    message: "Connected to the server",
+                  },
+                }),
+              ],
             },
             onError: {
               target: "DisplayingExportStateForm",

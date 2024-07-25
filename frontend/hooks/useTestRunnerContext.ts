@@ -58,6 +58,7 @@ export const useTestRunnerContext = () => {
       testRunnerState,
     },
     data: {
+      name: useSelector(testRunnerActorRef, (state: any) => state.context.name || ""),
       testCases: useSelector(testRunnerActorRef, (state: any) => state.context.testCases || []),
       testResults: useSelector(testRunnerActorRef, (state: any) => state.context.testResults || []),
       fullTestResult: useSelector(testRunnerActorRef, (state: any) => state.context.fullTestResult || null),

@@ -30,13 +30,14 @@ export const useAppContext = () => {
   const appActorRef = AppContext.useActorRef();
   useToast(appActorRef);
 
-  const chatState = useMemo(() => {
+  const chatState: ChatState = useMemo(() => {
     if (state.matches("Open.Testing" as any)) return ChatState.Testing;
     if (state.matches("Open.ManagingProducts" as any)) return ChatState.ManagingProducts;
     if (state.matches("Open.Chatting" as any)) return ChatState.Chatting;
     if (state.matches("ImportingState")) return ChatState.ImportingState;
     if (state.matches("ExportingState")) return ChatState.ExportingState;
     if (state.matches("UpdatingSettings")) return ChatState.UpdatingSettings;
+    return ChatState.Chatting;
   }, [state]);
 
   const handleSelectTest = useCallback(() => {
@@ -57,12 +58,18 @@ export const useAppContext = () => {
   const handleUpdateSetting = useCallback(() => {
     appActorRef.send({ type: "user.updateSetting" });
   }, [appActorRef]);
-  const handleSubmitImportStateForm = useCallback(() => {
-    appActorRef.send({ type: "user.submitImportStateForm" });
-  }, [appActorRef]);
-  const handleSubmitExportStateForm = useCallback(() => {
-    appActorRef.send({ type: "user.submitExportStateForm" });
-  }, [appActorRef]);
+  const handleSubmitImportStateForm = useCallback(
+    (data: { importKey: string }) => {
+      appActorRef.send({ type: "user.submitImportStateForm", data });
+    },
+    [appActorRef]
+  );
+  const handleSubmitExportStateForm = useCallback(
+    (data: { exportKey: string }) => {
+      appActorRef.send({ type: "user.submitExportStateForm", data });
+    },
+    [appActorRef]
+  );
   const handleSubmitUpdateSettingForm = useCallback(
     (data: { model: Model; architecture: Architecture; historyManagement: HistoryManagement }) => {
       appActorRef.send({ type: "user.submitUpdateSettingForm", data });
