@@ -1,11 +1,9 @@
-import { setup } from "xstate";
+import { ActorRefFrom, setup } from "xstate";
 
 export const productMachine = setup({
   types: {
     context: {} as {},
-    events: {} as
-      | { type: "app.startManagingProducts" }
-      | { type: "app.stopManagingProducts" },
+    events: {} as { type: "app.startManagingProducts" } | { type: "app.stopManagingProducts" },
   },
 }).createMachine({
   context: {},
@@ -28,3 +26,10 @@ export const productMachine = setup({
     },
   },
 });
+
+export const getProductMachineState = (productRef: ActorRefFrom<typeof productMachine>) => {
+  const snapshot = productRef.getSnapshot();
+  return {
+    currentState: snapshot.value,
+  };
+};

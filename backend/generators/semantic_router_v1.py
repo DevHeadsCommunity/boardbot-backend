@@ -1,5 +1,5 @@
-from generators.agent_v1 import AgentV1
 from models.message import Message
+from generators.agent_v1 import AgentV1
 from services.openai_service import OpenAIService
 from services.weaviate_service import WeaviateService
 
@@ -38,8 +38,7 @@ class SemanticRouterV1:
         elif route == "vague_intent_product":
             return await self.handle_vague_intent(message, chat_history)
         elif route == "clear_intent_product":
-            return await self.handle_vague_intent(message, chat_history)
-            # return await self.agent_v1.run(message.content, chat_history)
+            return await self.agent_v1.run(message.content, chat_history)
         else:
             raise Exception(f"Unknown route: {route}")
 

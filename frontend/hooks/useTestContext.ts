@@ -1,4 +1,4 @@
-import { AppContext } from "@/context/appContext";
+import { useAppContext } from "@/context/appContext";
 import { testMachine } from "@/machines/testMachine";
 import { TestCase } from "@/types";
 import { useSelector } from "@xstate/react";
@@ -25,8 +25,8 @@ const testStateMap: Record<keyof StateFrom<typeof testMachine> | string, TestSta
 };
 
 export const useTestContext = () => {
-  const state = AppContext.useSelector((state) => state);
-  const testActorRef = state.context.testRef;
+  const { actorRef } = useAppContext();
+  const testActorRef = actorRef.test;
   const testActorState = useSelector(testActorRef, (state) => state);
   useToast(testActorRef);
 

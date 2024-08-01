@@ -1,11 +1,10 @@
 "use client";
 
-import { ChatMessage } from "@/hooks/useConsumer";
-import useWebSocket from "@/hooks/useWebSocket";
+import { ChatState, useChatContext } from "@/hooks/useChatContext";
+import { ChatMessage } from "@/types";
 import { MessageCircle } from "lucide-react";
 import { useState } from "react";
 import ReactJson from "react-json-view";
-import { v4 as uuidv4 } from "uuid";
 
 interface ChatWindowProps {
   chatHistory: ChatMessage[];
@@ -76,14 +75,16 @@ const MessageInput: React.FC<MessageInputProps> = ({ currentMessage, setCurrentM
 };
 
 const ChatComponent = () => {
-  const { chatHistory, sendTextMessage } = useWebSocket();
   const [currentMessage, setCurrentMessage] = useState<string>("");
+  const { state, data, actions } = useChatContext();
 
   const handleSendMessage = () => {
-    const id = uuidv4();
-    sendTextMessage(id, currentMessage);
+    console.log(`state.chatState: ${state.chatState}`);
+    if (state.chatState !== ChatState.Typing) return;
+    actions.handleSendMessage(currentMessage);
     setCurrentMessage("");
   };
+
   return (
     <div className="flex min-h-screen flex-col items-center bg-background">
       <header className="flex items-start border-b bg-card px-4 py-3 sm:px-6">
@@ -92,7 +93,7 @@ const ChatComponent = () => {
           <h1 className="text-lg font-semibold text-card-foreground">Chatbot</h1>
         </div>
       </header>
-      <ChatWindow chatHistory={chatHistory} />
+      <ChatWindow chatHistory={data.chatHistory} />
       <MessageInput currentMessage={currentMessage} setCurrentMessage={setCurrentMessage} handleSendMessage={handleSendMessage} />
     </div>
   );

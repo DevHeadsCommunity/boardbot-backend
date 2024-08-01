@@ -3,17 +3,19 @@
 import { useToast } from "@/hooks/useToast";
 import { appMachine, Architecture, HistoryManagement, Model } from "@/machines/appMachine";
 import { createBrowserInspector } from "@statelyai/inspect";
-import { createActorContext, useSelector } from "@xstate/react";
-import { useCallback, useMemo } from "react";
+import { useSelector } from "@xstate/react";
+import { createContext, useCallback, useContext, useMemo } from "react";
+import { ActorRefFrom, createActor } from "xstate";
 
 const { inspect } = createBrowserInspector();
-
-export const AppContext = createActorContext(appMachine, {
+const appActor = createActor(appMachine, {
   inspect,
-});
+}).start();
+
+const AppContext = createContext<ActorRefFrom<typeof appMachine> | null>(null);
 
 export const AppContextProvider = ({ children }: { children: React.ReactNode }) => {
-  return <AppContext.Provider>{children}</AppContext.Provider>;
+  return <AppContext.Provider value={appActor}>{children}</AppContext.Provider>;
 };
 
 export enum ChatState {
@@ -26,8 +28,11 @@ export enum ChatState {
 }
 
 export const useAppContext = () => {
-  const state = AppContext.useSelector((state) => state);
-  const appActorRef = AppContext.useActorRef();
+  const appActorRef = useContext(AppContext);
+  if (!appActorRef) {
+    throw new Error("useAppContext must be used within an AppContextProvider");
+  }
+  const state = useSelector(appActorRef, (state) => state);
   useToast(appActorRef);
 
   const chatState: ChatState = useMemo(() => {
@@ -90,6 +95,11 @@ export const useAppContext = () => {
   }, [appActorRef]);
 
   return {
+    actorRef: {
+      chat: state.context.chatRef,
+      test: state.context.testRef,
+      product: state.context.prodRef,
+    },
     state: {
       chatState,
     },

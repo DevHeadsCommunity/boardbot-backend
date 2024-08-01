@@ -34,7 +34,7 @@ const AppComponent: React.FC = () => {
   };
 
   return (
-    <Tabs defaultValue="test" className="w-full" onValueChange={handleTabChange}>
+    <Tabs defaultValue="chat" className="w-full" onValueChange={handleTabChange}>
       <Header state={state.chatState} data={data} actions={actions} />
       <TabsContent value="chat">
         <ChatComponent />
@@ -88,32 +88,6 @@ const Navigation: React.FC = () => (
     <TabsTrigger value="products">Products</TabsTrigger>
   </TabsList>
 );
-
-/**
- * interface DeleteDocumentFormProps {
-  onConfirm: () => void;
-  onCancel: () => void;
-}
-
-const DeleteDocumentForm: React.FC<DeleteDocumentFormProps> = ({ onConfirm, onCancel }) => (
-  <Dialog open={true} onOpenChange={onCancel}>
-    <DialogContent>
-      <DialogTitle>Delete Document</DialogTitle>
-      <div className="py-4">
-        <p>Are you sure you want to delete this document?</p>
-      </div>
-      <DialogFooter>
-        <Button variant="outline" onClick={onConfirm}>
-          Confirm
-        </Button>
-        <Button variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
-);
- */
 
 interface ImportStateFormProps {
   isOpen: boolean;

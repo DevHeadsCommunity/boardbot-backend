@@ -12,6 +12,7 @@ class MessageProcessor:
         self.semantic_router_v1 = semantic_router_v1
 
     async def process_message(self, message: Message, chat_history: list[Message]) -> ResponseMessage:
+        print(f"*** Processing message: {message.content}")
         start_time = time.time()
 
         if message.architecture_choice == "semantic-router-v1":

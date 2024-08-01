@@ -1,5 +1,5 @@
 import { Test, TestCase } from "@/types";
-import { assign, emit, setup } from "xstate";
+import { ActorRefFrom, assign, emit, setup } from "xstate";
 import { Architecture, HistoryManagement, Model } from "./appMachine";
 import { testRunnerMachine } from "./testRunnerMachine";
 
@@ -16,6 +16,7 @@ export const testMachine = setup({
       model: Model;
       architecture: Architecture;
       historyManagement: HistoryManagement;
+      restoredState?: any;
     },
     events: {} as
       | { type: "app.startTest" }
@@ -23,27 +24,18 @@ export const testMachine = setup({
       | { type: "user.createTest"; data: { name: string; id: string; testCase: TestCase[]; createdAt: string } }
       | { type: "user.selectTest"; data: { testId: string } }
       | { type: "user.clickSingleTestResult" }
-      | { type: "user.closeTestResultModal" }
-      | { type: "test.restoreState"; state: { selectedTest: Test | null; tests: Test[] } },
+      | { type: "user.closeTestResultModal" },
   },
 }).createMachine({
   context: ({ input }) => ({
-    selectedTest: null,
-    tests: [],
+    selectedTest: input.restoredState?.selectedTest || null,
+    tests: input.restoredState?.tests || [],
     model: input.model,
     architecture: input.architecture,
     historyManagement: input.historyManagement,
   }),
   id: "testActor",
   initial: "idle",
-  on: {
-    "test.restoreState": {
-      actions: assign({
-        selectedTest: ({ context, event }) => event.state.selectedTest,
-        tests: ({ context, event }) => event.state.tests,
-      }),
-    },
-  },
   states: {
     idle: {
       on: {
@@ -122,3 +114,15 @@ export const testMachine = setup({
     },
   },
 });
+
+export const getTestMachineState = (testRef: ActorRefFrom<typeof testMachine>) => {
+  const snapshot = testRef.getSnapshot();
+  return {
+    selectedTest: snapshot.context.selectedTest,
+    tests: snapshot.context.tests,
+    model: snapshot.context.model,
+    architecture: snapshot.context.architecture,
+    historyManagement: snapshot.context.historyManagement,
+    currentState: snapshot.value,
+  };
+};

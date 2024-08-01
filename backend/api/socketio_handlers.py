@@ -53,10 +53,9 @@ class SocketIOHandler:
             architecture_choice=data.get("architectureChoice"),
             history_management_choice=data.get("historyManagementChoice"),
         )
-        self.session_manager.add_message(message)
-
+        print(f"===> Message279: {message}")
         chat_history = self.session_manager.get_chat_history(message.session_id, message.history_management_choice)
-
+        print(f"Chat history: {chat_history}")
         response = await self.message_processor.process_message(message, chat_history)
 
         response_json = {
@@ -75,4 +74,5 @@ class SocketIOHandler:
 
         await self.sio.emit("textResponse", response_json, room=sid)
         print(f"Response sent to {sid}: {response}")
+        self.session_manager.add_message(message)
         self.session_manager.add_message(response)
