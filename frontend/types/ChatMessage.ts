@@ -7,4 +7,5 @@ export interface ChatMessage {
   inputTokenCount?: number;
   outputTokenCount?: number;
   elapsedTime?: number;
+  model?: string;
 }

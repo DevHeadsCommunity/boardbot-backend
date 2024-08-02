@@ -22,3 +22,8 @@ class SessionManager:
             return self.sessions[session_id][-5:]
         else:
             raise ValueError(f"Unknown history management choice: {history_management_choice}")
+
+    def format_chat_history(self, chat_history: List[Message]) -> List[Dict[str, str]]:
+        return [
+            {"role": "user" if msg.is_user_message else "assistant", "content": msg.content} for msg in chat_history
+        ]

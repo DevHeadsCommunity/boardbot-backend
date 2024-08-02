@@ -1,5 +1,5 @@
 import { Test, TestCase } from "@/types";
-import { assign, emit, setup } from "xstate";
+import { ActorRefFrom, assign, ContextFrom, emit, setup } from "xstate";
 import { Architecture, HistoryManagement, Model } from "./appMachine";
 import { testRunnerMachine } from "./testRunnerMachine";
 
@@ -16,31 +16,34 @@ export const testMachine = setup({
       model: Model;
       architecture: Architecture;
       historyManagement: HistoryManagement;
+      restoredState?: any;
     },
     events: {} as
       | { type: "app.startTest" }
       | { type: "app.stopTest" }
+      | { type: "app.updateState"; data: { model: Model; architecture: Architecture; historyManagement: HistoryManagement } }
       | { type: "user.createTest"; data: { name: string; id: string; testCase: TestCase[]; createdAt: string } }
       | { type: "user.selectTest"; data: { testId: string } }
       | { type: "user.clickSingleTestResult" }
-      | { type: "user.closeTestResultModal" }
-      | { type: "test.restoreState"; state: { selectedTest: Test | null; tests: Test[] } },
+      | { type: "user.closeTestResultModal" },
   },
 }).createMachine({
   context: ({ input }) => ({
-    selectedTest: null,
-    tests: [],
+    selectedTest: input.restoredState?.selectedTest || null,
+    tests: input.restoredState?.tests || [],
     model: input.model,
     architecture: input.architecture,
     historyManagement: input.historyManagement,
   }),
   id: "testActor",
   initial: "idle",
+  // initial: ({input}) => input?.currentState ? input.currentState : "idle", // This is not working, but we need to find a way to restore the state
   on: {
-    "test.restoreState": {
+    "app.updateState": {
       actions: assign({
-        selectedTest: ({ context, event }) => event.state.selectedTest,
-        tests: ({ context, event }) => event.state.tests,
+        model: ({ event }) => event.data.model,
+        architecture: ({ event }) => event.data.architecture,
+        historyManagement: ({ event }) => event.data.historyManagement,
       }),
     },
   },
@@ -122,3 +125,68 @@ export const testMachine = setup({
     },
   },
 });
+
+export const serializeTestState = (testRef: ActorRefFrom<typeof testMachine>) => {
+  const snapshot = testRef.getSnapshot();
+  return {
+    selectedTest: snapshot.context.selectedTest,
+    tests: snapshot.context.tests.map((test) => ({
+      ...test,
+      testRunnerState: serializeTestRunnerState(test.testRunnerRef),
+    })),
+    model: snapshot.context.model,
+    architecture: snapshot.context.architecture,
+    historyManagement: snapshot.context.historyManagement,
+    currentState: snapshot.value,
+  };
+};
+
+export const serializeTestRunnerState = (testRunnerRef: ActorRefFrom<typeof testRunnerMachine>) => {
+  const snapshot = testRunnerRef.getSnapshot();
+  return {
+    name: snapshot.context.name,
+    sessionId: snapshot.context.sessionId,
+    testCases: snapshot.context.testCases,
+    testResults: snapshot.context.testResults,
+    fullTestResult: snapshot.context.fullTestResult,
+    currentTestIndex: snapshot.context.currentTestIndex,
+    batchSize: snapshot.context.batchSize,
+    testTimeout: snapshot.context.testTimeout,
+    progress: snapshot.context.progress,
+    model: snapshot.context.model,
+    architecture: snapshot.context.architecture,
+    historyManagement: snapshot.context.historyManagement,
+    currentState: snapshot.value,
+  };
+};
+
+export const deserializeTestState = (savedState: any, spawn: any): ContextFrom<typeof testMachine> => {
+  return {
+    ...savedState,
+    tests: savedState.tests.map((test: any) => ({
+      ...test,
+      testRunnerRef: spawn(testRunnerMachine, {
+        id: test.testId,
+        input: deserializeTestRunnerState(test.testRunnerState),
+      }),
+    })),
+  };
+};
+
+export const deserializeTestRunnerState = (savedState: any): ContextFrom<typeof testRunnerMachine> => {
+  return {
+    webSocketRef: undefined,
+    name: savedState.name,
+    sessionId: savedState.sessionId,
+    testCases: savedState.testCases,
+    testResults: savedState.testResults,
+    fullTestResult: savedState.fullTestResult,
+    currentTestIndex: savedState.currentTestIndex,
+    batchSize: savedState.batchSize,
+    testTimeout: savedState.testTimeout,
+    progress: savedState.progress,
+    model: savedState.model,
+    architecture: savedState.architecture,
+    historyManagement: savedState.historyManagement,
+  };
+};

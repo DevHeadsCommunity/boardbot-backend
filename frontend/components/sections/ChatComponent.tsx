@@ -1,11 +1,10 @@
 "use client";
 
-import { ChatMessage } from "@/hooks/useConsumer";
-import useWebSocket from "@/hooks/useWebSocket";
+import { ChatState, useChatContext } from "@/hooks/useChatContext";
+import { ChatMessage } from "@/types";
 import { MessageCircle } from "lucide-react";
 import { useState } from "react";
 import ReactJson from "react-json-view";
-import { v4 as uuidv4 } from "uuid";
 
 interface ChatWindowProps {
   chatHistory: ChatMessage[];
@@ -17,11 +16,28 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatHistory }) => {
       {chatHistory.map((message) => (
         <div key={message.id} className={`mb-4 rounded-lg p-3 ${message.isUserMessage ? "self-end bg-[#fff0ef]" : "self-start bg-[#effeff]"}`}>
           <ChatMessageContent message={message.message} />
+          {!message.isUserMessage && (
+            <div className="mt-8 grid grid-cols-2 gap-4">
+              <MetricItem label="Model" value={message.model!} />
+              <MetricItem label="Response Time" value={`${message.elapsedTime!.toFixed(2)} ms`} />
+              <MetricItem label="Input Tokens" value={message.inputTokenCount!} />
+              <MetricItem label="Input Cost" value={`${(message.inputTokenCount! * 0.000005).toFixed(4)} $`} />
+              <MetricItem label="Output Tokens" value={message.outputTokenCount!} />
+              <MetricItem label="Output Cost" value={`${(message.outputTokenCount! * 0.00001).toFixed(4)} $`} />
+            </div>
+          )}
         </div>
       ))}
     </div>
   );
 };
+
+const MetricItem: React.FC<{ label: string; value: string | number }> = ({ label, value }) => (
+  <div>
+    <p className="text-sm font-medium text-muted-foreground">{label}</p>
+    <p className="text-lg font-semibold">{value}</p>
+  </div>
+);
 
 interface ChatMessageContentProps {
   message: string;
@@ -76,14 +92,16 @@ const MessageInput: React.FC<MessageInputProps> = ({ currentMessage, setCurrentM
 };
 
 const ChatComponent = () => {
-  const { chatHistory, sendTextMessage } = useWebSocket();
   const [currentMessage, setCurrentMessage] = useState<string>("");
+  const { state, data, actions } = useChatContext();
 
   const handleSendMessage = () => {
-    const id = uuidv4();
-    sendTextMessage(id, currentMessage);
+    console.log(`state.chatState: ${state.chatState}`);
+    if (state.chatState !== ChatState.Typing) return;
+    actions.handleSendMessage(currentMessage);
     setCurrentMessage("");
   };
+
   return (
     <div className="flex min-h-screen flex-col items-center bg-background">
       <header className="flex items-start border-b bg-card px-4 py-3 sm:px-6">
@@ -92,7 +110,7 @@ const ChatComponent = () => {
           <h1 className="text-lg font-semibold text-card-foreground">Chatbot</h1>
         </div>
       </header>
-      <ChatWindow chatHistory={chatHistory} />
+      <ChatWindow chatHistory={data.chatHistory} />
       <MessageInput currentMessage={currentMessage} setCurrentMessage={setCurrentMessage} handleSendMessage={handleSendMessage} />
     </div>
   );

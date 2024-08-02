@@ -1,5 +1,6 @@
-from generators.agent_v1 import AgentV1
+from typing import Dict, List
 from models.message import Message
+from generators.agent_v1 import AgentV1
 from services.openai_service import OpenAIService
 from services.weaviate_service import WeaviateService
 
@@ -16,7 +17,7 @@ class SemanticRouterV1:
         self.weaviate_service = weaviate_service
         self.agent_v1 = agent_v1
 
-    async def run(self, message: Message, chat_history: list[Message]):
+    async def run(self, message: Message, chat_history: List[Dict[str, str]]):
         route = await self.determine_route(message.content)
         return await self.handle_route(route, message, chat_history)
 
@@ -27,7 +28,7 @@ class SemanticRouterV1:
         print(f"Found routes: {routes}")
         return routes
 
-    async def handle_route(self, route: str, message: Message, chat_history: list[Message]):
+    async def handle_route(self, route: str, message: Message, chat_history: List[Dict[str, str]]):
         if route == "politics":
             return '{"message": "I\'m sorry, I\'m not programmed to discuss politics."}', {
                 "input_token_count": 0,
@@ -38,18 +39,17 @@ class SemanticRouterV1:
         elif route == "vague_intent_product":
             return await self.handle_vague_intent(message, chat_history)
         elif route == "clear_intent_product":
-            return await self.handle_vague_intent(message, chat_history)
-            # return await self.agent_v1.run(message.content, chat_history)
+            return await self.agent_v1.run(message, chat_history)
         else:
             raise Exception(f"Unknown route: {route}")
 
-    async def handle_chitchat(self, message: Message, chat_history: list[Message]):
+    async def handle_chitchat(self, message: Message, chat_history: List[Dict[str, str]]):
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
             message.content, history=chat_history, model=message.model
         )
         return response, {"input_token_count": input_tokens, "output_token_count": output_tokens}
 
-    async def handle_vague_intent(self, message: Message, chat_history: list[Message]):
+    async def handle_vague_intent(self, message: Message, chat_history: List[Dict[str, str]]):
         context = await self.weaviate_service.search_products(
             message.content,
         )

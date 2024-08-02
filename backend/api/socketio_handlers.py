@@ -38,9 +38,9 @@ class SocketIOHandler:
         session_id = data.get("sessionId")
         self.session_manager.initialize_session(session_id)
         print(f"Session {session_id} initialized for {sid}")
-        await self.sio.emit(
-            "sessionInit", {"sessionId": session_id, "chatHistory": self.session_manager.sessions[session_id]}, room=sid
-        )
+        chat_history = self.session_manager.get_chat_history(session_id, "keep-all")
+        formatted_chat_history = self.session_manager.format_chat_history(chat_history)
+        await self.sio.emit("sessionInit", {"sessionId": session_id, "chatHistory": formatted_chat_history}, room=sid)
 
     async def process_message(self, sid, data):
         print(f"Received message from {sid}: {data}")
@@ -53,11 +53,11 @@ class SocketIOHandler:
             architecture_choice=data.get("architectureChoice"),
             history_management_choice=data.get("historyManagementChoice"),
         )
-        self.session_manager.add_message(message)
-
+        print(f"===> Message279: {message}")
         chat_history = self.session_manager.get_chat_history(message.session_id, message.history_management_choice)
-
-        response = await self.message_processor.process_message(message, chat_history)
+        print(f"Chat history: {chat_history}")
+        formatted_chat_history = self.session_manager.format_chat_history(chat_history)
+        response = await self.message_processor.process_message(message, formatted_chat_history)
 
         response_json = {
             "session_id": message.session_id,
@@ -69,10 +69,12 @@ class SocketIOHandler:
             "outputTokenCount": response.output_token_count,
             "elapsedTime": response.elapsed_time,
             "isUserMessage": response.is_user_message,
+            "model": response.model,
         }
 
         print(f"===> Response: {response_json}")
 
         await self.sio.emit("textResponse", response_json, room=sid)
         print(f"Response sent to {sid}: {response}")
+        self.session_manager.add_message(message)
         self.session_manager.add_message(response)

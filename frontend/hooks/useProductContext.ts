@@ -1,11 +1,9 @@
-import { AppContext } from "@/context/appContext";
 import { useToast } from "@/hooks/useToast";
-
+import { useAppContext } from "./useAppContext";
 
 export const useProductContext = () => {
-  const state = AppContext.useSelector((state) => state);
-  const productActorRef = AppContext.useActorRef();
+  const { actorRef } = useAppContext();
+
+  const productActorRef = actorRef.product;
   useToast(productActorRef);
-
-}
-
+};

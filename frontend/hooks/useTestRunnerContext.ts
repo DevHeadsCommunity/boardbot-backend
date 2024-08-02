@@ -1,8 +1,8 @@
-import { AppContext } from "@/context/appContext";
 import { testRunnerMachine } from "@/machines/testRunnerMachine";
 import { useSelector } from "@xstate/react";
 import { useCallback, useMemo } from "react";
 import { StateFrom } from "xstate";
+import { useAppContext } from "./useAppContext";
 import { useToast } from "./useToast";
 
 export enum TestRunnerState {
@@ -24,8 +24,8 @@ const testRunnerStateMap: Record<keyof StateFrom<typeof testRunnerMachine> | str
 };
 
 export const useTestRunnerContext = () => {
-  const state = AppContext.useSelector((state) => state);
-  const testActorRef = state.context.testRef;
+  const { actorRef } = useAppContext();
+  const testActorRef = actorRef.test;
   const testActorState = useSelector(testActorRef, (state) => state);
   const testRunnerActorRef = testActorState?.context.selectedTest?.testRunnerRef ?? undefined;
   const testRunnerActorState = useSelector(testRunnerActorRef, (state) => state);

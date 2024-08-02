@@ -1,0 +1,26 @@
+﻿Prompts
+List Single Board Computers with a processor frequency of 1.5 GHz or higher and manufactured by Broadcom
+What are the available Computers on Module (COM) with DDR4 memory support and comes with an Intel processor?
+Show Devkits that include FPGA and are manufactured by Microsemi Corporation.
+Find all SBCs that support PCIe Gen3 interface and have more than 8 cores.
+Provide a list of products with ARM Cortex processors that are available in a COM Express Basic form factor.
+Identify all hardware components manufactured by Broadcom Corporation that include ARM processors.
+Which Advantech Computer on Modules support USB 3.0 interface?
+List all Single Board Computers with a memory capacity of 128GB or more with more than 2 USB ports.
+What are the available NXP powered Computer on Module products that include SATA 3.0 interface?
+Find Single Board Computers with a form factor smaller than 100mm x 100mm and RAM more 256 MB
+List all devices that support voltage ranges from 1.2V to 3.3V.
+Show products that include an Intel Xeon Processor D and support Embedded Software API.
+Which products offer a high-performance FPGA feature and are suitable for embedded development?
+Provide a list of Single Board Computers that can operate at a frequency up to 2.7 GHz with MiniITX form factor.
+What components are available with embedded nonvolatile flash memory (eNVM)?
+"Identify all products with a ""Customizable System-on-Chip (cSoC)"" type with ARM Cortex processor."
+Top 5 Single Board Computers products that support dual Gigabit Ethernet and SATA.
+Which products offer up to 16 cores and 2.3 GHz frequency in their processors?
+Find Kontron products that include both ECC and non-ECC memory options.
+List all hardware platforms with on-chip frame memory and supports a TFT-LCD controller.
+Provide a list of Single Board Computers manufactured by Advantech that include USB 3.0 support.
+Which devices support Intel Hyper-Threading Technology with mATX form factor?
+Identify products that include programmable analog components and eNVM.
+What are the available hardware platforms with built-in Intel Turbo Boost Technology and Hyper-Threading Technology?
+Show all SBCs supportinh Verilog and C with detailed specifications for FPGA integration.

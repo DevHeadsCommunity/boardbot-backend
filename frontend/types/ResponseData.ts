@@ -10,4 +10,5 @@ export interface ResponseData {
   inputTokenCount?: number;
   outputTokenCount?: number;
   elapsedTime?: number;
+  model?: string;
 }
