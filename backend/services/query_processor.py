@@ -7,7 +7,9 @@ class QueryProcessor:
     def __init__(self, openai_service: OpenAIService):
         self.openai_service = openai_service
 
-    async def expand_query(self, query: str, chat_history: List[dict], num_expansions: int = 3) -> List[str]:
+    async def expand_query(
+        self, query: str, chat_history: List[Dict[str, str]], num_expansions: int = 3, model: str = "gpt-4o"
+    ) -> List[str]:
         prompt = f"""
         Given the following user query and chat history, expand the query to improve product search results.
         Generate {num_expansions} different expanded queries, each adding relevant terms, synonyms, or attributes that might be implied by the query or context.
@@ -21,14 +23,18 @@ class QueryProcessor:
         Expanded Queries:
         """
 
-        response, input_tokens, output_tokens = await self.openai_service.generate_response(prompt, model="gpt-4o")
+        response, input_tokens, output_tokens = await self.openai_service.generate_response(
+            prompt, temperature=1, model=model
+        )
         response = response.replace("```", "").replace("json", "").replace("\n", "").strip()
         print(f"expand_query response from OpenAI: {response}")
 
         expanded_queries = json.loads(response.strip())
         return expanded_queries, input_tokens, output_tokens
 
-    async def generate_search_queries(self, query: str, chat_history: List[dict], num_queries: int = 3) -> List[str]:
+    async def generate_search_queries(
+        self, query: str, chat_history: List[Dict[str, str]], num_queries: int = 3, model: str = "gpt-4o"
+    ) -> List[str]:
         prompt = f"""
         Based on the user query and chat history, generate {num_queries} search queries that could be used to find relevant products.
         These queries should be variations that capture different aspects or interpretations of the user's intent.
@@ -42,7 +48,7 @@ class QueryProcessor:
         Search Queries:
         """
 
-        response, _, _ = await self.openai_service.generate_response(prompt)
+        response, _, _ = await self.openai_service.generate_response(prompt, model=model)
         response = response.replace("```", "").replace("json", "").replace("\n", "").strip()
         print(f"generate_search_queries response from OpenAI: {response}")
 
@@ -65,7 +71,9 @@ class QueryProcessor:
         attributes = json.loads(response.strip())
         return attributes
 
-    async def rerank_products(self, query: str, products: List[Dict[str, Any]], top_k: int = 5) -> List[Dict[str, Any]]:
+    async def rerank_products(
+        self, query: str, products: List[Dict[str, Any]], top_k: int = 5, model: str = "gpt-4o"
+    ) -> List[Dict[str, Any]]:
         prompt = f"""
         Rerank the given products based on their relevance to the user query.
         Return the top {top_k} most relevant products as a JSON list, ordered by relevance.
@@ -80,7 +88,7 @@ class QueryProcessor:
         Reranked Products:
         """
 
-        response, input_tokens, output_tokens = await self.openai_service.generate_response(prompt)
+        response, input_tokens, output_tokens = await self.openai_service.generate_response(prompt, model=model)
         response = response.replace("```", "").replace("json", "").replace("\n", "").strip()
         print(f"rerank_products response from OpenAI: {response}")
         reranked_products = json.loads(response.strip())

@@ -1,22 +1,21 @@
 import logging
 import json
-from typing import List, Tuple, Dict, Any
-from langgraph.graph import StateGraph, END
-from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.schema import HumanMessage, AIMessage, BaseMessage, FunctionMessage
 from models.message import Message
 from models.product import Product
-from services.weaviate_service import WeaviateService
-from services.query_processor import QueryProcessor
+from typing import List, Tuple, Dict, Any
 from services.openai_service import OpenAIService
+from services.query_processor import QueryProcessor
+from services.weaviate_service import WeaviateService
+from langgraph.graph import StateGraph, END
+from langchain.schema import BaseMessage
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
 class AgentState(Dict[str, Any]):
-    messages: List[BaseMessage]
+    model_name: str = "gpt-4o"
+    chat_history: List[Dict[str, str]]
     current_message: str
     agent_scratchpad: List[BaseMessage]
     expanded_queries: List[str]
@@ -37,13 +36,10 @@ class AgentV1:
         weaviate_service: WeaviateService,
         query_processor: QueryProcessor,
         openai_service: OpenAIService,
-        model_name: str = "gpt-4o",
     ):
         self.weaviate_service = weaviate_service
         self.query_processor = query_processor
         self.openai_service = openai_service
-        self.model_name = model_name
-        logger.info(f"Initializing Agent with model: {model_name}")
         self.workflow = self.setup_workflow()
 
     def setup_workflow(self) -> StateGraph:
@@ -68,7 +64,7 @@ class AgentV1:
     async def query_expansion_node(self, state: AgentState) -> AgentState:
         logger.info("Entering query_expansion_node")
         expanded_queries, input_tokens, output_tokens = await self.query_processor.expand_query(
-            state["current_message"], state["messages"], num_expansions=5
+            state["current_message"], state["chat_history"], num_expansions=5, model=state["model_name"]
         )
         state["expanded_queries"] = expanded_queries
         state["expansion_input_tokens"] = input_tokens
@@ -106,7 +102,7 @@ class AgentV1:
         logger.info("Entering result_reranking_node")
         products_for_reranking = [{"name": p.name, "summary": p.summary} for p in state["search_results"]]
         reranked_names, input_tokens, output_tokens = await self.query_processor.rerank_products(
-            state["current_message"], products_for_reranking, top_k=10
+            state["current_message"], products_for_reranking, top_k=10, model=state["model_name"]
         )
 
         # Reorder the full Product objects based on the reranked names
@@ -133,7 +129,7 @@ class AgentV1:
         """
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
-            user_message=user_message, system_message=system_message, temperature=0.7
+            user_message=user_message, system_message=system_message, temperature=0.9, model=state["model_name"]
         )
         response = response.replace("```", "").replace("json", "").replace("\n", "").strip()
         state["output"] = response
@@ -162,16 +158,13 @@ class AgentV1:
         }
         """
 
-    async def run(self, message: str, chat_history: List[Message]) -> Tuple[str, Dict[str, int]]:
+    async def run(self, message: Message, chat_history: List[Message]) -> Tuple[str, Dict[str, int]]:
         logger.info(f"Running agent with message: {message}")
-        chat_history_messages = [
-            HumanMessage(content=msg.content) if msg.is_user_message else AIMessage(content=msg.content)
-            for msg in chat_history
-        ]
 
         initial_state = AgentState(
-            messages=chat_history_messages,
-            current_message=message,
+            model_name=message.model,
+            chat_history=chat_history,
+            current_message=message.content,
             agent_scratchpad=[],
             expanded_queries=[],
             search_results=[],
@@ -195,6 +188,17 @@ class AgentV1:
             llm_output["products"] = product_details
             output = json.dumps(llm_output, indent=2)
 
+            input_tokens = (
+                final_state["expansion_input_tokens"]
+                + final_state["rerank_input_tokens"]
+                + final_state["generate_input_tokens"]
+            )
+            output_tokens = (
+                final_state["expansion_output_tokens"]
+                + final_state["rerank_output_tokens"]
+                + final_state["generate_output_tokens"]
+            )
+
         except Exception as e:
             logger.error(f"Error during workflow execution: {str(e)}", exc_info=True)
             output = json.dumps(
@@ -205,17 +209,6 @@ class AgentV1:
                     "additional_info": "Please try your query again or contact support if the problem persists.",
                 }
             )
-
-        input_tokens = (
-            final_state["expansion_input_tokens"]
-            + final_state["rerank_input_tokens"]
-            + final_state["generate_input_tokens"]
-        )
-        output_tokens = (
-            final_state["expansion_output_tokens"]
-            + final_state["rerank_output_tokens"]
-            + final_state["generate_output_tokens"]
-        )
 
         logger.info(f"Run completed. Input tokens: {input_tokens}, Output tokens: {output_tokens}")
         return output, {

@@ -31,6 +31,7 @@ class OpenAIService:
     ) -> Tuple[str, int, int]:
         try:
             model = model or self.config["DEFAULT_MODEL"]
+            logger.info(f"===> Using model: {model}")
             encoder = self._get_encoder(model)
 
             input_token_count = sum(len(encoder.encode(msg["content"])) for msg in messages)
@@ -66,6 +67,7 @@ class OpenAIService:
         formatted_chat_history: Optional[List[Dict[str, str]]] = None,
         **kwargs,
     ) -> Tuple[str, int, int]:
+        print(f"*** kwargs: {kwargs}")
         messages = self._prepare_messages(user_message, system_message, formatted_chat_history)
         return await self.create_chat_completion(messages, **kwargs)
 

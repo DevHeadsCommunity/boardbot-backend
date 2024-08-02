@@ -4,8 +4,8 @@ import { EventObject, assign, emit, fromCallback, fromPromise, sendParent, setup
 
 // const SOCKET_URL = "http://18.204.9.187:6789";
 // const SOCKET_URL = "http://0.0.0.0:6789";
-// const SOCKET_URL = "http://0.0.0.0:5678";
-const SOCKET_URL = "http://192.168.118.59:5678";
+const SOCKET_URL = "http://0.0.0.0:5678";
+// const SOCKET_URL = "http://192.168.118.59:5678";
 
 export const webSocketMachine = setup({
   types: {

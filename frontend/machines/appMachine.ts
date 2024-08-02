@@ -343,6 +343,28 @@ export const appMachine = setup({
                   architecture: ({ event }) => event.data.architecture,
                   historyManagement: ({ event }) => event.data.historyManagement,
                 }),
+                sendTo(
+                  ({ context }) => context.chatRef!,
+                  ({ context }) => ({
+                    type: "app.updateState",
+                    data: {
+                      model: context.model,
+                      architecture: context.architecture,
+                      historyManagement: context.historyManagement,
+                    },
+                  })
+                ),
+                sendTo(
+                  ({ context }) => context.testRef!,
+                  ({ context }) => ({
+                    type: "app.updateState",
+                    data: {
+                      model: context.model,
+                      architecture: context.architecture,
+                      historyManagement: context.historyManagement,
+                    },
+                  })
+                ),
               ],
             },
             "user.submitResetSettings": {
@@ -352,6 +374,22 @@ export const appMachine = setup({
                   model: "gpt-4o",
                   architecture: "semantic-router-v1",
                   historyManagement: "keep-all",
+                }),
+                sendTo(({ context }) => context.chatRef!, {
+                  type: "app.updateState",
+                  data: {
+                    model: "gpt-4o",
+                    architecture: "semantic-router-v1",
+                    historyManagement: "keep-all",
+                  },
+                }),
+                sendTo(({ context }) => context.testRef!, {
+                  type: "app.updateState",
+                  data: {
+                    model: "gpt-4o",
+                    architecture: "semantic-router-v1",
+                    historyManagement: "keep-all",
+                  },
                 }),
               ],
             },

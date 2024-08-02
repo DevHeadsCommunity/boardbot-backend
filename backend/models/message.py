@@ -1,6 +1,5 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
 
 
 class RequestMessage(BaseModel):
@@ -27,6 +26,7 @@ class ResponseMessage(BaseModel):
     output_token_count: int
     elapsed_time: float
     is_user_message: bool = False
+    model: str
 
     class Config:
         json_encoders = {datetime: lambda v: v.isoformat()}

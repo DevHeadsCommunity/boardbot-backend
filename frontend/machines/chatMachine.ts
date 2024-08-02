@@ -24,8 +24,10 @@ export const chatMachine = setup({
     events: {} as
       | { type: "app.startChat" }
       | { type: "app.stopChat" }
+      | { type: "app.updateState"; data: { model: Model; architecture: Architecture; historyManagement: HistoryManagement } }
       | { type: "webSocket.connected" }
       | { type: "webSocket.messageReceived"; data: ResponseData }
+      | { type: "webSocket.disconnected" }
       | { type: "user.sendMessage"; data: { messageId: string; message: string } },
   },
 }).createMachine({
@@ -40,6 +42,15 @@ export const chatMachine = setup({
   id: "chatActor",
   initial: "idle",
   // initial: ({input}) => input?.currentState ? input.currentState : "idle", // This is not working, but we need to find a way to restore the state
+  on: {
+    "app.updateState": {
+      actions: assign({
+        model: ({ event }) => event.data.model,
+        architecture: ({ event }) => event.data.architecture,
+        historyManagement: ({ event }) => event.data.historyManagement,
+      }),
+    },
+  },
   states: {
     idle: {
       on: {
@@ -86,6 +97,11 @@ export const chatMachine = setup({
         },
         Connected: {
           initial: "Typing",
+          on: {
+            "webSocket.disconnected": {
+              target: "Connecting",
+            },
+          },
           states: {
             Typing: {
               on: {
@@ -139,6 +155,10 @@ export const chatMachine = setup({
                           isComplete: true,
                           timestamp: new Date(),
                           isUserMessage: false,
+                          inputTokenCount: (event as any).data.inputTokenCount,
+                          outputTokenCount: (event as any).data.outputTokenCount,
+                          elapsedTime: (event as any).data.elapsedTime,
+                          model: (event as any).data.model,
                         },
                       ],
                     }),

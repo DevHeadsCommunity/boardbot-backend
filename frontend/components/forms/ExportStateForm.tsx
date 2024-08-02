@@ -10,36 +10,33 @@ interface StateFormProps {
 }
 
 interface ExportStateFormProps extends StateFormProps {
-  onSubmit: (fileName: string) => void;
+  onSubmit: (data: { fileName: string }) => void;
 }
 
 const ExportStateForm: React.FC<ExportStateFormProps> = ({ isOpen, onSubmit, onCancel }) => {
   const [fileName, setFileName] = useState("boardbot_state.json");
-  const [filePath, setFilePath] = useState<string | null>(null);
+  const [directoryPath, setDirectoryPath] = useState<string>("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    let directoryPath = "";
+    let selectedDirectoryPath = "";
 
     try {
       const directoryHandle = await (window as any).showDirectoryPicker({
         startIn: "downloads",
       });
 
-      // Getting the directory path
-      directoryPath = directoryHandle.name;
-
-      if (directoryHandle) {
-        setFilePath(directoryHandle.name);
-      }
+      // Get the full path of the selected directory
+      selectedDirectoryPath = await directoryHandle.name;
+      setDirectoryPath(selectedDirectoryPath);
     } catch (err) {
       console.log("Directory selection failed or not supported, defaulting to Downloads");
-      directoryPath = "downloads";
+      selectedDirectoryPath = "Downloads";
     }
 
-    // Construct the full file path
     const fullPath = `${directoryPath}/${fileName}`;
-    onSubmit(fullPath);
+    console.log("====> Exporting state to", fullPath);
+    onSubmit({ fileName: fullPath });
   };
 
   return (
@@ -51,6 +48,12 @@ const ExportStateForm: React.FC<ExportStateFormProps> = ({ isOpen, onSubmit, onC
             <Label htmlFor="fileName">File Name</Label>
             <Input id="fileName" value={fileName} onChange={(e) => setFileName(e.target.value)} placeholder="boardbot_state.json" />
           </div>
+          {directoryPath && (
+            <div className="space-y-2">
+              <Label>Selected Directory</Label>
+              <Input value={directoryPath} readOnly />
+            </div>
+          )}
           <DialogFooter>
             <Button type="submit">Export</Button>
             <Button type="button" variant="outline" onClick={onCancel}>

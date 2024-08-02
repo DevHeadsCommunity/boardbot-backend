@@ -21,6 +21,7 @@ export const testMachine = setup({
     events: {} as
       | { type: "app.startTest" }
       | { type: "app.stopTest" }
+      | { type: "app.updateState"; data: { model: Model; architecture: Architecture; historyManagement: HistoryManagement } }
       | { type: "user.createTest"; data: { name: string; id: string; testCase: TestCase[]; createdAt: string } }
       | { type: "user.selectTest"; data: { testId: string } }
       | { type: "user.clickSingleTestResult" }
@@ -36,6 +37,16 @@ export const testMachine = setup({
   }),
   id: "testActor",
   initial: "idle",
+  // initial: ({input}) => input?.currentState ? input.currentState : "idle", // This is not working, but we need to find a way to restore the state
+  on: {
+    "app.updateState": {
+      actions: assign({
+        model: ({ event }) => event.data.model,
+        architecture: ({ event }) => event.data.architecture,
+        historyManagement: ({ event }) => event.data.historyManagement,
+      }),
+    },
+  },
   states: {
     idle: {
       on: {
