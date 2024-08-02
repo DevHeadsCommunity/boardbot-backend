@@ -1,5 +1,5 @@
 import { Test, TestCase } from "@/types";
-import { ActorRefFrom, assign, emit, setup } from "xstate";
+import { ActorRefFrom, assign, ContextFrom, emit, setup } from "xstate";
 import { Architecture, HistoryManagement, Model } from "./appMachine";
 import { testRunnerMachine } from "./testRunnerMachine";
 
@@ -115,14 +115,67 @@ export const testMachine = setup({
   },
 });
 
-export const getTestMachineState = (testRef: ActorRefFrom<typeof testMachine>) => {
+export const serializeTestState = (testRef: ActorRefFrom<typeof testMachine>) => {
   const snapshot = testRef.getSnapshot();
   return {
     selectedTest: snapshot.context.selectedTest,
-    tests: snapshot.context.tests,
+    tests: snapshot.context.tests.map((test) => ({
+      ...test,
+      testRunnerState: serializeTestRunnerState(test.testRunnerRef),
+    })),
     model: snapshot.context.model,
     architecture: snapshot.context.architecture,
     historyManagement: snapshot.context.historyManagement,
     currentState: snapshot.value,
+  };
+};
+
+export const serializeTestRunnerState = (testRunnerRef: ActorRefFrom<typeof testRunnerMachine>) => {
+  const snapshot = testRunnerRef.getSnapshot();
+  return {
+    name: snapshot.context.name,
+    sessionId: snapshot.context.sessionId,
+    testCases: snapshot.context.testCases,
+    testResults: snapshot.context.testResults,
+    fullTestResult: snapshot.context.fullTestResult,
+    currentTestIndex: snapshot.context.currentTestIndex,
+    batchSize: snapshot.context.batchSize,
+    testTimeout: snapshot.context.testTimeout,
+    progress: snapshot.context.progress,
+    model: snapshot.context.model,
+    architecture: snapshot.context.architecture,
+    historyManagement: snapshot.context.historyManagement,
+    currentState: snapshot.value,
+  };
+};
+
+export const deserializeTestState = (savedState: any, spawn: any): ContextFrom<typeof testMachine> => {
+  return {
+    ...savedState,
+    tests: savedState.tests.map((test: any) => ({
+      ...test,
+      testRunnerRef: spawn(testRunnerMachine, {
+        id: test.testId,
+        input: deserializeTestRunnerState(test.testRunnerState),
+      }),
+    })),
+  };
+};
+
+export const deserializeTestRunnerState = (savedState: any): ContextFrom<typeof testRunnerMachine> => {
+  return {
+    webSocketRef: undefined,
+    name: savedState.name,
+    sessionId: savedState.sessionId,
+    testCases: savedState.testCases,
+    testResults: savedState.testResults,
+    fullTestResult: savedState.fullTestResult,
+    currentTestIndex: savedState.currentTestIndex,
+    batchSize: savedState.batchSize,
+    testTimeout: savedState.testTimeout,
+    progress: savedState.progress,
+    model: savedState.model,
+    architecture: savedState.architecture,
+    historyManagement: savedState.historyManagement,
   };
 };

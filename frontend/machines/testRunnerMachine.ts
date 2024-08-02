@@ -70,6 +70,12 @@ export const testRunnerMachine = setup({
       name: string;
       sessionId: string;
       testCases: TestCase[];
+      testResults?: TestResult[];
+      fullTestResult?: FullTestResult;
+      currentTestIndex?: number;
+      batchSize?: number;
+      testTimeout?: number;
+      Progress?: number;
       model: Model;
       architecture: Architecture;
       historyManagement: HistoryManagement;
@@ -160,12 +166,12 @@ export const testRunnerMachine = setup({
     name: input.name,
     sessionId: input.sessionId,
     testCases: input.testCases,
-    testResults: [],
-    fullTestResult: null,
-    currentTestIndex: 0,
-    batchSize: 1,
-    progress: 0,
-    testTimeout: 180000,
+    testResults: input?.testResults || [],
+    fullTestResult: input?.fullTestResult || null,
+    currentTestIndex: input?.currentTestIndex || 0,
+    batchSize: input?.batchSize || 1,
+    progress: input?.Progress || 0,
+    testTimeout: input?.testTimeout || 10000,
     model: input.model,
     architecture: input.architecture,
     historyManagement: input.historyManagement,

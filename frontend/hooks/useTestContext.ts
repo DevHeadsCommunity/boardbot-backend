@@ -1,9 +1,9 @@
-import { useAppContext } from "@/context/appContext";
 import { testMachine } from "@/machines/testMachine";
 import { TestCase } from "@/types";
 import { useSelector } from "@xstate/react";
 import { useCallback, useMemo } from "react";
 import { StateFrom } from "xstate";
+import { useAppContext } from "./useAppContext";
 import { useToast } from "./useToast";
 
 export enum TestState {

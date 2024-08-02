@@ -1,4 +1,4 @@
-import { ActorRefFrom, setup } from "xstate";
+import { ActorRefFrom, ContextFrom, setup } from "xstate";
 
 export const productMachine = setup({
   types: {
@@ -27,9 +27,15 @@ export const productMachine = setup({
   },
 });
 
-export const getProductMachineState = (productRef: ActorRefFrom<typeof productMachine>) => {
+export const serializeProductState = (productRef: ActorRefFrom<typeof productMachine>) => {
   const snapshot = productRef.getSnapshot();
   return {
     currentState: snapshot.value,
+  };
+};
+
+export const deserializeProductState = (savedState: any): ContextFrom<typeof productMachine> => {
+  return {
+    ...savedState,
   };
 };

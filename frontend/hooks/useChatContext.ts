@@ -1,8 +1,8 @@
-import { useAppContext } from "@/context/appContext";
 import { useToast } from "@/hooks/useToast";
 import { useSelector } from "@xstate/react";
 import { useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
+import { useAppContext } from "./useAppContext";
 
 export enum ChatState {
   Idle = "Idle",

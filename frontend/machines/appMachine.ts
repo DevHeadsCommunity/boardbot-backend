@@ -1,7 +1,7 @@
 import { ActorRefFrom, assign, emit, fromPromise, sendTo, setup } from "xstate";
-import { chatMachine, getChatMachineState } from "./chatMachine";
-import { getProductMachineState, productMachine } from "./productMachine";
-import { getTestMachineState, testMachine } from "./testMachine";
+import { chatMachine, deserializeChatState, serializeChatState } from "./chatMachine";
+import { deserializeProductState, productMachine, serializeProductState } from "./productMachine";
+import { deserializeTestState, serializeTestState, testMachine } from "./testMachine";
 
 export const MODEL_VALUES = ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"] as const;
 export type Model = (typeof MODEL_VALUES)[number];
@@ -9,6 +9,30 @@ export const ARCHITECTURE_VALUES = ["semantic-router-v1", "agentic-v1", "agentic
 export type Architecture = (typeof ARCHITECTURE_VALUES)[number];
 export const HISTORY_MANAGEMENT_VALUES = ["keep-all", "keep-none", "keep-last-5"] as const;
 export type HistoryManagement = (typeof HISTORY_MANAGEMENT_VALUES)[number];
+
+const serializeAppState = (context: any) => ({
+  version: "1.0",
+  appState: {
+    model: context.model,
+    architecture: context.architecture,
+    historyManagement: context.historyManagement,
+  },
+  chatState: serializeChatState(context.chatRef),
+  testState: serializeTestState(context.testRef),
+  productState: serializeProductState(context.prodRef),
+});
+
+const deserializeAppState = (savedState: any, spawn: any) => {
+  if (savedState.version !== "1.0") {
+    throw new Error("Unsupported state version");
+  }
+  return {
+    ...savedState.appState,
+    chatRef: spawn(chatMachine, { input: deserializeChatState(savedState.chatState) }),
+    testRef: spawn(testMachine, { input: deserializeTestState(savedState.testState, spawn) }),
+    prodRef: spawn(productMachine, { input: deserializeProductState(savedState.productState) }),
+  };
+};
 
 export const saveToLocalStorage = (key: string, value: any) => {
   try {
@@ -65,6 +89,7 @@ export const appMachine = setup({
       historyManagement: HistoryManagement;
     },
     events: {} as
+      | { type: "sys.saveState" }
       | { type: "user.selectTest" }
       | { type: "user.selectChat" }
       | { type: "user.selectManageProducts" }
@@ -100,32 +125,34 @@ export const appMachine = setup({
 }).createMachine({
   context: ({ spawn }) => {
     const savedState = loadFromLocalStorage("appState");
-    return {
-      chatRef: spawn(chatMachine, {
-        input: {
-          model: savedState?.model || "gpt-4o",
-          architecture: savedState?.architecture || "agentic-v1",
-          historyManagement: savedState?.historyManagement || "keep-all",
-          restoredState: savedState?.chatState,
-        },
-      }),
-      testRef: spawn(testMachine, {
-        input: {
-          model: savedState?.model || "gpt-4o",
-          architecture: savedState?.architecture || "agentic-v1",
-          historyManagement: savedState?.historyManagement || "keep-all",
-          restoredState: savedState?.testState,
-        },
-      }),
-      prodRef: spawn(productMachine, {
-        input: {
-          restoredState: savedState?.prodState,
-        },
-      }),
-      model: savedState?.model || "gpt-4o",
-      architecture: savedState?.architecture || "agentic-v1",
-      historyManagement: savedState?.historyManagement || "keep-all",
-    };
+    return savedState
+      ? deserializeAppState(savedState, spawn)
+      : {
+          chatRef: spawn(chatMachine, {
+            input: {
+              model: "gpt-4o",
+              architecture: "semantic-router-v1",
+              historyManagement: "keep-all",
+            },
+          }),
+          testRef: spawn(testMachine, {
+            input: {
+              model: "gpt-4o",
+              architecture: "semantic-router-v1",
+              historyManagement: "keep-all",
+            },
+          }),
+          prodRef: spawn(productMachine, {
+            input: {
+              model: "gpt-4o",
+              architecture: "semantic-router-v1",
+              historyManagement: "keep-all",
+            },
+          }),
+          model: "gpt-4o",
+          architecture: "semantic-router-v1",
+          historyManagement: "keep-all",
+        };
   },
   id: "appActor",
   initial: "Open",
@@ -133,6 +160,12 @@ export const appMachine = setup({
     Open: {
       initial: "Chatting",
       on: {
+        "sys.saveState": {
+          actions: ({ context }) => {
+            const serializedState = serializeAppState(context);
+            saveToLocalStorage("appState", serializedState);
+          },
+        },
         "user.selectTest": {
           target: "#appActor.Open.Testing",
         },
@@ -210,41 +243,10 @@ export const appMachine = setup({
             onDone: {
               target: "#appActor.Open.History",
               actions: [
-                assign(({ context, event, spawn }) => {
+                assign(({ event, spawn }) => {
                   const importedState = event.output;
-                  return {
-                    ...context,
-                    chatRef: spawn(chatMachine, {
-                      input: {
-                        model: importedState.model,
-                        architecture: importedState.architecture,
-                        historyManagement: importedState.historyManagement,
-                        restoredState: importedState.chatState,
-                      },
-                    }),
-                    testRef: spawn(testMachine, {
-                      input: {
-                        model: importedState.model,
-                        architecture: importedState.architecture,
-                        historyManagement: importedState.historyManagement,
-                        restoredState: importedState.testState,
-                      },
-                    }),
-                    model: importedState.model,
-                    architecture: importedState.architecture,
-                    historyManagement: importedState.historyManagement,
-                  };
+                  return deserializeAppState(importedState, spawn);
                 }),
-                ({ context }) => {
-                  saveToLocalStorage("appState", {
-                    chatState: getChatMachineState(context.chatRef),
-                    testState: getTestMachineState(context.testRef),
-                    prodState: getProductMachineState(context.prodRef),
-                    model: context.model,
-                    architecture: context.architecture,
-                    historyManagement: context.historyManagement,
-                  });
-                },
                 emit({
                   type: "notification",
                   data: {
@@ -293,14 +295,7 @@ export const appMachine = setup({
               }
               return {
                 fileName: event.data.fileName,
-                state: {
-                  chatState: getChatMachineState(context.chatRef),
-                  testState: getTestMachineState(context.testRef),
-                  prodState: getProductMachineState(context.prodRef),
-                  model: context.model,
-                  architecture: context.architecture,
-                  historyManagement: context.historyManagement,
-                },
+                state: serializeAppState(context),
               };
             },
             onDone: {
@@ -348,16 +343,6 @@ export const appMachine = setup({
                   architecture: ({ event }) => event.data.architecture,
                   historyManagement: ({ event }) => event.data.historyManagement,
                 }),
-                ({ context }) => {
-                  saveToLocalStorage("appState", {
-                    chatState: getChatMachineState(context.chatRef),
-                    testState: getTestMachineState(context.testRef),
-                    prodState: getProductMachineState(context.prodRef),
-                    model: context.model,
-                    architecture: context.architecture,
-                    historyManagement: context.historyManagement,
-                  });
-                },
               ],
             },
             "user.submitResetSettings": {
@@ -368,16 +353,6 @@ export const appMachine = setup({
                   architecture: "semantic-router-v1",
                   historyManagement: "keep-all",
                 }),
-                ({ context }) => {
-                  saveToLocalStorage("appState", {
-                    chatState: getChatMachineState(context.chatRef),
-                    testState: getTestMachineState(context.testRef),
-                    prodState: getProductMachineState(context.prodRef),
-                    model: "gpt-4o",
-                    architecture: "semantic-router-v1",
-                    historyManagement: "keep-all",
-                  });
-                },
               ],
             },
           },
@@ -386,14 +361,3 @@ export const appMachine = setup({
     },
   },
 });
-
-export const saveAppState = (context: any) => {
-  saveToLocalStorage("appState", {
-    chatState: getChatMachineState(context.chatRef),
-    testState: getTestMachineState(context.testRef),
-    prodState: getProductMachineState(context.prodRef),
-    model: context.model,
-    architecture: context.architecture,
-    historyManagement: context.historyManagement,
-  });
-};

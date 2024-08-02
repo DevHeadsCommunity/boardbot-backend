@@ -1,6 +1,6 @@
 import { ChatMessage, RequestData, ResponseData } from "@/types";
 import { v4 as uuidv4 } from "uuid";
-import { ActorRefFrom, assign, sendTo, setup } from "xstate";
+import { ActorRefFrom, assign, ContextFrom, sendTo, setup } from "xstate";
 import { Architecture, HistoryManagement, Model } from "./appMachine";
 import { webSocketMachine } from "./webSocketMachine";
 
@@ -15,10 +15,11 @@ export const chatMachine = setup({
       historyManagement: HistoryManagement;
     },
     input: {} as {
+      sessionId?: string;
+      chatHistory?: ChatMessage[];
       model: Model;
       architecture: Architecture;
       historyManagement: HistoryManagement;
-      restoredState?: any;
     },
     events: {} as
       | { type: "app.startChat" }
@@ -29,16 +30,16 @@ export const chatMachine = setup({
   },
 }).createMachine({
   context: ({ input }) => ({
-    sessionId: input.restoredState?.sessionId || "",
+    sessionId: input?.sessionId || "",
     webSocketRef: undefined,
-    chatHistory: input.restoredState?.chatHistory || [],
+    chatHistory: input?.chatHistory || [],
     model: input.model,
     architecture: input.architecture,
     historyManagement: input.historyManagement,
   }),
   id: "chatActor",
   initial: "idle",
-  // initial: ({input}) => (input.restoredState ? "DisplayingChat" : "idle"),
+  // initial: ({input}) => input?.currentState ? input.currentState : "idle", // This is not working, but we need to find a way to restore the state
   states: {
     idle: {
       on: {
@@ -101,6 +102,10 @@ export const chatMachine = setup({
                           messageId: (event as any).data.messageId,
                           message: (event as any).data.message,
                           isComplete: true,
+                          timestamp: new Date().toISOString(),
+                          model: context.model,
+                          architectureChoice: context.architecture,
+                          historyManagementChoice: context.historyManagement,
                         } as RequestData,
                       })
                     ) as any,
@@ -148,7 +153,7 @@ export const chatMachine = setup({
   },
 });
 
-export const getChatMachineState = (chatRef: ActorRefFrom<typeof chatMachine>) => {
+export const serializeChatState = (chatRef: ActorRefFrom<typeof chatMachine>) => {
   const snapshot = chatRef.getSnapshot();
   return {
     sessionId: snapshot.context.sessionId,
@@ -157,5 +162,11 @@ export const getChatMachineState = (chatRef: ActorRefFrom<typeof chatMachine>) =
     architecture: snapshot.context.architecture,
     historyManagement: snapshot.context.historyManagement,
     currentState: snapshot.value,
+  };
+};
+
+export const deserializeChatState = (savedState: any): ContextFrom<typeof chatMachine> => {
+  return {
+    ...savedState,
   };
 };
