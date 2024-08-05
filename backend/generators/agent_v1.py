@@ -129,7 +129,7 @@ class AgentV1:
         """
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
-            user_message=user_message, system_message=system_message, temperature=0.9, model=state["model_name"]
+            user_message=user_message, system_message=system_message, temperature=0.1, model=state["model_name"]
         )
         response = response.replace("```", "").replace("json", "").replace("\n", "").strip()
         state["output"] = response

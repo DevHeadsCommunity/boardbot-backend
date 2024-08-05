@@ -8,7 +8,12 @@ class QueryProcessor:
         self.openai_service = openai_service
 
     async def expand_query(
-        self, query: str, chat_history: List[Dict[str, str]], num_expansions: int = 3, model: str = "gpt-4o"
+        self,
+        query: str,
+        chat_history: List[Dict[str, str]],
+        num_expansions: int = 3,
+        model: str = "gpt-4o",
+        temperature: float = 0.1,
     ) -> List[str]:
         prompt = f"""
         Given the following user query and chat history, expand the query to improve product search results.
@@ -24,16 +29,18 @@ class QueryProcessor:
         """
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
-            prompt, temperature=1, model=model
+            prompt, temperature=temperature, model=model
         )
-        response = response.replace("```", "").replace("json", "").replace("\n", "").strip()
-        print(f"expand_query response from OpenAI: {response}")
-
-        expanded_queries = json.loads(response.strip())
-        return expanded_queries, input_tokens, output_tokens
+        response = self._clean_response(response)
+        return response, input_tokens, output_tokens
 
     async def generate_search_queries(
-        self, query: str, chat_history: List[Dict[str, str]], num_queries: int = 3, model: str = "gpt-4o"
+        self,
+        query: str,
+        chat_history: List[Dict[str, str]],
+        num_queries: int = 3,
+        model: str = "gpt-4o",
+        temperature: float = 0.1,
     ) -> List[str]:
         prompt = f"""
         Based on the user query and chat history, generate {num_queries} search queries that could be used to find relevant products.
@@ -48,14 +55,18 @@ class QueryProcessor:
         Search Queries:
         """
 
-        response, _, _ = await self.openai_service.generate_response(prompt, model=model)
-        response = response.replace("```", "").replace("json", "").replace("\n", "").strip()
-        print(f"generate_search_queries response from OpenAI: {response}")
+        response, input_tokens, output_tokens = await self.openai_service.generate_response(
+            prompt, temperature=temperature, model=model
+        )
+        response = self._clean_response(response)
+        return response, input_tokens, output_tokens
 
-        search_queries = json.loads(response.strip())
-        return search_queries
-
-    async def extract_product_attributes(self, query: str) -> Dict[str, Any]:
+    async def extract_product_attributes(
+        self,
+        query: str,
+        model: str = "gpt-4o",
+        temperature: float = 0.1,
+    ) -> Dict[str, Any]:
         prompt = f"""
         Extract product attributes from the given query. Return the attributes as a JSON object.
         If an attribute is not mentioned, do not include it in the response.
@@ -67,12 +78,19 @@ class QueryProcessor:
         Extracted Attributes:
         """
 
-        response, _, _ = await self.openai_service.generate_response(prompt)
-        attributes = json.loads(response.strip())
-        return attributes
+        response, input_tokens, output_tokens = await self.openai_service.generate_response(
+            prompt, temperature=temperature, model=model
+        )
+        response = self._clean_response(response)
+        return response, input_tokens, output_tokens
 
     async def rerank_products(
-        self, query: str, products: List[Dict[str, Any]], top_k: int = 5, model: str = "gpt-4o"
+        self,
+        query: str,
+        products: List[Dict[str, Any]],
+        top_k: int = 5,
+        model: str = "gpt-4o",
+        temperature: float = 0.1,
     ) -> List[Dict[str, Any]]:
         prompt = f"""
         Rerank the given products based on their relevance to the user query.
@@ -88,13 +106,20 @@ class QueryProcessor:
         Reranked Products:
         """
 
-        response, input_tokens, output_tokens = await self.openai_service.generate_response(prompt, model=model)
-        response = response.replace("```", "").replace("json", "").replace("\n", "").strip()
+        response, input_tokens, output_tokens = await self.openai_service.generate_response(
+            prompt, temperature=temperature, model=model
+        )
+        response = self._clean_response(response)
         print(f"rerank_products response from OpenAI: {response}")
-        reranked_products = json.loads(response.strip())
-        return [product["name"] for product in reranked_products[:top_k]], input_tokens, output_tokens
+        return [product["name"] for product in response[:top_k]], input_tokens, output_tokens
 
-    async def generate_faceted_search_params(self, query: str, available_facets: List[str]) -> Dict[str, List[str]]:
+    async def generate_faceted_search_params(
+        self,
+        query: str,
+        available_facets: List[str],
+        model: str = "gpt-4o",
+        temperature: float = 0.1,
+    ) -> Dict[str, List[str]]:
         prompt = f"""
         Generate faceted search parameters based on the user query.
         Return a JSON object where keys are facet names and values are lists of possible values for each facet.
@@ -106,14 +131,23 @@ class QueryProcessor:
         Faceted Search Parameters:
         """
 
-        response, _, _ = await self.openai_service.generate_response(prompt)
-        faceted_search_params = json.loads(response.strip())
-        return faceted_search_params
+        response, input_tokens, output_tokens = await self.openai_service.generate_response(
+            prompt, temperature=temperature, model=model
+        )
+        response = self._clean_response(response)
+        return response, input_tokens, output_tokens
 
-    async def generate_query_clarification(self, query: str, chat_history: List[dict]) -> str:
+    async def generate_query_clarification(
+        self,
+        query: str,
+        chat_history: List[dict],
+        model: str = "gpt-4o",
+        temperature: float = 0.1,
+    ) -> str:
         prompt = f"""
         Based on the user query and chat history, generate a clarification question to ask the user.
         This question should help narrow down the search or resolve any ambiguities in the query.
+        Return a JSON object with the clarification question.
 
         User Query: {query}
 
@@ -123,19 +157,16 @@ class QueryProcessor:
         Clarification Question:
         """
 
-        response, _, _ = await self.openai_service.generate_response(prompt)
-        return response.strip()
-
-    async def process_query(self, query: str, chat_history: List[dict], **kwargs) -> Dict[str, Any]:
-        expanded_queries = await self.expand_query(query, chat_history, num_expansions=kwargs.get("num_expansions", 3))
-        search_queries = await self.generate_search_queries(
-            query, chat_history, num_queries=kwargs.get("num_search_queries", 3)
+        response, input_tokens, output_tokens = await self.openai_service.generate_response(
+            prompt, temperature=temperature, model=model
         )
-        attributes = await self.extract_product_attributes(query)
+        response = self._clean_response(response)
+        return response, input_tokens, output_tokens
 
-        return {
-            "original_query": query,
-            "expanded_queries": expanded_queries,
-            "search_queries": search_queries,
-            "extracted_attributes": attributes,
-        }
+    @staticmethod
+    def _clean_response(response: str) -> Any:
+        try:
+            response = response.replace("```", "").replace("json", "").replace("\n", "").strip()
+            return json.loads(response)
+        except json.JSONDecodeError:
+            raise ValueError(f"Invalid JSON response: {response}")

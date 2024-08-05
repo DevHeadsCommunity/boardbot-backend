@@ -7,7 +7,8 @@ class TavilyService:
 
     async def search(self, query: str) -> dict:
         try:
-            return self.client.search(query)
+            response = self.client.search(query)
+            return response.get("results", [])
         except Exception as e:
             print(f"Error in Tavily search: {str(e)}")
             raise
