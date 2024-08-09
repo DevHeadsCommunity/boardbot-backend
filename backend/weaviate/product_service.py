@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from .weaviate_client import WeaviateClient
 from .weaviate_service import WeaviateService
 
@@ -17,7 +17,23 @@ class ProductService(WeaviateService):
 
     @property
     def properties(self) -> List[str]:
-        return ["name", "description", "price", "feature", "specification", "location", "summary"]
+        return [
+            "name",
+            "ids",
+            "manufacturer",
+            "form_factor",
+            "processor",
+            "core_count",
+            "processor_tdp",
+            "memory",
+            "io",
+            "operating_system",
+            "environmentals",
+            "certifications",
+            "short_summary",
+            "full_summary",
+            "full_product_description",
+        ]
 
     async def upsert(self, response_data: Dict[str, Any]) -> str:
         return await self.client.create_object(response_data, self.object_type)
@@ -37,5 +53,8 @@ class ProductService(WeaviateService):
     async def delete(self, uuid: str) -> bool:
         return await self.client.delete_object(uuid, self.object_type)
 
-    async def search(self, query: str, fields: List[str], limit: int = 3) -> List[Dict[str, Any]]:
+    async def search(self, query: str, fields: Optional[List[str]], limit: int = 3) -> List[Dict[str, Any]]:
+        if not fields:
+            fields = self.properties
+
         return await self.client.search(self.object_type, query, fields, limit)

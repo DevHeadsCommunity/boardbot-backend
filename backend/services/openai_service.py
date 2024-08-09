@@ -30,19 +30,22 @@ class OpenAIService:
         functions: Optional[List[Dict[str, Any]]] = None,
     ) -> Tuple[str, int, int]:
         try:
-            model = model or self.config["DEFAULT_MODEL"]
-            logger.info(f"===> Using model: {model}")
+            model = model or self.config.DEFAULT_MODEL
+            # logger.info(f"===> Using model: {model}")
             encoder = self._get_encoder(model)
 
             input_token_count = sum(len(encoder.encode(msg["content"])) for msg in messages)
-            logger.info(f"Input token count: {input_token_count}")
+            # logger.info(f"Input token count: {input_token_count}")
 
             kwargs = {
                 "model": model,
                 "messages": messages,
-                "temperature": temperature or self.config["DEFAULT_TEMPERATURE"],
-                "max_tokens": max_tokens or self.config["DEFAULT_MAX_TOKENS"],
-                "top_p": top_p or self.config["DEFAULT_TOP_P"],
+                "temperature": temperature or self.config.DEFAULT_TEMPERATURE,
+                "max_tokens": max_tokens or self.config.DEFAULT_MAX_TOKENS,
+                "top_p": top_p or self.config.DEFAULT_TOP_P,
+                # "temperature": temperature or self.config["DEFAULT_TEMPERATURE"],
+                # "max_tokens": max_tokens or self.config["DEFAULT_MAX_TOKENS"],
+                # "top_p": top_p or self.config["DEFAULT_TOP_P"],
                 "stream": stream,
             }
             if functions:
@@ -52,7 +55,7 @@ class OpenAIService:
 
             content = response.choices[0].message.content or ""
             output_token_count = len(encoder.encode(content))
-            logger.info(f"Output token count: {output_token_count}")
+            # logger.info(f"Output token count: {output_token_count}")
 
             return content, input_token_count, output_token_count
 
@@ -67,7 +70,6 @@ class OpenAIService:
         formatted_chat_history: Optional[List[Dict[str, str]]] = None,
         **kwargs,
     ) -> Tuple[str, int, int]:
-        print(f"*** kwargs: {kwargs}")
         messages = self._prepare_messages(user_message, system_message, formatted_chat_history)
         return await self.create_chat_completion(messages, **kwargs)
 

@@ -5,10 +5,17 @@ from typing import Optional
 @dataclass
 class Product:
     name: str
-    summary: str
-    form: Optional[str] = None
-    io: Optional[str] = None
-    manufacturer: Optional[str] = None
-    memory: Optional[str] = None
-    processor: Optional[str] = None
-    size: Optional[str] = None
+    ids: str
+    manufacturer: str
+    form_factor: str
+    processor: str
+    core_count: int
+    processor_tdp: int
+    memory: int
+    io: str
+    operating_system: str
+    environmentals: str
+    certifications: str
+    short_summary: str
+    full_summary: str
+    full_product_description: str
