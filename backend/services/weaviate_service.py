@@ -16,8 +16,8 @@ class WeaviateService:
             await weaviate_interface.schema.reset()
 
             # Load and insert products data
-            products = pd.read_csv("data/clean_products.csv")
-            products = products.drop(columns=["raw_data", "id", "raw_length"])
+            products = pd.read_csv("data/extracted_data_grouped.csv")
+            # products = products.drop(columns=["raw_data", "id", "raw_length"])
             products_data = products.to_dict(orient="records")
 
             # loop through the products in batches of 20
@@ -65,8 +65,24 @@ class WeaviateService:
 
     async def search_products(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
         try:
-            features = ["name", "size", "form", "processor", "memory", "io", "manufacturer", "summary"]
-            products = await self.wi.product.search(query, features, limit)
+            features = [
+                "name",
+                "ids",
+                "manufacturer",
+                "form_factor",
+                "processor",
+                "core_count",
+                "processor_tdp",
+                "memory",
+                "io",
+                "operating_system",
+                "environmentals",
+                "certifications",
+                "short_summary",
+                "full_summary",
+                "full_product_description",
+            ]
+            products = await self.wi.product.search(query, limit=limit, fields=features)
             return products
         except Exception as e:
             print(f"Error in Weaviate search: {str(e)}")

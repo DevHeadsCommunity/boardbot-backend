@@ -83,47 +83,47 @@ class FeatureExtractor:
         )
 
         workflow.set_entry_point("extract_features")
-        logger.info(":: Workflow setup complete ::")
+        # logger.info(":: Workflow setup complete ::")
         return workflow.compile()
 
     async def extract_features_node(self, state: ExtractorState) -> ExtractorState:
-        logger.info(":: Extracting features from raw data ::")
+        # logger.info(":: Extracting features from raw data ::")
         system_message = self._get_data_extraction_system_message()
         user_message = f"Raw product data: {state.raw_data}"
 
-        logger.info(f":: Generating response, \nuser message: {user_message}, \nsystem message: {system_message} ::")
+        # logger.info(f":: Generating response, \nuser message: {user_message}, \nsystem message: {system_message} ::")
         response, _, _ = await self.openai_service.generate_response(
             user_message, system_message, max_tokens=4096, temperature=0.1
         )
         extracted_features = self._parse_response(response)
-        logger.info(f":: Response generated: {extracted_features} ::\n\n")
+        # logger.info(f":: Response generated: {extracted_features} ::\n\n")
 
         state.extracted_features = extracted_features
         state.total_attempts += 1
-        logger.info(f":: Initial extraction complete, attempt {state.total_attempts} ::")
+        # logger.info(f":: Initial extraction complete, attempt {state.total_attempts} ::")
         return state
 
     async def search_missing_node(self, state: ExtractorState) -> ExtractorState:
-        logger.info(":: Performing search for missing features ::")
+        # logger.info(":: Performing search for missing features ::")
         missing_features = self.get_missing_features(state.extracted_features)
-        logger.info(f":: Missing features: {missing_features} ::")
+        # logger.info(f":: Missing features: {missing_features} ::")
 
         if not missing_features:
             logger.info(":: No missing features, search skipped ::")
             return state
 
         query = self.construct_search_query(state.extracted_features, missing_features, "missing")
-        logger.info(f":: Searching for missing features with query: {query} ::")
+        # logger.info(f":: Searching for missing features with query: {query} ::")
         state.missing_features_search_results = await self.tavily_service.search(query)
-        logger.info(f":: Missing features search results retrieved: {state.missing_features_search_results} ::\n\n")
+        # logger.info(f":: Missing features search results retrieved: {state.missing_features_search_results} ::\n\n")
         return state
 
     async def generate_missing_features_node(self, state: ExtractorState) -> ExtractorState:
-        logger.info(":: Generating missing features from search results ::")
+        # logger.info(":: Generating missing features from search results ::")
         missing_features = self.get_missing_features(state.extracted_features)
 
         if not state.missing_features_search_results or not missing_features:
-            logger.info(":: No search results or missing features, skipping feature generation ::")
+            # logger.info(":: No search results or missing features, skipping feature generation ::")
             return state
 
         context_text = "\n".join(
@@ -145,39 +145,39 @@ class FeatureExtractor:
         If a feature is not found in the context, use "Not available" with a confidence score of 0.
         """
 
-        logger.info(
-            f":: Generating response with context, \nuser message: {user_message}, \nsystem message: {system_message} ::"
-        )
+        # logger.info(
+        #     f":: Generating response with context, \nuser message: {user_message}, \nsystem message: {system_message} ::"
+        # )
         response, _, _ = await self.openai_service.generate_response(
             user_message, system_message, max_tokens=4096, temperature=0.1
         )
         supplemented_features = self._parse_response(response)
-        logger.info(f":: Response generated: {supplemented_features} ::\n\n")
+        # logger.info(f":: Response generated: {supplemented_features} ::\n\n")
 
         state.extracted_features = self.merge_features(state.extracted_features, supplemented_features)
         state.total_attempts += 1
-        logger.info(f":: Feature generation complete, attempt {state.total_attempts} ::")
+        # logger.info(f":: Feature generation complete, attempt {state.total_attempts} ::")
         return state
 
     async def search_low_confidence_node(self, state: ExtractorState) -> ExtractorState:
-        logger.info(":: Performing search for low confidence features ::")
+        # logger.info(":: Performing search for low confidence features ::")
         low_confidence_features = self.get_low_confidence_features(state.extracted_features)
-        logger.info(f":: Low confidence features: {low_confidence_features} ::")
+        # logger.info(f":: Low confidence features: {low_confidence_features} ::")
 
         if not low_confidence_features:
             logger.info(":: No low confidence features, search skipped ::")
             return state
 
         query = self.construct_search_query(state.extracted_features, low_confidence_features, "low_confidence")
-        logger.info(f":: Searching for low confidence features with query: {query} ::")
+        # logger.info(f":: Searching for low confidence features with query: {query} ::")
         state.low_confidence_search_results = await self.tavily_service.search(query)
-        logger.info(
-            f":: Low confidence features search results retrieved: {state.low_confidence_search_results} ::\n\n"
-        )
+        # logger.info(
+        #     f":: Low confidence features search results retrieved: {state.low_confidence_search_results} ::\n\n"
+        # )
         return state
 
     async def refine_features_node(self, state: ExtractorState) -> ExtractorState:
-        logger.info(":: Refining low confidence features ::")
+        # logger.info(":: Refining low confidence features ::")
         low_confidence_features = self.get_low_confidence_features(state.extracted_features)
 
         if not state.low_confidence_search_results or not low_confidence_features:
@@ -203,18 +203,18 @@ class FeatureExtractor:
         If a feature cannot be refined, keep its current value and confidence score.
         """
 
-        logger.info(
-            f":: Generating response with context, \nuser message: {user_message}, \nsystem message: {system_message} ::"
-        )
+        # logger.info(
+        #     f":: Generating response with context, \nuser message: {user_message}, \nsystem message: {system_message} ::"
+        # )
         response, _, _ = await self.openai_service.generate_response(
             user_message, system_message, max_tokens=4096, temperature=0.1
         )
         refined_features = self._parse_response(response)
-        logger.info(f":: Response generated: {refined_features} ::\n\n")
+        # logger.info(f":: Response generated: {refined_features} ::\n\n")
 
         state.extracted_features = self.merge_features(state.extracted_features, refined_features)
         state.total_attempts += 1
-        logger.info(f":: Feature refinement complete, attempt {state.total_attempts} ::")
+        # logger.info(f":: Feature refinement complete, attempt {state.total_attempts} ::")
         return state
 
     def should_continue(self, state: ExtractorState) -> str:
@@ -222,14 +222,14 @@ class FeatureExtractor:
         low_confidence_features = self.get_low_confidence_features(state.extracted_features)
 
         if missing_features and state.total_attempts < self.max_attempts / 2:
-            logger.info(
-                f":: Continuing with missing features search, attempt {state.total_attempts + 1} of {self.max_attempts} ::"
-            )
+            # logger.info(
+            #     f":: Continuing with missing features search, attempt {state.total_attempts + 1} of {self.max_attempts} ::"
+            # )
             return "search_missing"
         elif low_confidence_features and state.total_attempts < self.max_attempts:
-            logger.info(
-                f":: Continuing with low confidence features search, attempt {state.total_attempts + 1} of {self.max_attempts} ::"
-            )
+            # logger.info(
+            #     f":: Continuing with low confidence features search, attempt {state.total_attempts + 1} of {self.max_attempts} ::"
+            # )
             return "search_low_confidence"
         logger.info(f":: Ending extraction after {state.total_attempts} attempts ::")
         return "end"
@@ -279,11 +279,11 @@ class FeatureExtractor:
         return query.strip()
 
     def merge_features(self, original: Dict[str, Feature], supplement: Dict[str, Feature]) -> Dict[str, Feature]:
-        logger.info(f":: Merging features ::")
+        # logger.info(f":: Merging features ::")
         for key, new_feature in supplement.items():
             if key not in original or original[key].confidence < new_feature.confidence:
                 original[key] = new_feature
-        logger.info(f":: Merged features complete ::")
+        # logger.info(f":: Merged features complete ::")
         return original
 
     def _parse_response(self, response: str) -> Dict[str, Feature]:
@@ -333,5 +333,5 @@ class FeatureExtractor:
     async def extract_data(self, text: str) -> Dict[str, str]:
         initial_state = ExtractorState(raw_data=text)
         final_state = await self.workflow.ainvoke(initial_state)
-        logger.info(f"\n\n:: Extraction complete: \n{final_state['extracted_features']} ::")
+        # logger.info(f"\n\n:: Extraction complete: \n{final_state['extracted_features']} ::")
         return {k: v.value for k, v in final_state["extracted_features"].items()}

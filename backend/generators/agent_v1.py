@@ -79,19 +79,27 @@ class AgentV1:
             results = await self.weaviate_service.search_products(query, limit=5)
             all_results.extend(results)
 
+        print(f"+++all_results: {all_results}")
         # Remove duplicates and create Product objects
         unique_results = {}
         for result in all_results:
             if result["name"] not in unique_results:
                 unique_results[result["name"]] = Product(
                     name=result["name"],
-                    summary=result["summary"],
-                    form=result.get("form"),
-                    io=result.get("io"),
-                    manufacturer=result.get("manufacturer"),
-                    memory=result.get("memory"),
-                    processor=result.get("processor"),
-                    size=result.get("size"),
+                    ids=result["ids"],
+                    manufacturer=result["manufacturer"],
+                    form_factor=result["form_factor"],
+                    processor=result["processor"],
+                    core_count=result["core_count"],
+                    processor_tdp=result["processor_tdp"],
+                    memory=result["memory"],
+                    io=result["io"],
+                    operating_system=result["operating_system"],
+                    environmentals=result["environmentals"],
+                    certifications=result["certifications"],
+                    short_summary=result["short_summary"],
+                    full_summary=result["full_summary"],
+                    full_product_description=result["full_product_description"],
                 )
 
         state["search_results"] = list(unique_results.values())
@@ -100,7 +108,9 @@ class AgentV1:
 
     async def result_reranking_node(self, state: AgentState) -> AgentState:
         logger.info("Entering result_reranking_node")
-        products_for_reranking = [{"name": p.name, "summary": p.summary} for p in state["search_results"]]
+        products_for_reranking = [
+            {"name": p.name, "summary": p.full_product_description} for p in state["search_results"]
+        ]
         reranked_names, input_tokens, output_tokens = await self.query_processor.rerank_products(
             state["current_message"], products_for_reranking, top_k=10, model=state["model_name"]
         )
@@ -123,7 +133,7 @@ class AgentV1:
         User Query: {state['current_message']}
 
         Relevant Products:
-        {json.dumps([{"name": p.name, "summary": p.summary} for p in state['final_results']], indent=2)}
+        {json.dumps([{"name": p.name, "summary": p.full_product_description} for p in state['final_results']], indent=2)}
 
         Please provide a response to the user's query based on the relevant products found.
         """
@@ -209,6 +219,8 @@ class AgentV1:
                     "additional_info": "Please try your query again or contact support if the problem persists.",
                 }
             )
+            input_tokens = 0
+            output_tokens = 0
 
         logger.info(f"Run completed. Input tokens: {input_tokens}, Output tokens: {output_tokens}")
         return output, {
