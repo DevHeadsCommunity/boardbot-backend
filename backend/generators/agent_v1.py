@@ -19,6 +19,7 @@ class AgentState(Dict[str, Any]):
     current_message: str
     agent_scratchpad: List[BaseMessage]
     expanded_queries: List[str]
+    attributes: List[str]
     search_results: List[Product]
     final_results: List[Product]
     expansion_input_tokens: int = 0
@@ -61,12 +62,31 @@ class AgentV1:
         logger.info("Workflow setup complete")
         return workflow.compile()
 
+    def generate_semantic_search_queries(self, comprehensive_result: Dict[str, Any]) -> List[str]:
+        expanded_queries = comprehensive_result["expanded_queries"]
+        search_params = comprehensive_result["search_params"]
+        extracted_attributes = comprehensive_result["extracted_attributes"]
+
+        queries = expanded_queries.copy()
+        search_param_query = ", ".join([f"{key}: {', '.join(value)}" for key, value in search_params.items()])
+        queries.append(search_param_query)
+        extracted_attributes_query = ", ".join([f"{key}: {value}" for key, value in extracted_attributes.items()])
+        queries.append(extracted_attributes_query)
+
+        # we also want to return list of attributes that were extracted
+        attributes = list(extracted_attributes.keys())
+
+        return queries, attributes
+
     async def query_expansion_node(self, state: AgentState) -> AgentState:
         logger.info("Entering query_expansion_node")
-        expanded_queries, input_tokens, output_tokens = await self.query_processor.expand_query(
-            state["current_message"], state["chat_history"], num_expansions=5, model=state["model_name"]
+        result, input_tokens, output_tokens = await self.query_processor.process_query_comprehensive(
+            state["current_message"], state["chat_history"], num_expansions=3, model=state["model_name"]
         )
+        expanded_queries, attributes = self.generate_semantic_search_queries(result)
+
         state["expanded_queries"] = expanded_queries
+        state["attributes"] = attributes
         state["expansion_input_tokens"] = input_tokens
         state["expansion_output_tokens"] = output_tokens
         logger.info(f"Expanded queries: {expanded_queries}")
@@ -109,7 +129,8 @@ class AgentV1:
     async def result_reranking_node(self, state: AgentState) -> AgentState:
         logger.info("Entering result_reranking_node")
         products_for_reranking = [
-            {"name": p.name, "summary": p.full_product_description} for p in state["search_results"]
+            {"name": p.name, **{attr: getattr(p, attr) for attr in state["attributes"]}}
+            for p in state["search_results"]
         ]
         reranked_names, input_tokens, output_tokens = await self.query_processor.rerank_products(
             state["current_message"], products_for_reranking, top_k=10, model=state["model_name"]

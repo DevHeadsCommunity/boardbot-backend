@@ -11,6 +11,7 @@ src/optik/django_app/media/
 *.so
 *.mp3
 *.mp4
+*.txt
 
 # Distribution / packaging
 .Python
