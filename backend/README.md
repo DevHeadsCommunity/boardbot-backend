@@ -1,26 +1,8 @@
-# ThroughPut
+# ThroughPut: AI-Powered Product Query System
 
-ThroughPut is an advanced AI-powered project designed to assist users with their queries about products using Large Language Models (LLMs) and semantic search capabilities.
+## Overview
 
-## Table of Contents
-
-- [ThroughPut](#throughput)
-  - [Table of Contents](#table-of-contents)
-  - [Project Overview](#project-overview)
-  - [Key Features](#key-features)
-  - [Project Structure](#project-structure)
-  - [Setup Instructions](#setup-instructions)
-  - [Running the Project](#running-the-project)
-  - [Usage](#usage)
-  - [Architecture Choices](#architecture-choices)
-  - [Schema Overview](#schema-overview)
-    - [Example Schema (schema.json)](#example-schema-schemajson)
-  - [Contributing](#contributing)
-  - [License](#license)
-
-## Project Overview
-
-ThroughPut leverages OpenAI's language models, Weaviate's vector search capabilities, and Tavily's internet search to provide intelligent responses to user queries about various products. The system categorizes queries into different types and processes them using flexible agent architectures.
+ThroughPut is an advanced AI-powered system designed to assist users with product queries, particularly focusing on embedded systems, development kits, and industrial communication devices. The system leverages Large Language Models (LLMs), semantic search capabilities, and various AI architectures to provide accurate and relevant responses to user queries.
 
 ## Key Features
 
@@ -28,52 +10,47 @@ ThroughPut leverages OpenAI's language models, Weaviate's vector search capabili
 - Semantic search capabilities with Weaviate
 - Integration with OpenAI's GPT models
 - Internet search validation using Tavily
-- Flexible agent architectures for query processing
+- Multiple AI architectures for query processing
 - Session management and chat history handling
-- Modular and extensible design
+- Automated testing system for performance evaluation
+- Product data management and feature extraction pipeline
 
 ## Project Structure
 
-The project is organized into the following main directories:
-
 ```
 ThroughPut/
-├── api/
-│   ├── routes.py
-│   └── socketio_handlers.py
-├── core/
-│   ├── message_processor.py
-│   └── session_manager.py
-├── generators/
-│   ├── semantic_router_v1.py
-│   ├── agent_v1.py
-│   └── agent_v2.py
-├── services/
-│   ├── openai_service.py
-│   ├── tavily_service.py
-│   └── weaviate_service.py
-├── agents/
-│   ├── base_agent.py
-│   ├── agent_v1.py
-│   └── agent_v2.py
-├── models/
-│   └── message.py
-├── notebooks/
-├── weaviate/
-├── config.py
-├── dependencies.py
-├── main.py
-├── requirements.txt
-└── README.md
+├── api/                 # API routes and Socket.IO handlers
+├── core/                # Core functionality (message processing, session management)
+├── data/                # Data files (CSV, JSON) for testing and training
+├── generators/          # AI architectures (AgentV1, AgentV2, SemanticRouters)
+├── models/              # Data models (Message, Product)
+├── notebooks/           # Jupyter notebooks for data exploration and testing
+├── services/            # External service integrations (OpenAI, Weaviate, Tavily)
+├── test/                # Test files
+├── weaviate/            # Weaviate client and related utilities
+├── config.py            # Configuration settings
+├── containers.py        # Dependency injection container
+├── dependencies.py      # Dependency management
+├── main.py              # Application entry point
+└── requirements.txt     # Python dependencies
 ```
 
-## Setup Instructions
+## AI Architectures
+
+ThroughPut implements multiple AI architectures to handle different types of queries:
+
+1. **SemanticRouterV1**: Uses Weaviate for semantic search to categorize queries.
+2. **SemanticRouterV2**: Utilizes LLM for query categorization.
+3. **AgentV1**: Implements a multi-step workflow for product search and response generation.
+4. **AgentV2**: An alternative agent architecture (specifics may vary).
+
+## Setup and Installation
 
 1. Clone the repository:
 
    ```
-   git clone https://github.com/eandualem/ThroughPut
-   cd ThroughPut
+   git clone https://github.com/get10acious/ThroughPut
+   cd ThroughPut/backend
    ```
 
 2. Set up a virtual environment:
@@ -98,12 +75,12 @@ ThroughPut/
    TAVILY_API_KEY=your_tavily_api_key
    ```
 
-5. Initialize Weaviate (if not already set up):
+5. Initialize Weaviate:
    Follow Weaviate's documentation to set up and run a Weaviate instance.
 
-## Running the Project
+## Running the Application
 
-To run the project, execute:
+To start the ThroughPut server:
 
 ```
 python main.py
@@ -113,21 +90,18 @@ This will start the FastAPI server with Socket.IO support.
 
 ## Usage
 
-The system handles different types of user queries:
+Clients can connect to the server using Socket.IO and send messages with specified architecture choices and history management options. The system handles different types of queries:
 
 - Product information requests
 - Chitchat conversations
-- Queries requiring internet validation
 
-Clients can connect to the server using Socket.IO and send messages with specified architecture choices and history management options.
+## Product Data Management
 
-## Architecture Choices
+ThroughPut includes a feature extraction pipeline for processing raw product data. This system allows for:
 
-The project supports multiple architecture choices:
-
-1. `semantic-router-v1`: Uses a semantic router to categorize queries and process them accordingly.
-2. `agentic-v1`: Employs a basic agent architecture for product searches and response generation.
-3. `agentic-v2`: Utilizes an advanced agent with multiple tools, including internet search validation.
+- Adding new product data
+- Automatically extracting features
+- Updating the vector store with new products
 
 ## Schema Overview
 
@@ -157,7 +131,7 @@ The schema defines the structure of the data stored in Weaviate. It includes def
 
 ## Contributing
 
-Contributions to ThroughPut are welcome! Please refer to the `CONTRIBUTING.md` file for guidelines on how to contribute to this project.
+Contributions to ThroughPut are welcome! Please refer to the `CONTRIBUTING.md` file (if available) for guidelines on how to contribute to this project.
 
 ## License
 

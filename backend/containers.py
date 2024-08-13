@@ -7,6 +7,7 @@ from core.message_processor import MessageProcessor
 from generators.agent_v1 import AgentV1
 from generators.agent_v2 import AgentV2
 from generators.semantic_router_v1 import SemanticRouterV1
+from generators.semantic_router_v2 import SemanticRouterV2
 from services.query_processor import QueryProcessor
 
 
@@ -35,6 +36,14 @@ class Container(containers.DeclarativeContainer):
         SemanticRouterV1, openai_service=openai_service, weaviate_service=weaviate_service, agent_v1=agent_v1
     )
 
+    semantic_router_v2 = providers.Singleton(
+        SemanticRouterV2, openai_service=openai_service, weaviate_service=weaviate_service, agent_v1=agent_v1
+    )
+
     message_processor = providers.Singleton(
-        MessageProcessor, semantic_router_v1=semantic_router_v1, agent_v1=agent_v1, agent_v2=agent_v2
+        MessageProcessor,
+        semantic_router_v1=semantic_router_v1,
+        semantic_router_v2=semantic_router_v2,
+        agent_v1=agent_v1,
+        agent_v2=agent_v2,
     )

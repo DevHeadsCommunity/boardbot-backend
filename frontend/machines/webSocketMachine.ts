@@ -2,10 +2,10 @@ import { RequestData, ResponseData } from "@/types";
 import { Socket, io } from "socket.io-client";
 import { EventObject, assign, emit, fromCallback, fromPromise, sendParent, setup } from "xstate";
 
-// const SOCKET_URL = "http://18.204.9.187:6789";
+const SOCKET_URL = "http://18.204.9.187:6789";
 // const SOCKET_URL = "http://0.0.0.0:6789";
-const SOCKET_URL = "http://0.0.0.0:5678";
-// const SOCKET_URL = "http://192.168.118.59:5678";
+// const SOCKET_URL = "http://0.0.0.0:5678";
+// const SOCKET_URL = "http://192.168.21.59:5678";
 
 export const webSocketMachine = setup({
   types: {

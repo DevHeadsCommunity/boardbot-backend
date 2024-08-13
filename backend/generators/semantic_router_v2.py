@@ -5,7 +5,7 @@ from services.openai_service import OpenAIService
 from services.weaviate_service import WeaviateService
 
 
-class SemanticRouterV1:
+class SemanticRouterV2:
     def __init__(
         self,
         openai_service: OpenAIService,
@@ -21,11 +21,21 @@ class SemanticRouterV1:
         return await self.handle_route(route, message, chat_history)
 
     async def determine_route(self, query: str) -> str:
-        routes = await self.weaviate_service.search_routes(query)
-        if not routes:
-            raise Exception(f"No route found for query: {query}")
-        print(f"Found routes: {routes}")
-        return routes
+        system_message = """
+        You are a routing assistant. Your task is to categorize the given query into one of the following categories:
+        1. politics - for queries related to political topics. Example: "What are your thoughts on the upcoming election?"
+        2. chitchat - for general conversation or small talk. Example: "How are you doing today?"
+        3. vague_intent_product - for product-related queries that are not specific. Example: "What is a Single Board Computer?"
+        4. clear_intent_product - for specific product-related queries. Example: "5 boards compatible with Linux's Debian distro"
+
+        Respond with only the category name, nothing else. Make sure to categorize the query accurately, and you should always return the closest category even if the query is ambiguous.
+        """
+        user_message = f"Categorize this query: {query}"
+        response, _, _ = await self.openai_service.generate_response(
+            user_message=user_message, system_message=system_message, temperature=0.1, model="gpt-4o"
+        )
+        print(f"Route determined: {response.strip().lower()}")
+        return response.strip().lower()
 
     async def handle_route(self, route: str, message: Message, chat_history: List[Dict[str, str]]):
         if route == "politics":

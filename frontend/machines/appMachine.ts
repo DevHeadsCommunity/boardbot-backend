@@ -5,7 +5,7 @@ import { deserializeTestState, serializeTestState, testMachine } from "./testMac
 
 export const MODEL_VALUES = ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"] as const;
 export type Model = (typeof MODEL_VALUES)[number];
-export const ARCHITECTURE_VALUES = ["semantic-router-v1", "agentic-v1", "agentic-v2"] as const;
+export const ARCHITECTURE_VALUES = ["semantic-router-v1", "semantic-router-v2", "agentic-v1"] as const;
 export type Architecture = (typeof ARCHITECTURE_VALUES)[number];
 export const HISTORY_MANAGEMENT_VALUES = ["keep-all", "keep-none", "keep-last-5"] as const;
 export type HistoryManagement = (typeof HISTORY_MANAGEMENT_VALUES)[number];

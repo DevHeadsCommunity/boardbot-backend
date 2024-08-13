@@ -40,12 +40,12 @@ class OpenAIService:
             kwargs = {
                 "model": model,
                 "messages": messages,
-                "temperature": temperature or self.config.DEFAULT_TEMPERATURE,
-                "max_tokens": max_tokens or self.config.DEFAULT_MAX_TOKENS,
-                "top_p": top_p or self.config.DEFAULT_TOP_P,
-                # "temperature": temperature or self.config["DEFAULT_TEMPERATURE"],
-                # "max_tokens": max_tokens or self.config["DEFAULT_MAX_TOKENS"],
-                # "top_p": top_p or self.config["DEFAULT_TOP_P"],
+                # "temperature": temperature or self.config.DEFAULT_TEMPERATURE,
+                # "max_tokens": max_tokens or self.config.DEFAULT_MAX_TOKENS,
+                # "top_p": top_p or self.config.DEFAULT_TOP_P,
+                "temperature": temperature or self.config["DEFAULT_TEMPERATURE"],
+                "max_tokens": max_tokens or self.config["DEFAULT_MAX_TOKENS"],
+                "top_p": top_p or self.config["DEFAULT_TOP_P"],
                 "stream": stream,
             }
             if functions:
