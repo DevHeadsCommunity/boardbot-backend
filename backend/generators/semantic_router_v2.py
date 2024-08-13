@@ -53,7 +53,7 @@ class SemanticRouterV2:
             raise Exception(f"Unknown route: {route}")
 
     async def handle_chitchat(self, message: Message, chat_history: List[Dict[str, str]]):
-        system_message = "You are a friendly AI assistant engaging in casual conversation. Respond naturally and politely to the user's message."
+        system_message = "You are ThroughPut assistant.  Your main task is to help users with their queries about products. The user is engaging in casual conversation with you. Respond naturally and politely to the user's message."
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
             user_message=message.content,
             system_message=system_message,

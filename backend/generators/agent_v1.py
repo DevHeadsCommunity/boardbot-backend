@@ -99,7 +99,6 @@ class AgentV1:
             results = await self.weaviate_service.search_products(query, limit=5)
             all_results.extend(results)
 
-        print(f"+++all_results: {all_results}")
         # Remove duplicates and create Product objects
         unique_results = {}
         for result in all_results:
@@ -139,7 +138,6 @@ class AgentV1:
         # Reorder the full Product objects based on the reranked names
         logging.info(f"Reranked names: {reranked_names}")
         name_to_product = {p.name: p for p in state["search_results"]}
-        logging.info(f"Name to product: {name_to_product}")
         state["final_results"] = [name_to_product[name] for name in reranked_names if name in name_to_product]
         state["rerank_input_tokens"] = input_tokens
         state["rerank_output_tokens"] = output_tokens
@@ -154,15 +152,20 @@ class AgentV1:
         User Query: {state['current_message']}
 
         Relevant Products:
-        {json.dumps([{"name": p.name, "summary": p.full_product_description} for p in state['final_results']], indent=2)}
+        {json.dumps([{"name": p.name, **{attr: getattr(p, attr) for attr in state["attributes"]}, "summary": p.full_product_description} for p in state['final_results']], indent=2)}
 
         Please provide a response to the user's query based on the relevant products found.
+        Ensure that only products that fully match ALL criteria specified in the user's query are included.
+        If no products match ALL criteria, return an empty list of products.
         """
+
+        print(f"\n\n+++user_message: {user_message}")
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
             user_message=user_message, system_message=system_message, temperature=0.1, model=state["model_name"]
         )
         response = response.replace("```", "").replace("json", "").replace("\n", "").strip()
+        print(f"+++response: {response}")
         state["output"] = response
         state["generate_input_tokens"] = input_tokens
         state["generate_output_tokens"] = output_tokens
@@ -173,15 +176,18 @@ class AgentV1:
         return """You are ThroughPut assistant. Your main task is to help users with their queries about products.
         Analyze the user's query and the relevant products found, then provide a comprehensive and helpful response.
         Your response should be clear, informative, and directly address the user's query.
-        If the products don't fully answer the query, suggest ways the user could refine their search or ask for more information.
-        Always respond in JSON format with the following structure. Your response should include Names of top five most relevant products in a descending order in terms of relevance.
-        For products only include the name of the product.
+        IMPORTANT:
+        1. Only include products that FULLY match ALL criteria specified in the user's query.
+        2. Pay special attention to the users query, and the specifications of the products.
+        3. Do NOT confuse the processor manufacturer with the product manufacturer. This applies to all attributes.
+        4. If no products match ALL criteria, return an empty list of products.
+        Always respond in JSON format with the following structure:
         {
-            "response_description": "A concise description of the products that match the user's query.",
-            "response_justification": "Explanation of why this response is appropriate.",
+            "response_description": "A concise description of the products that match the user's query, or a statement that no products match all criteria if applicable.",
+            "response_justification": "Explanation of why this response is appropriate, including which criteria were met or not met.",
             "products": [
                 {
-                    "name": "Product Name",
+                    "name": "Product Name", // We only need the name of the product
                 },
                 // ... more products if applicable
             ],

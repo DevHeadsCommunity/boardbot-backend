@@ -94,16 +94,20 @@ class QueryProcessor:
     ) -> List[Dict[str, Any]]:
         prompt = f"""
         Rerank the given products based on their relevance to the user query.
-        Return the top {top_k} most relevant products as a JSON list, ordered by relevance.
-        Include a 'relevance_score' key for each product with a float value between 0 and 1.
-        Do not include product summaries in the response, only product names are sufficient.
+        Return ONLY the products that FULLY match ALL criteria specified in the user's query.
+        If no products match ALL criteria, return an empty list.
 
         User Query: {query}
 
         Products:
         {json.dumps(products, indent=2)}
 
-        Reranked Products:
+        Return the list of matching products, ranked by relevance, in the following format:
+        [
+            {{"name": "Product Name", "relevance_score": 0.95}},
+            // ... more products if applicable
+        ]
+        If no products match, return an empty list: []
         """
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
