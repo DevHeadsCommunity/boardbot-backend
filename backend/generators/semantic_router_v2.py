@@ -1,370 +1,212 @@
 import json
 import logging
 import time
-from typing import Any, Dict, List
-from backend.models.product import Product
+from typing import List, Tuple, Dict, Any
 from models.message import Message
-from generators.agent_v1 import AgentV1
+from models.product import Product
 from services.openai_service import OpenAIService
+from services.query_processor import QueryProcessor
 from services.weaviate_service import WeaviateService
+from utils.response_formatter import ResponseFormatter
+from prompts.prompt_manager import PromptManager
+from langgraph.graph import StateGraph, END
 
 logger = logging.getLogger(__name__)
 
 
-class SemanticRouterV2:
+class AgentState(Dict[str, Any]):
+    model_name: str = "gpt-4o"
+    chat_history: List[Dict[str, str]]
+    current_message: str
+    expanded_queries: List[str]
+    attributes: List[str]
+    search_results: List[Product]
+    reranking_result: Dict[str, Any]
+    final_results: List[Product]
+    input_tokens: Dict[str, int] = {
+        "expansion": 0,
+        "rerank": 0,
+        "generate": 0,
+    }
+    output_tokens: Dict[str, int] = {
+        "expansion": 0,
+        "rerank": 0,
+        "generate": 0,
+    }
+    time_taken: Dict[str, float] = {
+        "expansion": 0.0,
+        "search": 0.0,
+        "rerank": 0.0,
+        "generate": 0.0,
+    }
+    output: Dict[str, Any] = {}
+
+
+class AgentV1:
     def __init__(
         self,
-        openai_service: OpenAIService,
         weaviate_service: WeaviateService,
-        agent_v1: AgentV1,
+        query_processor: QueryProcessor,
+        openai_service: OpenAIService,
     ):
-        self.openai_service = openai_service
         self.weaviate_service = weaviate_service
-        self.agent_v1 = agent_v1
+        self.query_processor = query_processor
+        self.openai_service = openai_service
+        self.workflow = self.setup_workflow()
+        self.prompt_manager = PromptManager()
+        self.response_formatter = ResponseFormatter()
 
-    async def run(self, message: Message, chat_history: List[Dict[str, str]]):
-        classification, input_tokens, output_tokens, time_taken = await self.determine_route(
-            message.content, chat_history
-        )
-        return await self.handle_route(classification, message, chat_history, input_tokens, output_tokens, time_taken)
+    def setup_workflow(self) -> StateGraph:
+        workflow = StateGraph(AgentState)
 
-    async def determine_route(self, query: str, chat_history: List[Dict[str, str]]) -> Dict[str, Any]:
+        workflow.add_node("query_expansion", self.query_expansion_node)
+        workflow.add_node("product_search", self.product_search_node)
+        workflow.add_node("result_reranking", self.result_reranking_node)
+        workflow.add_node("response_generation", self.response_generation_node)
+
+        workflow.add_edge("query_expansion", "product_search")
+        workflow.add_edge("product_search", "result_reranking")
+        workflow.add_edge("result_reranking", "response_generation")
+        workflow.add_edge("response_generation", END)
+
+        workflow.set_entry_point("query_expansion")
+
+        return workflow.compile()
+
+    async def query_expansion_node(self, state: AgentState) -> AgentState:
         start_time = time.time()
-        system_message = """
-        You are a routing assistant for a specialized product information system focusing on computer hardware, particularly embedded systems, development kits, and industrial communication devices. Your task is to categorize the given query, considering the current query and recent chat history, into one of the following categories:
+        result, input_tokens, output_tokens = await self.query_processor.process_query_comprehensive(
+            state["current_message"], state["chat_history"], num_expansions=3, model=state["model_name"]
+        )
+        expanded_queries, attributes = self.generate_semantic_search_queries(result)
 
-        1. politics - for queries related to political topics.
-        2. chitchat - for general conversation or small talk.
-        3. vague_intent_product - for product-related queries that are general or lack specific criteria.
-        4. clear_intent_product - for product-related queries with specific criteria or constraints.
-        5. do_not_respond - for queries that are inappropriate, offensive, or outside the system's scope.
+        state["expanded_queries"] = expanded_queries
+        state["attributes"] = attributes
+        state["input_tokens"]["expansion"] = input_tokens
+        state["output_tokens"]["expansion"] = output_tokens
+        state["time_taken"]["expansion"] = time.time() - start_time
 
-        Provide your classification along with a brief justification and a confidence score (0-100).
+        logger.info(f"Expanded queries: {expanded_queries}")
+        return state
 
-        Respond in JSON format as follows:
-        {
-            "category": "category_name",
-            "justification": "A brief explanation for this classification",
-            "confidence": 85
-        }
+    async def product_search_node(self, state: AgentState) -> AgentState:
+        start_time = time.time()
+        all_results = []
+        for query in [state["current_message"]] + state["expanded_queries"]:
+            results = await self.weaviate_service.search_products(query, limit=5)
+            all_results.extend(results)
 
-        Guidelines and examples:
-        - clear_intent_product: Queries with specific criteria about products.
-        Examples:
-            - "Find me a board with an Intel processor and at least 8GB of RAM"
-            - "List Single Board Computers with a processor frequency of 1.5 GHz or higher"
-            - "What are the top 5 ARM-based development kits with built-in Wi-Fi?"
+        unique_results = {}
+        for result in all_results:
+            if result["name"] not in unique_results:
+                unique_results[result["name"]] = Product(**result)
 
-        - vague_intent_product: General product queries without specific criteria.
-        Examples:
-            - "Tell me about single board computers"
-            - "What are some good development kits?"
-            - "I'm looking for industrial communication devices"
+        state["search_results"] = list(unique_results.values())
+        state["time_taken"]["search"] = time.time() - start_time
 
-        - If a query contains any clear product-related intent or specific criteria, classify it as clear_intent_product, regardless of other elements in the query.
-        - Consider the chat history when making your classification. A vague query might become clear in the context of previous messages.
-        - Classify as politics only if the query is primarily about political topics.
-        - Use do_not_respond for queries that are inappropriate, offensive, or completely unrelated to computer hardware and embedded systems.
-        - Be decisive - always choose the most appropriate category even if the query is ambiguous.
-        """
+        logger.info(f"Found {len(state['search_results'])} unique products")
+        return state
 
-        # Format the chat history, including only the last 5 user messages
-        formatted_history = "\n".join([f"User: {msg['content']}" for msg in chat_history[-5:] if msg["role"] == "user"])
+    async def result_reranking_node(self, state: AgentState) -> AgentState:
+        start_time = time.time()
+        products_for_reranking = [
+            {"name": p.name, **{attr: getattr(p, attr) for attr in state["attributes"]}}
+            for p in state["search_results"]
+        ]
+        reranked_result, input_tokens, output_tokens = await self.query_processor.rerank_products(
+            state["current_message"], products_for_reranking, top_k=10, model=state["model_name"]
+        )
 
-        user_message = f"""
-        Chat History:
-        {formatted_history}
+        state["reranking_result"] = reranked_result
+        name_to_product = {p.name: p for p in state["search_results"]}
+        state["final_results"] = [
+            name_to_product[p["name"]] for p in reranked_result["products"] if p["name"] in name_to_product
+        ]
+        state["input_tokens"]["rerank"] = input_tokens
+        state["output_tokens"]["rerank"] = output_tokens
+        state["time_taken"]["rerank"] = time.time() - start_time
 
-        Current Query: {query}
+        logger.info(f"Reranked results: {[p.name for p in state['final_results']]}")
+        return state
 
-        Please categorize the current query, taking into account the chat history provided above.
-        """
+    async def response_generation_node(self, state: AgentState) -> AgentState:
+        start_time = time.time()
+        system_message = self.prompt_manager.get_system_message("clear_intent_product")
+        user_message = self.prompt_manager.format_user_message(
+            "clear_intent_product",
+            state["current_message"],
+            state["chat_history"],
+            reranking_result=state["reranking_result"],
+            relevant_products=state["final_results"],
+        )
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
-            user_message=user_message, system_message=system_message, temperature=0.1, model="gpt-4o"
+            user_message=user_message, system_message=system_message, temperature=0.1, model=state["model_name"]
         )
 
-        logging.info(f"===:> Route determined: {response}")
+        state["input_tokens"]["generate"] = input_tokens
+        state["output_tokens"]["generate"] = output_tokens
+        state["time_taken"]["generate"] = time.time() - start_time
 
-        classification = self._clean_response(response)
-        return classification, input_tokens, output_tokens, time.time() - start_time
-
-    async def handle_route(
-        self,
-        classification: Dict[str, Any],
-        message: Message,
-        chat_history: List[Dict[str, str]],
-        input_tokens: int,
-        output_tokens: int,
-        time_taken: float,
-    ):
-        route = classification["category"]
-        confidence = classification["confidence"]
-        justification = classification["justification"]
-
-        if confidence < 50:
-            response = await self.handle_low_confidence_query(message, chat_history, classification)
-            response["metadata"]["input_token_usage"]["classification"] = input_tokens
-            response["metadata"]["output_token_usage"]["classification"] = output_tokens
-            response["metadata"]["time_taken"]["classification"] = time_taken
-            return response
-
-        if route == "politics":
-            return {
-                "type": "politics",
-                "message": "I'm sorry, but I don't discuss politics.",
-                "products": [],
-                "reasoning": justification,
-                "follow_up_question": "Can I help you with anything else?",
-                "metadata": {
-                    "classification_result": {
-                        "confidence": confidence,
-                    }
-                },
-                "input_token_usage": {
-                    "classification": input_tokens,
-                },
-                "output_token_usage": {
-                    "classification": output_tokens,
-                },
-                "time_taken": {
-                    "classification": time_taken,
-                },
-            }
-
-        elif route == "chitchat":
-            response = await self.handle_chitchat(message, chat_history)
-            response["metadata"]["classification_result"] = {
-                "confidence": confidence,
-                "justification": justification,
-            }
-            response["metadata"]["input_token_usage"]["classification"] = input_tokens
-            response["metadata"]["output_token_usage"]["classification"] = output_tokens
-            response["metadata"]["time_taken"]["classification"] = time_taken
-            return response
-
-        elif route == "vague_intent_product":
-            response = await self.handle_vague_intent(message, chat_history)
-            response["metadata"]["classification_result"] = {
-                "confidence": confidence,
-                "justification": justification,
-            }
-            response["metadata"]["input_token_usage"]["classification"] = input_tokens
-            response["metadata"]["output_token_usage"]["classification"] = output_tokens
-            response["metadata"]["time_taken"]["classification"] = time_taken
-            return response
-
-        elif route == "clear_intent_product":
-            response = await self.agent_v1.run(message, chat_history)
-            response["metadata"]["classification_result"] = {
-                "confidence": confidence,
-                "justification": justification,
-            }
-            response["metadata"]["input_token_usage"]["classification"] = input_tokens
-            response["metadata"]["output_token_usage"]["classification"] = output_tokens
-            response["metadata"]["time_taken"]["classification"] = time_taken
-            return response
-
-        elif route == "do_not_respond":
-            return {
-                "type": "do_not_respond",
-                "message": "I'm sorry, but I can't help with that.",
-                "products": [],
-                "reasoning": justification,
-                "follow_up_question": "Can I help you with anything else?",
-                "metadata": {
-                    "classification_result": {
-                        "confidence": confidence,
-                    }
-                },
-                "input_token_usage": {
-                    "classification": input_tokens,
-                },
-                "output_token_usage": {
-                    "classification": output_tokens,
-                },
-                "time_taken": {
-                    "classification": time_taken,
-                },
-            }
-        else:
-            raise Exception(f"Unknown route: {route}")
-
-    async def handle_low_confidence_query(
-        self, message: Message, chat_history: List[Dict[str, str]], classification: Dict[str, Any]
-    ):
-        start_time = time.time()
-        system_message = self._get_low_confidence_system_message()
-
-        user_message = f"""
-            User Query: {message.content}
-
-            Chat History:
-                {json.dumps(chat_history, indent=2)}
-
-            Classification result:
-                Category: {classification['category']}
-                Confidence: {classification['confidence']}
-                Justification: {classification['justification']}
-
-        Please provide a response that acknowledges the uncertainty and asks for clarification from the user.
-        """
-        response, input_tokens, output_tokens = await self.openai_service.generate_response(
-            user_message=user_message,
-            system_message=system_message,
-            formatted_chat_history=chat_history,
-            model=message.model,
-        )
-        return {
-            "type": "low_confidence",
-            "message": response["message"],
-            "products": [],
-            "reasoning": response["reasoning"],
-            "follow_up_question": response["follow_up_question"],
-            "metadata": {
-                "classification_result": classification,
-            },
-            "input_token_usage": {
-                "generate": input_tokens,
-            },
-            "output_token_usage": {
-                "generate": output_tokens,
-            },
-            "time_taken": {
-                "generate": time.time() - start_time,
-            },
+        metadata = {
+            "reranking_result": state["reranking_result"],
+            "input_token_usage": state["input_tokens"],
+            "output_token_usage": state["output_tokens"],
+            "time_taken": state["time_taken"],
         }
 
-    async def handle_chitchat(self, message: Message, chat_history: List[Dict[str, str]]):
-        start_time = time.time()
-        system_message = self._get_chitchat_system_message()
+        state["output"] = self.response_formatter.format_response("clear_intent_product", response, metadata)
 
-        user_message = f"""
-            User Query: {message.content}
+        logger.info(f"Generated response: {state['output']}")
+        return state
 
-            Chat History:
-                {json.dumps(chat_history, indent=2)}
-        """
+    def generate_semantic_search_queries(self, comprehensive_result: Dict[str, Any]) -> Tuple[List[str], List[str]]:
+        expanded_queries = comprehensive_result["expanded_queries"]
+        search_params = comprehensive_result["search_params"]
+        extracted_attributes = comprehensive_result["extracted_attributes"]
 
-        response, input_tokens, output_tokens = await self.openai_service.generate_response(
-            user_message=user_message,
-            system_message=system_message,
-            formatted_chat_history=chat_history,
-            model=message.model,
+        queries = expanded_queries.copy()
+        search_param_query = ", ".join([f"{key}: {', '.join(value)}" for key, value in search_params.items()])
+        queries.append(search_param_query)
+        extracted_attributes_query = ", ".join([f"{key}: {value}" for key, value in extracted_attributes.items()])
+        queries.append(extracted_attributes_query)
+
+        attributes = list(extracted_attributes.keys())
+        return queries, attributes
+
+    async def run(self, message: Message, chat_history: List[Message]) -> Tuple[str, Dict[str, Any]]:
+        logger.info(f"Running agent with message: {message}")
+
+        initial_state = AgentState(
+            model_name=message.model,
+            chat_history=chat_history,
+            current_message=message.content,
+            expanded_queries=[],
+            search_results=[],
+            final_results=[],
         )
-        return {
-            "type": "chitchat",
-            "message": response["response"],
-            "products": [],
-            "follow_up_question": response["follow_up_question"],
-            "metadata": {},
-            "input_token_usage": {
-                "generate": input_tokens,
-            },
-            "output_token_usage": {
-                "generate": output_tokens,
-            },
-            "time_taken": {
-                "generate": time.time() - start_time,
-            },
-        }
 
-    async def handle_vague_intent(self, message: Message, chat_history: List[Dict[str, str]]):
-        start_time = time.time()
-        search_result = await self.weaviate_service.search_products(message.content)
-        products = [Product(**product) for product in search_result]
-        system_message = self._get_vague_intent_system_message()
-
-        user_message = f"""
-            User Query: {message.content}
-
-            Chat History: {chat_history}
-
-            Relevant Products:
-            {json.dumps([{"name": p.name, "summary": p.full_product_description} for p in products], indent=2)}
-
-            Please provide a response that includes the relevant products found, a clear reasoning for the selection, and a follow-up question.
-            Ensure that only products that fully match ALL criteria specified in the user's query are included in the final list.
-            If no products match ALL criteria, explain why using the information from the reranking result.
-            Include a single, clear follow-up question based on the user's query and the products found.
-        """
-
-        response, input_tokens, output_tokens = await self.openai_service.generate_response(
-            user_message=user_message,
-            system_message=system_message,
-            formatted_chat_history=chat_history,
-            model=message.model,
-        )
-        return {
-            "type": "vague_intent_product",
-            "message": response["message"],
-            "products": [
-                product.__dict__
-                for product in products
-                if product.name in [p["name"] for p in response.get("products", [])]
-            ],
-            "reasoning": response["reasoning"],
-            "follow_up_question": response["follow_up_question"],
-            "metadata": {},
-            "input_token_usage": {
-                "generate": input_tokens,
-            },
-            "output_token_usage": {
-                "generate": output_tokens,
-            },
-            "time_taken": {
-                "generate": time.time() - start_time,
-            },
-        }
-
-    def _get_chitchat_system_message(self) -> str:
-        return """You are ThroughPut assistant. Your main task is to help users with their queries about products. Always respond in JSON format.
-                    The user is engaging in casual conversation with you. Respond naturally and politely to the user's message.
-                    Make sure your response is in a JSON format with the following structure:
-                    {
-                        "response": "Your response to the user's message."
-                        "follow_up_question": "A question to keep the conversation going."
-                    }
-                    """
-
-    def _get_vague_intent_system_message(self) -> str:
-        return """You are ThroughPut assistant. Your main task is to help users with their queries about products. Always respond in JSON format.
-        Analyze the user's query and the relevant products found, then provide a comprehensive and helpful response.
-        Your response should be clear, informative, and directly address the user's query.
-        IMPORTANT:
-        1. Only include products that FULLY match ALL criteria specified in the user's query.
-        2. Pay special attention to the user's query, and the specifications of the products.
-        3. Do NOT confuse the processor manufacturer with the product manufacturer. This applies to all attributes.
-        4. If no products match ALL criteria, return an empty list of products.
-        Always respond in JSON format with the following structure:
-            {
-                "message": "A concise introductory message addressing the user's query",
-                "products": [
-                    {
-                        "name": "Product Name", // We only need the name of the product
-                    },
-                    // ... more products if applicable
-                ],
-                "reasoning": "Clear and concise reasoning for the provided response and product selection",
-                "follow_up_question": "A single, clear follow-up question based on the user's query and the products found"
-            }
-        """
-
-    def _get_low_confidence_system_message(self) -> str:
-        return """You are ThroughPut assistant. Your main task is to help users with their queries about products. Always respond in JSON format.
-        We classified the user's query into three categories: clear_intent_product, vague_intent_product, and chitchat.
-        The system is not confident about how to categorize this query. Provide a response that acknowledges the uncertainty and asks for clarification from the user.
-        Always respond in JSON format with the following structure:
-            {
-                "message": "Your response to the user's message."
-                "follow_up_question": "A question to keep the conversation going."
-            }
-        """
-
-    @staticmethod
-    def _clean_response(response: str) -> Any:
         try:
-            response = response.replace("```", "").replace("json", "").replace("\n", "").strip()
-            return json.loads(response)
-        except json.JSONDecodeError:
-            raise ValueError(f"Invalid JSON response: {response}")
+            logger.info("Starting workflow execution")
+            final_state = await self.workflow.ainvoke(initial_state)
+            logger.info("Workflow execution completed")
+
+            output = json.dumps(final_state["output"], indent=2)
+            stats = {
+                "input_token_usage": final_state["input_tokens"],
+                "output_token_usage": final_state["output_tokens"],
+                "time_taken": final_state["time_taken"],
+            }
+
+        except Exception as e:
+            logger.error(f"Error during workflow execution: {str(e)}", exc_info=True)
+            output = json.dumps(
+                self.response_formatter.format_error_response("An unexpected error occurred during processing.")
+            )
+            stats = {
+                "input_token_usage": {"total": 0},
+                "output_token_usage": {"total": 0},
+                "time_taken": {"total": 0},
+            }
+
+        return output, stats
