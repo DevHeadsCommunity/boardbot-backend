@@ -92,22 +92,68 @@ class QueryProcessor:
         model: str = "gpt-4o",
         temperature: float = 0.1,
     ) -> List[Dict[str, Any]]:
+        # Predefined attribute descriptions
+        attribute_descriptions = {
+            "name": "Full name of the product",
+            "ids": "Unique identifier(s) for the product",
+            "manufacturer": "Company that produces the product",
+            "form_factor": "Physical dimensions or form factor of the product",
+            "processor": "Type or model of processor used in the product",
+            "core_count": "Number of processor cores",
+            "processor_tdp": "Thermal Design Power of the processor",
+            "memory": "RAM and storage capacity specifications",
+            "io": "Input/output interfaces available on the product",
+            "operating_system": "Supported operating system(s) or software environment",
+            "environmentals": "Operating conditions such as temperature and humidity ranges",
+            "certifications": "Relevant certifications for the product",
+            "short_summary": "Brief description of the product",
+            "full_summary": "Detailed summary of the product's features and capabilities",
+            "full_product_description": "Comprehensive description of the product",
+        }
+
+        # Dynamically create attribute mapping
+        attribute_mapping = {}
+        for product in products:
+            for key, value in product.items():
+                if key not in attribute_mapping:
+                    description = attribute_descriptions.get(key, f"{key.replace('_', ' ').title()}")
+                    attribute_mapping[key] = f"{key}: {type(value).__name__}, {description}"
+
+        attribute_mapping_str = "\n".join([f"- {value}" for value in attribute_mapping.values()])
+
         prompt = f"""
         Rerank the given products based on their relevance to the user query.
-        Return ONLY the products that FULLY match ALL criteria specified in the user's query.
-        If no products match ALL criteria, return an empty list.
+        Focus on exact matching of specified criteria rather than general relevance.
+        Carefully evaluate each product against ALL criteria specified in the user query. A product must match EVERY single criterion to be included.
+        Do NOT confuse different attributes (e.g., processor manufacturer vs product manufacturer).
+        Return the top {top_k} products based on relevance.
+
+        When evaluating products, use the following attribute mapping:
+        {attribute_mapping_str}
+
+        For any numerical criteria (e.g., processor frequency, memory size), ensure the product meets or exceeds the specified value.
 
         User Query: {query}
 
         Products:
         {json.dumps(products, indent=2)}
 
-        Return the list of matching products, ranked by relevance, in the following format:
-        [
-            {{"name": "Product Name", "relevance_score": 0.95}},
-            // ... more products if applicable
-        ]
-        If no products match, return an empty list: []
+        Return the list of matching products and justification in the following format:
+        {{
+            "products": [
+                {{
+                    "name": "Product Name",
+                    "relevance_score": 0.95,
+                    "score_explanation": "Brief explanation of this score",
+                    "matching_criteria": ["List of criteria that this product matches"],
+                    "missing_criteria": ["List of criteria that this product doesn't match, if any"]
+                }},
+                // ... more products if applicable
+            ],
+            "justification": "Clear, concise list or bullet points explaining why products are included or excluded, addressing each criterion from the query."
+        }}
+
+        If no products match, return: {{"products": [], "justification": "Detailed explanation why no products match, addressing each criterion from the query"}}
         """
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
@@ -115,7 +161,7 @@ class QueryProcessor:
         )
         response = self._clean_response(response)
         print(f"rerank_products response from OpenAI: {response}")
-        return [product["name"] for product in response[:top_k]], input_tokens, output_tokens
+        return response, input_tokens, output_tokens
 
     async def generate_faceted_search_params(
         self,

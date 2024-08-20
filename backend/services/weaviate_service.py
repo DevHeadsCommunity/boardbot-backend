@@ -1,7 +1,7 @@
 import logging
 import weaviate
 import pandas as pd
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from weaviate.weaviate_interface import WeaviateInterface
 
 
@@ -87,3 +87,18 @@ class WeaviateService:
         except Exception as e:
             print(f"Error in Weaviate search: {str(e)}")
             raise
+
+    async def get_all_products(self) -> List[Dict[str, Any]]:
+        return await self.wi.product.get_all()
+
+    async def get_product(self, product_id: str) -> Optional[Dict[str, Any]]:
+        return await self.wi.product.get(product_id)
+
+    async def add_product(self, product_data: Dict[str, Any]) -> str:
+        return await self.wi.product.upsert(product_data)
+
+    async def update_product(self, product_id: str, product_data: Dict[str, Any]) -> bool:
+        return await self.wi.product.update(product_id, product_data)
+
+    async def delete_product(self, product_id: str) -> bool:
+        return await self.wi.product.delete(product_id)

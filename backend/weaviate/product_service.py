@@ -18,6 +18,7 @@ class ProductService(WeaviateService):
     @property
     def properties(self) -> List[str]:
         return [
+            "_additional{id}",
             "name",
             "ids",
             "manufacturer",

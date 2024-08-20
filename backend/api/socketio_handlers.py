@@ -3,6 +3,7 @@ from dateutil.parser import isoparse
 from models.message import RequestMessage
 from core.session_manager import SessionManager
 from core.message_processor import MessageProcessor
+import datetime
 
 
 class SocketIOHandler:
@@ -44,10 +45,25 @@ class SocketIOHandler:
 
     async def process_message(self, sid, data):
         print(f"Received message from {sid}: {data}")
+
+        timestamp = data.get("timestamp")
+
+        if not timestamp:
+            print(f"Timestamp missing in message: {data}")
+            # Handle the case where timestamp is missing, e.g., log an error, or use a fallback value
+            timestamp = datetime.now().isoformat()  # Use the current timestamp as a fallback
+
+        try:
+            parsed_timestamp = isoparse(timestamp)
+        except Exception as e:
+            print(f"Error parsing timestamp: {timestamp}, Error: {e}")
+            # Fallback to the current timestamp in case of parsing error
+            parsed_timestamp = datetime.now()
+
         message = RequestMessage(
             id=data.get("messageId"),
             content=data.get("message"),
-            timestamp=isoparse(data.get("timestamp")),
+            timestamp=parsed_timestamp,
             session_id=data.get("sessionId"),
             model=data.get("model"),
             architecture_choice=data.get("architectureChoice"),

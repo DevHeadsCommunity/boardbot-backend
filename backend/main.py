@@ -1,13 +1,22 @@
+import logging
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from api import SocketIOHandler, api_router
-from containers import Container
-from config import Config
+from dependencies import container
+from fastapi.middleware.cors import CORSMiddleware
 
-container = Container()
-container.config.from_dict(Config().dict())
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # Add your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @asynccontextmanager

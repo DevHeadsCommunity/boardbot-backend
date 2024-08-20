@@ -9,6 +9,7 @@ from generators.agent_v2 import AgentV2
 from generators.semantic_router_v1 import SemanticRouterV1
 from generators.semantic_router_v2 import SemanticRouterV2
 from services.query_processor import QueryProcessor
+from services.feature_extractor_agent_v2 import FeatureExtractor
 
 
 class Container(containers.DeclarativeContainer):
@@ -46,4 +47,8 @@ class Container(containers.DeclarativeContainer):
         semantic_router_v2=semantic_router_v2,
         agent_v1=agent_v1,
         agent_v2=agent_v2,
+    )
+
+    feature_extractor = providers.Singleton(
+        FeatureExtractor, openai_service=openai_service, tavily_service=tavily_service
     )
