@@ -70,10 +70,7 @@ class SocketIOHandler:
             history_management_choice=data.get("historyManagementChoice"),
         )
         print(f"===> Message279: {message}")
-        chat_history = self.session_manager.get_chat_history(message.session_id, message.history_management_choice)
-        print(f"Chat history: {chat_history}")
-        formatted_chat_history = self.session_manager.format_chat_history(chat_history)
-        response = await self.message_processor.process_message(message, formatted_chat_history)
+        response = await self.message_processor.process_message(message)
 
         response_json = {
             "session_id": message.session_id,

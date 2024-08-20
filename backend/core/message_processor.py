@@ -21,18 +21,18 @@ class MessageProcessor:
         self.semantic_router_v1 = semantic_router_v1
         self.semantic_router_v2 = semantic_router_v2
 
-    async def process_message(self, message: Message, chat_history: List[Dict[str, str]]) -> ResponseMessage:
+    async def process_message(self, message: Message) -> ResponseMessage:
         print(f"*** Processing message: {message.content}")
         start_time = time.time()
 
         if message.architecture_choice == "semantic-router-v1":
-            response_content, stats = await self.semantic_router_v1.run(message, chat_history)
+            response_content, stats = await self.semantic_router_v1.run(message)
         elif message.architecture_choice == "semantic-router-v2":
-            response_content, stats = await self.semantic_router_v2.run(message, chat_history)
+            response_content, stats = await self.semantic_router_v2.run(message)
         elif message.architecture_choice == "agentic-v1":
-            response_content, stats = await self.agent_v1.run(message, chat_history)
+            response_content, stats = await self.agent_v1.run(message)
         elif message.architecture_choice == "agentic-v2":
-            response_content, stats = await self.agent_v2.run(message.content, chat_history)
+            response_content, stats = await self.agent_v2.run(message.content)
         else:
             raise ValueError(f"Unknown architecture choice: {message.architecture_choice}")
 

@@ -1,212 +1,211 @@
 import json
 import logging
 import time
-from typing import List, Tuple, Dict, Any
+from typing import Any, Dict, List, Tuple
+from core.session_manager import SessionManager
 from models.message import Message
 from models.product import Product
+from generators.agent_v1 import AgentV1
 from services.openai_service import OpenAIService
-from services.query_processor import QueryProcessor
 from services.weaviate_service import WeaviateService
 from utils.response_formatter import ResponseFormatter
 from prompts.prompt_manager import PromptManager
-from langgraph.graph import StateGraph, END
 
 logger = logging.getLogger(__name__)
 
 
-class AgentState(Dict[str, Any]):
-    model_name: str = "gpt-4o"
-    chat_history: List[Dict[str, str]]
-    current_message: str
-    expanded_queries: List[str]
-    attributes: List[str]
-    search_results: List[Product]
-    reranking_result: Dict[str, Any]
-    final_results: List[Product]
-    input_tokens: Dict[str, int] = {
-        "expansion": 0,
-        "rerank": 0,
-        "generate": 0,
-    }
-    output_tokens: Dict[str, int] = {
-        "expansion": 0,
-        "rerank": 0,
-        "generate": 0,
-    }
-    time_taken: Dict[str, float] = {
-        "expansion": 0.0,
-        "search": 0.0,
-        "rerank": 0.0,
-        "generate": 0.0,
-    }
-    output: Dict[str, Any] = {}
+class SemanticRouterV2:
 
-
-class AgentV1:
     def __init__(
         self,
-        weaviate_service: WeaviateService,
-        query_processor: QueryProcessor,
+        session_manager: SessionManager,
         openai_service: OpenAIService,
+        weaviate_service: WeaviateService,
+        agent_v1: AgentV1,
+        prompt_manager: PromptManager,
     ):
-        self.weaviate_service = weaviate_service
-        self.query_processor = query_processor
+        self.session_manager = session_manager
         self.openai_service = openai_service
-        self.workflow = self.setup_workflow()
-        self.prompt_manager = PromptManager()
+        self.weaviate_service = weaviate_service
+        self.agent_v1 = agent_v1
+        self.prompt_manager = prompt_manager
         self.response_formatter = ResponseFormatter()
 
-    def setup_workflow(self) -> StateGraph:
-        workflow = StateGraph(AgentState)
-
-        workflow.add_node("query_expansion", self.query_expansion_node)
-        workflow.add_node("product_search", self.product_search_node)
-        workflow.add_node("result_reranking", self.result_reranking_node)
-        workflow.add_node("response_generation", self.response_generation_node)
-
-        workflow.add_edge("query_expansion", "product_search")
-        workflow.add_edge("product_search", "result_reranking")
-        workflow.add_edge("result_reranking", "response_generation")
-        workflow.add_edge("response_generation", END)
-
-        workflow.set_entry_point("query_expansion")
-
-        return workflow.compile()
-
-    async def query_expansion_node(self, state: AgentState) -> AgentState:
-        start_time = time.time()
-        result, input_tokens, output_tokens = await self.query_processor.process_query_comprehensive(
-            state["current_message"], state["chat_history"], num_expansions=3, model=state["model_name"]
+    async def run(self, message: Message) -> Tuple[str, Dict[str, int]]:
+        chat_history = self.session_manager.get_formatted_chat_history(
+            message.session_id, message.history_management_choice, "message_only"
         )
-        expanded_queries, attributes = self.generate_semantic_search_queries(result)
+        classification, input_tokens, output_tokens, time_taken = await self.determine_route(
+            message.content, json.dumps(chat_history)
+        )
+        response = await self.handle_route(
+            classification, message, json.dumps(chat_history), input_tokens, output_tokens, time_taken
+        )
+        return json.dumps(response, indent=2), {
+            "input_token_count": sum(response["input_token_usage"].values()),
+            "output_token_count": sum(response["output_token_usage"].values()),
+        }
 
-        state["expanded_queries"] = expanded_queries
-        state["attributes"] = attributes
-        state["input_tokens"]["expansion"] = input_tokens
-        state["output_tokens"]["expansion"] = output_tokens
-        state["time_taken"]["expansion"] = time.time() - start_time
-
-        logger.info(f"Expanded queries: {expanded_queries}")
-        return state
-
-    async def product_search_node(self, state: AgentState) -> AgentState:
+    async def determine_route(
+        self, query: str, chat_history: List[Dict[str, str]]
+    ) -> Tuple[Dict[str, Any], int, int, float]:
         start_time = time.time()
-        all_results = []
-        for query in [state["current_message"]] + state["expanded_queries"]:
-            results = await self.weaviate_service.search_products(query, limit=5)
-            all_results.extend(results)
+        system_message, user_message = self.prompt_manager.get_route_classification_prompt(query, chat_history)
 
-        unique_results = {}
-        for result in all_results:
-            if result["name"] not in unique_results:
-                unique_results[result["name"]] = Product(**result)
-
-        state["search_results"] = list(unique_results.values())
-        state["time_taken"]["search"] = time.time() - start_time
-
-        logger.info(f"Found {len(state['search_results'])} unique products")
-        return state
-
-    async def result_reranking_node(self, state: AgentState) -> AgentState:
-        start_time = time.time()
-        products_for_reranking = [
-            {"name": p.name, **{attr: getattr(p, attr) for attr in state["attributes"]}}
-            for p in state["search_results"]
-        ]
-        reranked_result, input_tokens, output_tokens = await self.query_processor.rerank_products(
-            state["current_message"], products_for_reranking, top_k=10, model=state["model_name"]
+        response, input_tokens, output_tokens = await self.openai_service.generate_response(
+            user_message=user_message, system_message=system_message, temperature=0.1, model="gpt-4o"
         )
 
-        state["reranking_result"] = reranked_result
-        name_to_product = {p.name: p for p in state["search_results"]}
-        state["final_results"] = [
-            name_to_product[p["name"]] for p in reranked_result["products"] if p["name"] in name_to_product
-        ]
-        state["input_tokens"]["rerank"] = input_tokens
-        state["output_tokens"]["rerank"] = output_tokens
-        state["time_taken"]["rerank"] = time.time() - start_time
+        classification = self._clean_response(response)
+        logger.info(f"Route determined: {classification}")
+        return classification, input_tokens, output_tokens, time.time() - start_time
 
-        logger.info(f"Reranked results: {[p.name for p in state['final_results']]}")
-        return state
+    async def handle_route(
+        self,
+        classification: Dict[str, Any],
+        message: Message,
+        chat_history: List[Dict[str, str]],
+        input_tokens: int,
+        output_tokens: int,
+        time_taken: float,
+    ) -> Dict[str, Any]:
+        route = classification["category"]
+        confidence = classification["confidence"]
 
-    async def response_generation_node(self, state: AgentState) -> AgentState:
+        base_metadata = {
+            "classification_result": classification,
+            "input_token_usage": {"classification": input_tokens},
+            "output_token_usage": {"classification": output_tokens},
+            "time_taken": {"classification": time_taken},
+        }
+
+        if confidence < 50:
+            return await self.handle_low_confidence_query(message, chat_history, classification, base_metadata)
+
+        route_handlers = {
+            "politics": self.handle_politics,
+            "chitchat": self.handle_chitchat,
+            "vague_intent_product": self.handle_vague_intent,
+            "clear_intent_product": self.handle_clear_intent,
+            "do_not_respond": self.handle_do_not_respond,
+        }
+
+        handler = route_handlers.get(route, self.handle_unknown_route)
+        return await handler(message, chat_history, base_metadata)
+
+    async def handle_low_confidence_query(
+        self,
+        message: Message,
+        chat_history: List[Dict[str, str]],
+        classification: Dict[str, Any],
+        base_metadata: Dict[str, Any],
+    ) -> Dict[str, Any]:
         start_time = time.time()
-        system_message = self.prompt_manager.get_system_message("clear_intent_product")
-        user_message = self.prompt_manager.format_user_message(
-            "clear_intent_product",
-            state["current_message"],
-            state["chat_history"],
-            reranking_result=state["reranking_result"],
-            relevant_products=state["final_results"],
+        system_message, user_message = self.prompt_manager.get_low_confidence_prompt(
+            message.content, chat_history, classification
         )
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
-            user_message=user_message, system_message=system_message, temperature=0.1, model=state["model_name"]
+            user_message=user_message,
+            system_message=system_message,
+            formatted_chat_history=chat_history,
+            model=message.model,
         )
 
-        state["input_tokens"]["generate"] = input_tokens
-        state["output_tokens"]["generate"] = output_tokens
-        state["time_taken"]["generate"] = time.time() - start_time
+        base_metadata["input_token_usage"]["generate"] = input_tokens
+        base_metadata["output_token_usage"]["generate"] = output_tokens
+        base_metadata["time_taken"]["generate"] = time.time() - start_time
 
-        metadata = {
-            "reranking_result": state["reranking_result"],
-            "input_token_usage": state["input_tokens"],
-            "output_token_usage": state["output_tokens"],
-            "time_taken": state["time_taken"],
-        }
+        return self.response_formatter.format_response("low_confidence", response, base_metadata)
 
-        state["output"] = self.response_formatter.format_response("clear_intent_product", response, metadata)
-
-        logger.info(f"Generated response: {state['output']}")
-        return state
-
-    def generate_semantic_search_queries(self, comprehensive_result: Dict[str, Any]) -> Tuple[List[str], List[str]]:
-        expanded_queries = comprehensive_result["expanded_queries"]
-        search_params = comprehensive_result["search_params"]
-        extracted_attributes = comprehensive_result["extracted_attributes"]
-
-        queries = expanded_queries.copy()
-        search_param_query = ", ".join([f"{key}: {', '.join(value)}" for key, value in search_params.items()])
-        queries.append(search_param_query)
-        extracted_attributes_query = ", ".join([f"{key}: {value}" for key, value in extracted_attributes.items()])
-        queries.append(extracted_attributes_query)
-
-        attributes = list(extracted_attributes.keys())
-        return queries, attributes
-
-    async def run(self, message: Message, chat_history: List[Message]) -> Tuple[str, Dict[str, Any]]:
-        logger.info(f"Running agent with message: {message}")
-
-        initial_state = AgentState(
-            model_name=message.model,
-            chat_history=chat_history,
-            current_message=message.content,
-            expanded_queries=[],
-            search_results=[],
-            final_results=[],
+    async def handle_politics(self, base_metadata: Dict[str, Any]) -> Dict[str, Any]:
+        return self.response_formatter.format_response(
+            "politics",
+            json.dumps(
+                {
+                    "message": "I'm sorry, but I don't discuss politics.",
+                    "follow_up_question": "Can I help you with anything related to computer hardware?",
+                }
+            ),
+            base_metadata,
         )
 
+    async def handle_chitchat(
+        self, message: Message, chat_history: List[Dict[str, str]], base_metadata: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        start_time = time.time()
+        system_message, user_message = self.prompt_manager.get_chitchat_prompt(message.content, chat_history)
+
+        response, input_tokens, output_tokens = await self.openai_service.generate_response(
+            user_message=user_message,
+            system_message=system_message,
+            formatted_chat_history=chat_history,
+            model=message.model,
+        )
+
+        base_metadata["input_token_usage"]["generate"] = input_tokens
+        base_metadata["output_token_usage"]["generate"] = output_tokens
+        base_metadata["time_taken"]["generate"] = time.time() - start_time
+
+        return self.response_formatter.format_response("chitchat", response, base_metadata)
+
+    async def handle_vague_intent(
+        self, message: Message, chat_history: List[Dict[str, str]], base_metadata: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        start_time = time.time()
+        search_result = await self.weaviate_service.search_products(message.content)
+        products = [Product(**product) for product in search_result]
+
+        system_message, user_message = self.prompt_manager.get_vague_intent_product_prompt(
+            message.content, chat_history, products
+        )
+
+        response, input_tokens, output_tokens = await self.openai_service.generate_response(
+            user_message=user_message,
+            system_message=system_message,
+            formatted_chat_history=chat_history,
+            model=message.model,
+        )
+
+        base_metadata["input_token_usage"]["generate"] = input_tokens
+        base_metadata["output_token_usage"]["generate"] = output_tokens
+        base_metadata["time_taken"]["generate"] = time.time() - start_time
+
+        return self.response_formatter.format_response("vague_intent_product", response, base_metadata)
+
+    async def handle_clear_intent(
+        self, message: Message, chat_history: List[Dict[str, str]], base_metadata: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        agent_response, agent_stats = await self.agent_v1.run(message, chat_history)
+        agent_response_dict = json.loads(agent_response)
+
+        base_metadata["input_token_usage"].update(agent_stats["input_token_usage"])
+        base_metadata["output_token_usage"].update(agent_stats["output_token_usage"])
+        base_metadata["time_taken"].update(agent_stats["time_taken"])
+
+        return self.response_formatter.format_response(
+            "clear_intent_product", json.dumps(agent_response_dict), base_metadata
+        )
+
+    async def handle_do_not_respond(self, base_metadata: Dict[str, Any]) -> Dict[str, Any]:
+        return self.response_formatter.format_response(
+            "do_not_respond",
+            json.dumps(
+                {
+                    "message": "I'm sorry, but I can't help with that type of request.",
+                    "follow_up_question": "Is there anything related to computer hardware that I can assist you with?",
+                }
+            ),
+            base_metadata,
+        )
+
+    async def handle_unknown_route(self, base_metadata: Dict[str, Any]) -> Dict[str, Any]:
+        logger.error(f"Unknown route encountered: {base_metadata['classification_result']['category']}")
+        return self.response_formatter.format_error_response("An error occurred while processing your request.")
+
+    @staticmethod
+    def _clean_response(response: str) -> Any:
         try:
-            logger.info("Starting workflow execution")
-            final_state = await self.workflow.ainvoke(initial_state)
-            logger.info("Workflow execution completed")
-
-            output = json.dumps(final_state["output"], indent=2)
-            stats = {
-                "input_token_usage": final_state["input_tokens"],
-                "output_token_usage": final_state["output_tokens"],
-                "time_taken": final_state["time_taken"],
-            }
-
-        except Exception as e:
-            logger.error(f"Error during workflow execution: {str(e)}", exc_info=True)
-            output = json.dumps(
-                self.response_formatter.format_error_response("An unexpected error occurred during processing.")
-            )
-            stats = {
-                "input_token_usage": {"total": 0},
-                "output_token_usage": {"total": 0},
-                "time_taken": {"total": 0},
-            }
-
-        return output, stats
+            return json.loads(response.replace("```json", "").replace("```", "").strip())
+        except json.JSONDecodeError:
+            raise ValueError(f"Invalid JSON response: {response}")

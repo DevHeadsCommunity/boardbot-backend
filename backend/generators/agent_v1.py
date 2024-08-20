@@ -43,17 +43,19 @@ class AgentState(Dict[str, Any]):
 
 
 class AgentV1:
+
     def __init__(
         self,
         weaviate_service: WeaviateService,
         query_processor: QueryProcessor,
         openai_service: OpenAIService,
+        prompt_manager: PromptManager,
     ):
         self.weaviate_service = weaviate_service
         self.query_processor = query_processor
         self.openai_service = openai_service
         self.workflow = self.setup_workflow()
-        self.prompt_manager = PromptManager()
+        self.prompt_manager = prompt_manager
         self.response_formatter = ResponseFormatter()
 
     def setup_workflow(self) -> StateGraph:
@@ -114,7 +116,7 @@ class AgentV1:
             for p in state["search_results"]
         ]
         reranked_result, input_tokens, output_tokens = await self.query_processor.rerank_products(
-            state["current_message"], products_for_reranking, top_k=10, model=state["model_name"]
+            state["current_message"], state["chat_history"], products_for_reranking, top_k=10, model=state["model_name"]
         )
 
         state["reranking_result"] = reranked_result
@@ -131,13 +133,11 @@ class AgentV1:
 
     async def response_generation_node(self, state: AgentState) -> AgentState:
         start_time = time.time()
-        system_message = self.prompt_manager.get_system_message("clear_intent_product")
-        user_message = self.prompt_manager.format_user_message(
-            "clear_intent_product",
+        system_message, user_message = self.prompt_manager.get_clear_intent_product_prompt(
             state["current_message"],
             state["chat_history"],
-            reranking_result=state["reranking_result"],
-            relevant_products=state["final_results"],
+            state["final_results"],
+            state["reranking_result"],
         )
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(

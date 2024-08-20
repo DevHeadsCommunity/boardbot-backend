@@ -205,12 +205,13 @@ class LowConfidencePrompt(BaseChatPrompt):
         """
         )
         human_template = """
+        System Classification: {classification}
         Chat History: {chat_history}
         User Query: {query}
 
         Response:
         """
-        super().__init__(system_template, human_template, ["query", "chat_history"])
+        super().__init__(system_template, human_template, ["query", "chat_history", "classification"])
 
 
 class VagueIntentProductPrompt(BaseChatPrompt):
