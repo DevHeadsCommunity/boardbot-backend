@@ -1,12 +1,19 @@
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple
 from templates import (
     RouteClassificationPrompt,
     QueryProcessorPrompt,
     ProductRerankingPrompt,
+    SemanticSearchQueryPrompt,
     ChitchatPrompt,
     LowConfidencePrompt,
     VagueIntentProductPrompt,
     ClearIntentProductPrompt,
+    DynamicAgentActionPrompt,
+    DynamicAgentResponsePrompt,
+    SimpleDataExtractionPrompt,
+    DataExtractionPrompt,
+    ContextualExtractionPrompt,
+    FeatureRefinementPrompt,
 )
 
 
@@ -16,10 +23,17 @@ class PromptManager:
             "route_classification": RouteClassificationPrompt(),
             "query_processor": QueryProcessorPrompt(),
             "product_reranking": ProductRerankingPrompt(),
+            "semantic_search_query": SemanticSearchQueryPrompt(),
             "chitchat": ChitchatPrompt(),
             "low_confidence": LowConfidencePrompt(),
             "vague_intent_product": VagueIntentProductPrompt(),
             "clear_intent_product": ClearIntentProductPrompt(),
+            "dynamic_agent_action": DynamicAgentActionPrompt(),
+            "dynamic_agent_response": DynamicAgentResponsePrompt(),
+            "simple_data_extraction": SimpleDataExtractionPrompt(),
+            "data_extraction": DataExtractionPrompt(),
+            "contextual_extraction": ContextualExtractionPrompt(),
+            "feature_refinement": FeatureRefinementPrompt(),
         }
 
     def get_prompt(self, prompt_type: str, **kwargs) -> Tuple[str, str]:
@@ -75,6 +89,9 @@ class PromptManager:
             top_k=top_k,
         )
 
+    def get_semantic_search_query_prompt(self, query: str, chat_history: str) -> Tuple[str, str]:
+        return self.get_prompt("semantic_search_query", query=query, chat_history=chat_history)
+
     def get_chitchat_prompt(self, query: str, chat_history: str) -> Tuple[str, str]:
         return self.get_prompt("chitchat", query=query, chat_history=chat_history)
 
@@ -83,8 +100,8 @@ class PromptManager:
     ) -> Tuple[str, str]:
         return self.get_prompt("low_confidence", query=query, chat_history=chat_history, classification=classification)
 
-    def get_vague_intent_product_prompt(self, query: str, chat_history: str, products: str) -> Tuple[str, str]:
-        return self.get_prompt("vague_intent_product", query=query, chat_history=chat_history, products=products)
+    def get_vague_intent_response_prompt(self, query: str, chat_history: str, products: str) -> Tuple[str, str]:
+        return self.get_prompt("vague_intent_response", query=query, chat_history=chat_history, products=products)
 
     def get_clear_intent_product_prompt(
         self, query: str, chat_history: str, products: str, reranking_result: str
@@ -95,4 +112,50 @@ class PromptManager:
             chat_history=chat_history,
             products=products,
             reranking_result=reranking_result,
+        )
+
+    def get_dynamic_agent_action_prompt(
+        self,
+        query: str,
+        chat_history: List[Dict[str, str]],
+        context: List[Dict[str, Any]],
+        completed_actions: List[str],
+    ) -> Tuple[str, str]:
+        return self.get_prompt(
+            "dynamic_agent_action",
+            query=query,
+            chat_history=chat_history,
+            context=context,
+            completed_actions=completed_actions,
+        )
+
+    def get_dynamic_agent_response_prompt(
+        self, query: str, chat_history: List[Dict[str, str]], context: List[Dict[str, Any]]
+    ) -> Tuple[str, str]:
+        return self.get_prompt("dynamic_agent_response", query=query, chat_history=chat_history, context=context)
+
+    def get_simple_data_extraction_prompt(self, raw_data: str) -> Tuple[str, str]:
+        return self.get_prompt("simple_data_extraction", raw_data=raw_data)
+
+    def get_data_extraction_prompt(self, raw_data: str) -> Tuple[str, str]:
+        return self.get_prompt("data_extraction", raw_data=raw_data)
+
+    def get_contextual_extraction_prompt(
+        self, context: str, extracted_features: str, features_to_extract: List[str]
+    ) -> Tuple[str, str]:
+        return self.get_prompt(
+            "contextual_extraction",
+            context=context,
+            extracted_features=extracted_features,
+            features_to_extract=", ".join(features_to_extract),
+        )
+
+    def get_feature_refinement_prompt(
+        self, context: str, extracted_features: str, features_to_refine: List[str]
+    ) -> Tuple[str, str]:
+        return self.get_prompt(
+            "feature_refinement",
+            context=context,
+            extracted_features=extracted_features,
+            features_to_refine=", ".join(features_to_refine),
         )

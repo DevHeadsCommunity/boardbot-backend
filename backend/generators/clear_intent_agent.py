@@ -14,7 +14,7 @@ from langgraph.graph import StateGraph, END
 logger = logging.getLogger(__name__)
 
 
-class AgentState(Dict[str, Any]):
+class ClearIntentState(Dict[str, Any]):
     model_name: str = "gpt-4o"
     chat_history: List[Dict[str, str]]
     current_message: str
@@ -42,7 +42,7 @@ class AgentState(Dict[str, Any]):
     output: Dict[str, Any] = {}
 
 
-class AgentV1:
+class ClearIntentAgent:
 
     def __init__(
         self,
@@ -59,7 +59,7 @@ class AgentV1:
         self.response_formatter = ResponseFormatter()
 
     def setup_workflow(self) -> StateGraph:
-        workflow = StateGraph(AgentState)
+        workflow = StateGraph(ClearIntentState)
 
         workflow.add_node("query_expansion", self.query_expansion_node)
         workflow.add_node("product_search", self.product_search_node)
@@ -75,7 +75,7 @@ class AgentV1:
 
         return workflow.compile()
 
-    async def query_expansion_node(self, state: AgentState) -> AgentState:
+    async def query_expansion_node(self, state: ClearIntentState) -> ClearIntentState:
         start_time = time.time()
         result, input_tokens, output_tokens = await self.query_processor.process_query_comprehensive(
             state["current_message"], state["chat_history"], num_expansions=3, model=state["model_name"]
@@ -91,7 +91,7 @@ class AgentV1:
         logger.info(f"Expanded queries: {expanded_queries}")
         return state
 
-    async def product_search_node(self, state: AgentState) -> AgentState:
+    async def product_search_node(self, state: ClearIntentState) -> ClearIntentState:
         start_time = time.time()
         all_results = []
         for query in [state["current_message"]] + state["expanded_queries"]:
@@ -109,7 +109,7 @@ class AgentV1:
         logger.info(f"Found {len(state['search_results'])} unique products")
         return state
 
-    async def result_reranking_node(self, state: AgentState) -> AgentState:
+    async def result_reranking_node(self, state: ClearIntentState) -> ClearIntentState:
         start_time = time.time()
         products_for_reranking = [
             {"name": p.name, **{attr: getattr(p, attr) for attr in state["attributes"]}}
@@ -131,7 +131,7 @@ class AgentV1:
         logger.info(f"Reranked results: {[p.name for p in state['final_results']]}")
         return state
 
-    async def response_generation_node(self, state: AgentState) -> AgentState:
+    async def response_generation_node(self, state: ClearIntentState) -> ClearIntentState:
         start_time = time.time()
         system_message, user_message = self.prompt_manager.get_clear_intent_product_prompt(
             state["current_message"],
@@ -177,7 +177,7 @@ class AgentV1:
     async def run(self, message: Message, chat_history: List[Message]) -> Tuple[str, Dict[str, Any]]:
         logger.info(f"Running agent with message: {message}")
 
-        initial_state = AgentState(
+        initial_state = ClearIntentState(
             model_name=message.model,
             chat_history=chat_history,
             current_message=message.content,

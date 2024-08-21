@@ -4,30 +4,31 @@ import time
 from typing import Any, Dict, List, Tuple
 from core.session_manager import SessionManager
 from models.message import Message
-from models.product import Product
-from generators.agent_v1 import AgentV1
+from prompts.prompt_manager import PromptManager
 from services.openai_service import OpenAIService
 from services.weaviate_service import WeaviateService
 from utils.response_formatter import ResponseFormatter
-from prompts.prompt_manager import PromptManager
+from backend.generators.clear_intent_agent import ClearIntentAgent
+from backend.generators.vague_intent_agent import VagueIntentAgent
 
 logger = logging.getLogger(__name__)
 
 
-class SemanticRouterV2:
-
+class BaseRouter:
     def __init__(
         self,
         session_manager: SessionManager,
         openai_service: OpenAIService,
         weaviate_service: WeaviateService,
-        agent_v1: AgentV1,
+        clear_intent_agent: ClearIntentAgent,
+        vague_intent_agent: VagueIntentAgent,
         prompt_manager: PromptManager,
     ):
         self.session_manager = session_manager
         self.openai_service = openai_service
         self.weaviate_service = weaviate_service
-        self.agent_v1 = agent_v1
+        self.clear_intent_agent = clear_intent_agent
+        self.vague_intent_agent = vague_intent_agent
         self.prompt_manager = prompt_manager
         self.response_formatter = ResponseFormatter()
 
@@ -49,16 +50,7 @@ class SemanticRouterV2:
     async def determine_route(
         self, query: str, chat_history: List[Dict[str, str]]
     ) -> Tuple[Dict[str, Any], int, int, float]:
-        start_time = time.time()
-        system_message, user_message = self.prompt_manager.get_route_classification_prompt(query, chat_history)
-
-        response, input_tokens, output_tokens = await self.openai_service.generate_response(
-            user_message=user_message, system_message=system_message, temperature=0.1, model="gpt-4o"
-        )
-
-        classification = self._clean_response(response)
-        logger.info(f"Route determined: {classification}")
-        return classification, input_tokens, output_tokens, time.time() - start_time
+        raise NotImplementedError("Subclasses must implement determine_route method")
 
     async def handle_route(
         self,
@@ -152,31 +144,21 @@ class SemanticRouterV2:
     async def handle_vague_intent(
         self, message: Message, chat_history: List[Dict[str, str]], base_metadata: Dict[str, Any]
     ) -> Dict[str, Any]:
-        start_time = time.time()
-        search_result = await self.weaviate_service.search_products(message.content)
-        products = [Product(**product) for product in search_result]
+        agent_response, agent_stats = await self.vague_intent_agent.run(message, chat_history)
+        agent_response_dict = json.loads(agent_response)
 
-        system_message, user_message = self.prompt_manager.get_vague_intent_product_prompt(
-            message.content, chat_history, products
+        base_metadata["input_token_usage"].update(agent_stats["input_token_usage"])
+        base_metadata["output_token_usage"].update(agent_stats["output_token_usage"])
+        base_metadata["time_taken"].update(agent_stats["time_taken"])
+
+        return self.response_formatter.format_response(
+            "vague_intent_product", json.dumps(agent_response_dict), base_metadata
         )
-
-        response, input_tokens, output_tokens = await self.openai_service.generate_response(
-            user_message=user_message,
-            system_message=system_message,
-            formatted_chat_history=chat_history,
-            model=message.model,
-        )
-
-        base_metadata["input_token_usage"]["generate"] = input_tokens
-        base_metadata["output_token_usage"]["generate"] = output_tokens
-        base_metadata["time_taken"]["generate"] = time.time() - start_time
-
-        return self.response_formatter.format_response("vague_intent_product", response, base_metadata)
 
     async def handle_clear_intent(
         self, message: Message, chat_history: List[Dict[str, str]], base_metadata: Dict[str, Any]
     ) -> Dict[str, Any]:
-        agent_response, agent_stats = await self.agent_v1.run(message, chat_history)
+        agent_response, agent_stats = await self.clear_intent_agent.run(message, chat_history)
         agent_response_dict = json.loads(agent_response)
 
         base_metadata["input_token_usage"].update(agent_stats["input_token_usage"])

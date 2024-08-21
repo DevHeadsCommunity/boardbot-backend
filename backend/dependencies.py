@@ -17,5 +17,9 @@ def get_weaviate_service():
     return container.weaviate_service()
 
 
-def get_feature_extractor():
-    return container.feature_extractor()
+def get_agentic_feature_extractor():
+    return container.agentic_feature_extractor()
+
+
+def get_simple_feature_extractor():
+    return container.simple_feature_extractor()

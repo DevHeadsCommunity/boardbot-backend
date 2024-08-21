@@ -1,17 +1,29 @@
+from enum import Enum
 import pandas as pd
 from io import StringIO
 from models.product import Product
 from services.weaviate_service import WeaviateService
-from services.feature_extractor_agent_v2 import FeatureExtractor
-from dependencies import get_weaviate_service, get_feature_extractor
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from services.simple_feature_extractor import SimpleFeatureExtractor
+from backend.services.agentic_feature_extractor import AgenticFeatureExtractor
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+from dependencies import get_weaviate_service, get_agentic_feature_extractor, get_simple_feature_extractor
 
 router = APIRouter()
 
 
+class FeatureExtractorType(str, Enum):
+    agentic = "agentic"
+    simple = "simple"
+
+
 @router.get("/products")
-async def get_all_products(weaviate_service: WeaviateService = Depends(get_weaviate_service)):
-    return await weaviate_service.get_all_products()
+async def get_products(
+    limit: int = Query(10, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    weaviate_service: WeaviateService = Depends(get_weaviate_service),
+):
+    products, total_count = await weaviate_service.get_products(limit, offset)
+    return {"total": total_count, "limit": limit, "offset": offset, "products": products}
 
 
 @router.get("/products/{product_id}")
@@ -49,10 +61,18 @@ async def delete_product(product_id: str, weaviate_service: WeaviateService = De
 @router.post("/products/raw")
 async def add_raw_product(
     raw_data: str,
+    extractor_type: FeatureExtractorType = Query(
+        FeatureExtractorType.agentic, description="The type of feature extractor to use"
+    ),
     weaviate_service: WeaviateService = Depends(get_weaviate_service),
-    feature_extractor: FeatureExtractor = Depends(get_feature_extractor),
+    agentic_feature_extractor: AgenticFeatureExtractor = Depends(get_agentic_feature_extractor),
+    simple_feature_extractor: SimpleFeatureExtractor = Depends(get_simple_feature_extractor),
 ):
-    extracted_data = await feature_extractor.extract_data(raw_data)
+    if extractor_type == FeatureExtractorType.agentic:
+        extracted_data = await agentic_feature_extractor.extract_data(raw_data)
+    else:
+        extracted_data = await simple_feature_extractor.extract_data(raw_data)
+
     product_id = await weaviate_service.add_product(extracted_data)
     return {"id": product_id}
 
@@ -60,8 +80,12 @@ async def add_raw_product(
 @router.post("/products/batch")
 async def add_products_batch(
     file: UploadFile = File(...),
+    extractor_type: FeatureExtractorType = Query(
+        FeatureExtractorType.agentic, description="The type of feature extractor to use"
+    ),
     weaviate_service: WeaviateService = Depends(get_weaviate_service),
-    feature_extractor: FeatureExtractor = Depends(get_feature_extractor),
+    agentic_feature_extractor: AgenticFeatureExtractor = Depends(get_agentic_feature_extractor),
+    simple_feature_extractor: SimpleFeatureExtractor = Depends(get_simple_feature_extractor),
 ):
     content = await file.read()
     csv_content = content.decode("utf-8")
@@ -70,7 +94,10 @@ async def add_products_batch(
     product_ids = []
     for _, row in df.iterrows():
         raw_data = row["raw_data"]
-        extracted_data = await feature_extractor.extract_data(raw_data)
+        if extractor_type == FeatureExtractorType.agentic:
+            extracted_data = await agentic_feature_extractor.extract_data(raw_data)
+        else:
+            extracted_data = await simple_feature_extractor.extract_data(raw_data)
         product_id = await weaviate_service.add_product(extracted_data)
         product_ids.append(product_id)
 

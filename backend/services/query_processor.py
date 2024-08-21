@@ -63,6 +63,21 @@ class QueryProcessor:
                     attribute_mapping[key] = f"{key}: {type(value).__name__}, {description}"
         return "\n".join([f"- {value}" for value in attribute_mapping.values()])
 
+    async def generate_semantic_search_query(
+        self,
+        query: str,
+        chat_history: List[Dict[str, str]],
+        model: str = "gpt-4o",
+        temperature: float = 0.1,
+    ) -> Dict[str, Any]:
+        system_message, user_message = self.prompt_manager.get_semantic_search_query_prompt(query, chat_history)
+
+        response, input_tokens, output_tokens = await self.openai_service.generate_response(
+            user_message, system_message, temperature=temperature, model=model
+        )
+        processed_response = self._clean_response(response)
+        return processed_response, input_tokens, output_tokens
+
     @staticmethod
     def _clean_response(response: str) -> Any:
         try:

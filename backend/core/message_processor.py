@@ -1,9 +1,8 @@
 import time
-from typing import Dict, List
-from generators.agent_v1 import AgentV1
-from generators.agent_v2 import AgentV2
-from generators.semantic_router_v1 import SemanticRouterV1
-from generators.semantic_router_v2 import SemanticRouterV2
+from generators.llm_router import LLMRouter
+from generators.dynamic_agent import DynamicAgent
+from generators.hybrid_router import HybridRouter
+from generators.semantic_router import SemanticRouter
 from models.message import Message, ResponseMessage
 
 
@@ -11,28 +10,28 @@ class MessageProcessor:
 
     def __init__(
         self,
-        semantic_router_v1: SemanticRouterV1,
-        semantic_router_v2: SemanticRouterV2,
-        agent_v1: AgentV1,
-        agent_v2: AgentV2,
+        llm_router: LLMRouter,
+        semantic_router: SemanticRouter,
+        hybrid_router: HybridRouter,
+        dynamic_agent: DynamicAgent,
     ):
-        self.agent_v1 = agent_v1
-        self.agent_v2 = agent_v2
-        self.semantic_router_v1 = semantic_router_v1
-        self.semantic_router_v2 = semantic_router_v2
+        self.llm_router = llm_router
+        self.semantic_router = semantic_router
+        self.hybrid_router = hybrid_router
+        self.dynamic_agent = dynamic_agent
 
     async def process_message(self, message: Message) -> ResponseMessage:
         print(f"*** Processing message: {message.content}")
         start_time = time.time()
 
-        if message.architecture_choice == "semantic-router-v1":
-            response_content, stats = await self.semantic_router_v1.run(message)
-        elif message.architecture_choice == "semantic-router-v2":
-            response_content, stats = await self.semantic_router_v2.run(message)
-        elif message.architecture_choice == "agentic-v1":
-            response_content, stats = await self.agent_v1.run(message)
-        elif message.architecture_choice == "agentic-v2":
-            response_content, stats = await self.agent_v2.run(message.content)
+        if message.architecture_choice == "llm-router":
+            response_content, stats = await self.llm_router.run(message)
+        elif message.architecture_choice == "semantic-router":
+            response_content, stats = await self.semantic_router.run(message)
+        elif message.architecture_choice == "hybrid-router":
+            response_content, stats = await self.hybrid_router.run(message)
+        elif message.architecture_choice == "dynamic-agent":
+            response_content, stats = await self.dynamic_agent.run(message)
         else:
             raise ValueError(f"Unknown architecture choice: {message.architecture_choice}")
 

@@ -158,6 +158,37 @@ class ProductRerankingPrompt(BaseChatPrompt):
         )
 
 
+class SemanticSearchQueryPrompt(BaseChatPrompt):
+    def __init__(self):
+        system_template = (
+            PROCESSING_BASE
+            + """
+        Your task is to generate a semantic search query based on the user's vague product-related question.
+        Also, determine the number of products that should be returned based on the user's query.
+
+        Respond in JSON format as follows:
+        {
+            "query": "The generated semantic search query",
+            "product_count": 5  // Number of products to return, default to 5 if not specified
+        }
+
+        Guidelines:
+        - The query should be more detailed and specific than the user's original question.
+        - Include relevant technical terms and specifications that might help in finding appropriate products.
+        - If the user specifies a number of products they want to see, use that number for product_count.
+        - If no number is specified, use 5 as the default product_count.
+        """
+        )
+
+        human_template = """
+        Chat History: {chat_history}
+        User Query: {query}
+
+        Generated Search Query:
+        """
+        super().__init__(system_template, human_template, ["query", "chat_history"])
+
+
 class ChitchatPrompt(BaseChatPrompt):
     def __init__(self):
         system_template = (
@@ -214,32 +245,35 @@ class LowConfidencePrompt(BaseChatPrompt):
         super().__init__(system_template, human_template, ["query", "chat_history", "classification"])
 
 
-class VagueIntentProductPrompt(BaseChatPrompt):
+class VagueIntentResponsePrompt(BaseChatPrompt):
     def __init__(self):
         system_template = (
             USER_FACING_BASE
             + """
-        For queries without specific criteria:
-        1. Provide a general overview of relevant product categories.
-        2. Highlight key factors to consider when choosing products in this domain.
-        3. Suggest follow-up questions to help narrow down the user's needs.
-
-        Your response should be clear, informative, and directly address the user's query.
+        Your task is to generate a response to a user's vague product-related question.
+        Use the provided search results to craft an informative and helpful response.
 
         Always respond in JSON format with the following structure:
-        {{
+        {
             "message": "A concise introductory message addressing the user's query",
             "products": [
-                {{
+                {
                     "name": "Product Name", // We only need the name of the product
-                }}
+                }
                 // ... more products if applicable
             ],
             "reasoning": "Clear and concise reasoning for the provided response and product selection",
-            "follow_up_question": "A single, clear follow-up question based on the user's query and the products found"
-        }}
+            "follow_up_question": "A single, clear follow-up question to help narrow down the user's needs"
+        }
+
+        Guidelines:
+        - Provide a general overview of the product category if applicable.
+        - Highlight key factors to consider when choosing products in this domain.
+        - Include relevant products from the search results, explaining why they might be of interest.
+        - If the search results don't fully address the user's query, acknowledge this and suggest how to refine the search.
         """
         )
+
         human_template = """
         Relevant Products: {products}
         Chat History: {chat_history}
@@ -287,3 +321,183 @@ class ClearIntentProductPrompt(BaseChatPrompt):
         Response:
         """
         super().__init__(system_template, human_template, ["query", "chat_history", "products", "reranking_result"])
+
+
+class DynamicAgentActionPrompt(BaseChatPrompt):
+    def __init__(self):
+        system_template = (
+            PROCESSING_BASE
+            + """
+        You are a dynamic agent capable of deciding the next best action to take in response to a user query.
+        Your task is to choose the most appropriate next action based on the current context and the user's query.
+
+        Available actions:
+        1. expand_query: Use this when you need more detailed or specific information about the user's request.
+        2. semantic_search: Use this when you need to find relevant products or information from the database.
+        3. generate_response: Use this when you have enough information to provide a final response to the user.
+        4. end: Use this when you've completed all necessary actions and provided a final response.
+
+        Respond in JSON format as follows:
+        {
+            "next_action": "action_name",
+            "reasoning": "A brief explanation for why this action was chosen"
+        }
+
+        Consider the following when making your decision:
+        - The user's original query
+        - The chat history
+        - The current context (results of previous actions)
+        - The actions you've already completed
+        """
+        )
+
+        human_template = """
+        User Query: {query}
+        Chat History: {chat_history}
+        Current Context: {context}
+        Completed Actions: {completed_actions}
+
+        Decide the next action:
+        """
+        super().__init__(system_template, human_template, ["query", "chat_history", "context", "completed_actions"])
+
+
+class DynamicAgentResponsePrompt(BaseChatPrompt):
+    def __init__(self):
+        system_template = (
+            USER_FACING_BASE
+            + """
+        Your task is to generate a final response to the user's query based on all the information gathered.
+        Use the current context, which includes the results of query expansion and semantic search, to craft a comprehensive and helpful response.
+
+        Always respond in JSON format with the following structure:
+        {
+            "message": "Your main response to the user's query",
+            "products": [
+                {
+                    "name": "Product Name",
+                    "description": "Brief description of why this product is relevant"
+                }
+                // ... more products if applicable
+            ],
+            "reasoning": "Explanation of how you arrived at this response based on the context",
+            "follow_up_question": "A relevant follow-up question to continue the conversation"
+        }
+        """
+        )
+
+        human_template = """
+        User Query: {query}
+        Chat History: {chat_history}
+        Current Context: {context}
+
+        Generate the final response:
+        """
+        super().__init__(system_template, human_template, ["query", "chat_history", "context"])
+
+
+class SimpleDataExtractionPrompt(BaseChatPrompt):
+    def __init__(self):
+        system_template = """
+        You are an intelligent assistant specialized in extracting detailed information from raw product data. Your goal is to identify and extract specific attributes related to a product. For each attribute, if the information is not available, state 'Not available'. The attributes to be extracted are:
+
+        - name: The name of the product.
+        - size: The physical dimensions or form factor of the product.
+        - form: The design or configuration of the product (e.g., ATX, mini-ITX).
+        - processor: The type or model of the processor used in the product.
+        - core: The number of processor cores.
+        - frequency: The processor's operating frequency.
+        - memory: The type and size of the product's memory.
+        - voltage: The input voltage requirements for the product.
+        - io: The input/output interfaces available on the product.
+        - thermal: Information about the thermal management features of the product.
+        - feature: Notable features or functionalities of the product.
+        - type: The type of the product (e.g., Single Board Computers, Computer on Modules, Development Kits (Devkits), etc).
+        - specification: Detailed technical specifications.
+        - manufacturer: The company that makes the product.
+        - location: The location (address) of the product or manufacturer.
+        - description: A brief description of the product's purpose and capabilities.
+        - summary: A concise summary of the product.
+
+        Ensure the extracted information is accurate and well-formatted. Provide the extracted details in JSON format.
+        """
+        human_template = "Raw product data: {raw_data}"
+        super().__init__(system_template, human_template, ["raw_data"])
+
+
+class DataExtractionPrompt(BaseChatPrompt):
+    def __init__(self):
+        system_template = """
+        You are an AI assistant specialized in extracting detailed product information.
+        Your task is to identify and extract specific attributes from raw product data.
+        If information for an attribute is not available, use 'Not available'.
+
+        Extract the following attributes:
+        - name: Product name (clear, capital case, no special characters, singular)
+        - manufacturer: Company name (clear, capital case, no special characters, singular)
+        - form_factor: Physical dimensions or form factor
+        - processor: Processor type or model
+        - core_count: Number of processor cores
+        - processor_tdp: Processor's thermal design power
+        - memory: Memory type and size
+        - io: Input/output interfaces
+        - operating_system: Operating system or board support package
+        - environmentals: Environmental specifications (e.g., operating temperature)
+        - certifications: Product certifications
+        - short_summary: Brief product summary
+        - full_summary: Comprehensive product summary
+        - full_product_description: Complete product description
+
+        For each attribute, provide a value and a confidence score between 0 and 1.
+        Provide the extracted details in JSON format.
+        """
+        human_template = "Raw product data: {raw_data}"
+        super().__init__(system_template, human_template, ["raw_data"])
+
+
+class ContextualExtractionPrompt(BaseChatPrompt):
+    def __init__(self):
+        system_template = """
+        You are an AI assistant specialized in extracting product information from context.
+        Your task is to identify and extract the following specific attributes: {features_to_extract}.
+        Ensure the extracted information is accurate and provided in JSON format.
+        For each attribute, provide a value and a confidence score between 0 and 1.
+        If information for an attribute is not found, use 'Not available' with a confidence score of 0.
+        """
+        human_template = """
+        Context: {context}
+
+        Extracted features so far: {extracted_features}
+
+        Please provide the following missing features based on the given context:
+        {features_to_extract}
+
+        Format your response as a JSON object containing only the missing features.
+        For each feature, provide a value and a confidence score between 0 and 1.
+        If a feature is not found in the context, use "Not available" with a confidence score of 0.
+        """
+        super().__init__(system_template, human_template, ["context", "extracted_features", "features_to_extract"])
+
+
+class FeatureRefinementPrompt(BaseChatPrompt):
+    def __init__(self):
+        system_template = """
+        You are an AI assistant specialized in refining product information from context.
+        Your task is to refine the following specific attributes: {features_to_refine}.
+        Ensure the refined information is accurate and provided in JSON format.
+        For each attribute, provide a value and a confidence score between 0 and 1.
+        If a feature cannot be refined, keep its current value and confidence score.
+        """
+        human_template = """
+        Context: {context}
+
+        Extracted features so far: {extracted_features}
+
+        Please refine the following low confidence features based on the given context:
+        {features_to_refine}
+
+        Format your response as a JSON object containing only the refined features.
+        For each feature, provide a value and a confidence score between 0 and 1.
+        If a feature cannot be refined, keep its current value and confidence score.
+        """
+        super().__init__(system_template, human_template, ["context", "extracted_features", "features_to_refine"])
