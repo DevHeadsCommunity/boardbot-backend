@@ -1,4 +1,3 @@
-import { useToast } from "@/hooks/useToast";
 import { Product } from "@/types";
 import { useSelector } from "@xstate/react";
 import { useCallback, useMemo } from "react";
@@ -31,33 +30,6 @@ export const useProductContext = () => {
   const { actorRef } = useAppContext();
   const productActorRef = actorRef.product;
   const productActorState = useSelector(productActorRef, (state) => state);
-  useToast(productActorRef);
-
-  // const productState = useMemo(() => {
-  //   if (!productActorState) return ProductState.Idle;
-  //   console.log("productActorState:", productActorState);
-  //   const currentState = productActorState.value as string;
-  //   console.log("currentState:", currentState);
-  //   return (
-  //     (Object.keys(ProductState).find((key) => {
-  //       console.log("key:", key);
-  //       console.log("ProductState[key as keyof typeof ProductState]:", ProductState[key as keyof typeof ProductState]);
-  //       console.log("check:", ProductState[key as keyof typeof ProductState] === currentState);
-
-  //       return ProductState[key as keyof typeof ProductState] === currentState;
-  //     }) as ProductState) || ProductState.Idle
-  //   );
-  // }, [productActorState]);
-
-  // const appState: AppState = useSelector(appActorRef, (state) => {
-  //   console.log(`state++: ${JSON.stringify(state.value)}`);
-  //   for (const key in AppState) {
-  //     if (state.matches(AppState[key as keyof typeof AppState] as any)) {
-  //       return AppState[key as keyof typeof AppState];
-  //     }
-  //   }
-  //   throw new Error(`Invalid app state: ${state.value}`);
-  // });
 
   const productState = useMemo(() => {
     if (!productActorState) return ProductState.Idle;
@@ -69,15 +41,6 @@ export const useProductContext = () => {
     throw new Error(`Invalid product state: ${productActorState.value}`);
   }, [productActorState]);
 
-  // const displayProductState = useMemo(() => {
-  //   if (productState !== ProductState.DisplayingProduct) return DisplayProductState.Idle;
-  //   const currentState = productActorState.value as string;
-  //   return (
-  //     (Object.keys(DisplayProductState).find((key) => DisplayProductState[key as keyof typeof DisplayProductState] === currentState) as DisplayProductState) ||
-  //     DisplayProductState.Idle
-  //   );
-  // }, [productActorState, productState]);
-
   const displayProductState = useMemo(() => {
     if (productState !== ProductState.DisplayingProduct) return DisplayProductState.Idle;
     for (const key in DisplayProductState) {
@@ -87,12 +50,6 @@ export const useProductContext = () => {
     }
     throw new Error(`Invalid display product state: ${productActorState.value}`);
   }, [productActorState, productState]);
-
-  // const addProductState = useMemo(() => {
-  //   if (productState !== ProductState.AddingProduct) return AddProductState.Idle;
-  //   const currentState = productActorState.value as string;
-  //   return (Object.keys(AddProductState).find((key) => AddProductState[key as keyof typeof AddProductState] === currentState) as AddProductState) || AddProductState.Idle;
-  // }, [productActorState, productState]);
 
   const addProductState = useMemo(() => {
     if (productState !== ProductState.AddingProduct) return AddProductState.Idle;

@@ -1,6 +1,6 @@
 import json
 from typing import List, Dict, Any
-from backend.prompts.prompt_manager import PromptManager
+from prompts.prompt_manager import PromptManager
 from services.openai_service import OpenAIService
 from models.product import attribute_descriptions
 

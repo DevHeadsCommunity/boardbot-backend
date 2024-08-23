@@ -36,70 +36,69 @@ BoardBot is an AI-powered system designed to assist users with queries about com
 ## Project Structure
 
 ```
-├── README.md
-├── __init__.py
-├── api
-│   ├── __init__.py
-│   ├── routes.py
-│   └── socketio_handlers.py
-├── config.py
-├── containers.py
-├── core
-│   ├── __init__.py
-│   ├── message_processor.py
-│   └── session_manager.py
-├── data
-├── dependencies.py
-├── generators
-│   ├── __init__.py
-│   ├── base_router.py
-│   ├── clear_intent_agent.py
-│   ├── dynamic_agent.py
-│   ├── hybrid_router.py
-│   ├── llm_router.py
-│   ├── semantic_router.py
-│   └── vague_intent_agent.py
-├── main.py
-├── models
-│   ├── __init__.py
-│   │   ├── message.cpython-310.pyc
-│   │   ├── message.cpython-311.pyc
-│   │   └── product.cpython-310.pyc
-│   ├── message.py
-│   └── product.py
-├── notebooks
-├── prompts
-│   ├── __init__.py
-│   ├── base.py
-│   ├── prompt_manager.py
-│   └── templates.py
-├── requirements.txt
-├── services
-│   ├── __init__.py
-│   ├── agentic_feature_extractor.py
-│   ├── openai_service.py
-│   ├── query_processor.py
-│   ├── simple_feature_extractor.py
-│   ├── tavily_service.py
-│   └── weaviate_service.py
-├── test
-│   └── semantic_router_test.py
-├── utils
-│   ├── __init__.py
-│   └── response_formatter.py
-└── weaviate
-    ├── __init__.py
-    ├── http_client.py
-    ├── product_service.py
-    ├── route_service.py
-    ├── schema.json
-    ├── schema_manager.py
-    ├── utils
-    │   ├── graphql_query_builder.py
-    │   └── where_clause_builder.py
-    ├── weaviate_client.py
-    ├── weaviate_interface.py
-    └── weaviate_service.py
+[FastAPI Application]
+|
++-- [API Layer]
+|   |
+|   +-- routes.py
+|   +-- socketio_handlers.py
+|
++-- [Core]
+|   |
+|   +-- message_processor.py
+|   +-- session_manager.py
+|
++-- [Generators]
+|   |
+|   +-- base_router.py
+|   +-- clear_intent_agent.py
+|   +-- dynamic_agent.py
+|   +-- hybrid_router.py
+|   +-- llm_router.py
+|   +-- semantic_router.py
+|   +-- vague_intent_agent.py
+|
++-- [Services]
+|   |
+|   +-- agentic_feature_extractor.py
+|   +-- openai_service.py
+|   +-- query_processor.py
+|   +-- simple_feature_extractor.py
+|   +-- tavily_service.py
+|   +-- weaviate_service.py
+|
++-- [Prompts]
+|   |
+|   +-- prompt_manager.py
+|   +-- templates.py
+|
++-- [Models]
+|   |
+|   +-- message.py
+|   +-- product.py
+|
++-- [Weaviate]
+|   |
+|   +-- weaviate_interface.py
+|   +-- weaviate_client.py
+|   +-- schema_manager.py
+|   +-- product_service.py
+|   +-- route_service.py
+|   +-- http_client.py
+|   |
+|   +-- [Utils]
+|       |
+|       +-- graphql_query_builder.py
+|       +-- where_clause_builder.py
+|
++-- [Utils]
+|   |
+|   +-- response_formatter.py
+|
++-- config.py
++-- containers.py
++-- dependencies.py
++-- main.py
 ```
 
 ## Architecture Overview
@@ -111,6 +110,8 @@ The backend is built using FastAPI and follows a modular architecture with the f
 3. **Services**: Provide core functionalities like database interactions and external API calls.
 4. **Prompt Management**: Centralized management of AI prompts.
 5. **Vector Store**: Weaviate-based storage for efficient semantic search and retrieval.
+
+![Alt text](img/architecture.png)
 
 ## Components Breakdown
 
@@ -127,6 +128,8 @@ The backend is built using FastAPI and follows a modular architecture with the f
 - **ClearIntentAgent**: Handles queries with clear product-related intent.
 - **VagueIntentAgent**: Processes queries with vague product-related intent.
 - **DynamicAgent**: Adapts its approach based on the query context.
+
+![Alt text](img/gen.png)
 
 ### 3. Services
 
@@ -175,6 +178,8 @@ BoardBot uses a sophisticated prompt classification system to route user queries
 5. **Do Not Respond**
    - For queries that are inappropriate, offensive, or completely unrelated to computer hardware and embedded systems.
    - Example: "Tell me an inappropriate joke"
+
+![Alt text](img/prompt.png)
 
 ## Request Types and Responses
 

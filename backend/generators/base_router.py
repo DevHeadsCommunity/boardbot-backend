@@ -8,8 +8,8 @@ from prompts.prompt_manager import PromptManager
 from services.openai_service import OpenAIService
 from services.weaviate_service import WeaviateService
 from utils.response_formatter import ResponseFormatter
-from backend.generators.clear_intent_agent import ClearIntentAgent
-from backend.generators.vague_intent_agent import VagueIntentAgent
+from generators.clear_intent_agent import ClearIntentAgent
+from generators.vague_intent_agent import VagueIntentAgent
 
 logger = logging.getLogger(__name__)
 
@@ -127,11 +127,12 @@ class BaseRouter:
     ) -> Dict[str, Any]:
         start_time = time.time()
         system_message, user_message = self.prompt_manager.get_chitchat_prompt(message.content, chat_history)
+        print("system_message", system_message)
+        print("user_message", user_message)
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
             user_message=user_message,
             system_message=system_message,
-            formatted_chat_history=chat_history,
             model=message.model,
         )
 

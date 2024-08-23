@@ -1,5 +1,5 @@
 from typing import Dict, Any, List
-from base import USER_FACING_BASE, PROCESSING_BASE
+from .base import USER_FACING_BASE, PROCESSING_BASE
 from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
 
 
@@ -60,12 +60,11 @@ class RouteClassificationPrompt(BaseChatPrompt):
         )
 
         human_template = """
-        Chat History: {chat_history}
         User Query: {query}
 
         Classification:
         """
-        super().__init__(system_template, human_template, ["query", "chat_history"])
+        super().__init__(system_template, human_template, ["query"])
 
 
 class QueryProcessorPrompt(BaseChatPrompt):
@@ -101,14 +100,11 @@ class QueryProcessorPrompt(BaseChatPrompt):
         """
         )
         human_template = """
-        Chat History: {chat_history}
         User Query: {query}
 
         Response:
         """
-        super().__init__(
-            system_template, human_template, ["query", "chat_history", "num_expansions", "attribute_descriptions"]
-        )
+        super().__init__(system_template, human_template, ["query", "num_expansions", "attribute_descriptions"])
 
 
 class ProductRerankingPrompt(BaseChatPrompt):
@@ -148,14 +144,11 @@ class ProductRerankingPrompt(BaseChatPrompt):
 
         human_template = """
         Relevant Products: {products}
-        Chat History: {chat_history}
         User Query: {query}
 
         Response:
         """
-        super().__init__(
-            system_template, human_template, ["query", "chat_history", "products", "attribute_mapping_str", "top_k"]
-        )
+        super().__init__(system_template, human_template, ["query", "products", "attribute_mapping_str", "top_k"])
 
 
 class SemanticSearchQueryPrompt(BaseChatPrompt):
@@ -181,12 +174,11 @@ class SemanticSearchQueryPrompt(BaseChatPrompt):
         )
 
         human_template = """
-        Chat History: {chat_history}
         User Query: {query}
 
         Generated Search Query:
         """
-        super().__init__(system_template, human_template, ["query", "chat_history"])
+        super().__init__(system_template, human_template, ["query"])
 
 
 class ChitchatPrompt(BaseChatPrompt):
@@ -206,12 +198,11 @@ class ChitchatPrompt(BaseChatPrompt):
         """
         )
         human_template = """
-        Chat History: {chat_history}
         User Query: {query}
 
         Response:
         """
-        super().__init__(system_template, human_template, ["query", "chat_history"])
+        super().__init__(system_template, human_template, ["query"])
 
 
 class LowConfidencePrompt(BaseChatPrompt):
@@ -237,12 +228,11 @@ class LowConfidencePrompt(BaseChatPrompt):
         )
         human_template = """
         System Classification: {classification}
-        Chat History: {chat_history}
         User Query: {query}
 
         Response:
         """
-        super().__init__(system_template, human_template, ["query", "chat_history", "classification"])
+        super().__init__(system_template, human_template, ["query", "classification"])
 
 
 class VagueIntentResponsePrompt(BaseChatPrompt):
@@ -276,12 +266,11 @@ class VagueIntentResponsePrompt(BaseChatPrompt):
 
         human_template = """
         Relevant Products: {products}
-        Chat History: {chat_history}
         User Query: {query}
 
         Response:
         """
-        super().__init__(system_template, human_template, ["query", "chat_history", "products"])
+        super().__init__(system_template, human_template, ["query", "products"])
 
 
 class ClearIntentProductPrompt(BaseChatPrompt):
@@ -315,85 +304,41 @@ class ClearIntentProductPrompt(BaseChatPrompt):
         human_template = """
         Reranking Result: {reranking_result}
         Relevant Products: {products}
-        Chat History: {chat_history}
         User Query: {query}
 
         Response:
         """
-        super().__init__(system_template, human_template, ["query", "chat_history", "products", "reranking_result"])
+        super().__init__(system_template, human_template, ["query", "products", "reranking_result"])
 
 
-class DynamicAgentActionPrompt(BaseChatPrompt):
-    def __init__(self):
-        system_template = (
-            PROCESSING_BASE
-            + """
-        You are a dynamic agent capable of deciding the next best action to take in response to a user query.
-        Your task is to choose the most appropriate next action based on the current context and the user's query.
-
-        Available actions:
-        1. expand_query: Use this when you need more detailed or specific information about the user's request.
-        2. semantic_search: Use this when you need to find relevant products or information from the database.
-        3. generate_response: Use this when you have enough information to provide a final response to the user.
-        4. end: Use this when you've completed all necessary actions and provided a final response.
-
-        Respond in JSON format as follows:
-        {
-            "next_action": "action_name",
-            "reasoning": "A brief explanation for why this action was chosen"
-        }
-
-        Consider the following when making your decision:
-        - The user's original query
-        - The chat history
-        - The current context (results of previous actions)
-        - The actions you've already completed
-        """
-        )
-
-        human_template = """
-        User Query: {query}
-        Chat History: {chat_history}
-        Current Context: {context}
-        Completed Actions: {completed_actions}
-
-        Decide the next action:
-        """
-        super().__init__(system_template, human_template, ["query", "chat_history", "context", "completed_actions"])
-
-
-class DynamicAgentResponsePrompt(BaseChatPrompt):
+class DynamicAgentPrompt(BaseChatPrompt):
     def __init__(self):
         system_template = (
             USER_FACING_BASE
             + """
-        Your task is to generate a final response to the user's query based on all the information gathered.
-        Use the current context, which includes the results of query expansion and semantic search, to craft a comprehensive and helpful response.
+        You are an AI assistant specializing in computer hardware, particularly embedded systems, development kits, and industrial communication devices. Your task is to assist users with their queries about these products.
 
-        Always respond in JSON format with the following structure:
-        {
-            "message": "Your main response to the user's query",
-            "products": [
-                {
-                    "name": "Product Name",
-                    "description": "Brief description of why this product is relevant"
-                }
-                // ... more products if applicable
-            ],
-            "reasoning": "Explanation of how you arrived at this response based on the context",
-            "follow_up_question": "A relevant follow-up question to continue the conversation"
-        }
+        You have access to the following tools:
+        1. semantic_search: Search for products based on a query
+        2. rerank_products: Rerank a list of products based on relevance to a query
+        3. expand_query: Expand a query to improve search results
+
+        When you need to use a tool, respond with the following format:
+        ACTION: {"tool": "tool_name", "input": {"param1": "value1", "param2": "value2"}}
+
+        If you don't need to use a tool and can respond directly, simply provide your response.
+
+        Always strive to provide accurate, up-to-date information and clarify any ambiguities in user queries.
+        Maintain a professional yet approachable tone in your responses
         """
         )
 
         human_template = """
         User Query: {query}
-        Chat History: {chat_history}
-        Current Context: {context}
 
-        Generate the final response:
+        Please process this query and respond appropriately.
         """
-        super().__init__(system_template, human_template, ["query", "chat_history", "context"])
+        super().__init__(system_template, human_template, ["query"])
 
 
 class SimpleDataExtractionPrompt(BaseChatPrompt):

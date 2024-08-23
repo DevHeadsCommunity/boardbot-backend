@@ -1,6 +1,6 @@
 import time
 import logging
-from base_router import BaseRouter
+from .base_router import BaseRouter
 from typing import Any, Dict, List, Tuple
 
 logger = logging.getLogger(__name__)

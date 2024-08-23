@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import time
@@ -93,10 +94,9 @@ class ClearIntentAgent:
 
     async def product_search_node(self, state: ClearIntentState) -> ClearIntentState:
         start_time = time.time()
-        all_results = []
-        for query in [state["current_message"]] + state["expanded_queries"]:
-            results = await self.weaviate_service.search_products(query, limit=5)
-            all_results.extend(results)
+        queries = [state["current_message"]] + state["expanded_queries"]
+        results = await asyncio.gather(*[self.weaviate_service.search_products(query, limit=5) for query in queries])
+        all_results = [item for sublist in results for item in sublist]
 
         unique_results = {}
         for result in all_results:

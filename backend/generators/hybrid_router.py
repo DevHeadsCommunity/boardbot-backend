@@ -1,12 +1,13 @@
 import time
 import logging
-from base_router import BaseRouter
+from .base_router import BaseRouter
 from typing import Any, Dict, List, Tuple
 
 logger = logging.getLogger(__name__)
 
 
 class HybridRouter(BaseRouter):
+
     async def determine_route(
         self, query: str, chat_history: List[Dict[str, str]]
     ) -> Tuple[Dict[str, Any], int, int, float]:

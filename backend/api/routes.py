@@ -4,7 +4,7 @@ from io import StringIO
 from models.product import Product
 from services.weaviate_service import WeaviateService
 from services.simple_feature_extractor import SimpleFeatureExtractor
-from backend.services.agentic_feature_extractor import AgenticFeatureExtractor
+from services.agentic_feature_extractor import AgenticFeatureExtractor
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from dependencies import get_weaviate_service, get_agentic_feature_extractor, get_simple_feature_extractor
 
