@@ -16,7 +16,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatHistory }) => {
       {chatHistory.map((message) => (
         <div key={message.id} className={`mb-4 rounded-lg p-3 ${message.isUserMessage ? "self-end bg-[#fff0ef]" : "self-start bg-[#effeff]"}`}>
           <ChatMessageContent message={message.message} />
-          {!message.isUserMessage && (
+          {/* {!message.isUserMessage && (
             <div className="mt-8 grid grid-cols-2 gap-4">
               <MetricItem label="Model" value={message.model!} />
               <MetricItem label="Response Time" value={`${message.elapsedTime!.toFixed(2)} ms`} />
@@ -25,7 +25,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatHistory }) => {
               <MetricItem label="Output Tokens" value={message.outputTokenCount!} />
               <MetricItem label="Output Cost" value={`${(message.outputTokenCount! * 0.00001).toFixed(4)} $`} />
             </div>
-          )}
+          )} */}
         </div>
       ))}
     </div>

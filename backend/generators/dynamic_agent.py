@@ -80,11 +80,11 @@ class DynamicAgent:
 
     def should_use_tool(self, state: AgentState) -> bool:
         last_message = state["messages"][-1]
-        return "ACTION" in last_message.content
+        return "ACTION" in last_message.message
 
     async def tool_step(self, state: AgentState) -> Dict[str, Any]:
         last_message = state["messages"][-1]
-        action_content = last_message.content.split("ACTION:", 1)[1].strip()
+        action_content = last_message.message.split("ACTION:", 1)[1].strip()
 
         try:
             action = json.loads(action_content)

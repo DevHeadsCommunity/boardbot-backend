@@ -1,3 +1,4 @@
+import json
 import socketio
 from dateutil.parser import isoparse
 from models.message import RequestMessage
@@ -46,24 +47,10 @@ class SocketIOHandler:
     async def process_message(self, sid, data):
         print(f"Received message from {sid}: {data}")
 
-        timestamp = data.get("timestamp")
-
-        if not timestamp:
-            print(f"Timestamp missing in message: {data}")
-            # Handle the case where timestamp is missing, e.g., log an error, or use a fallback value
-            timestamp = datetime.now().isoformat()  # Use the current timestamp as a fallback
-
-        try:
-            parsed_timestamp = isoparse(timestamp)
-        except Exception as e:
-            print(f"Error parsing timestamp: {timestamp}, Error: {e}")
-            # Fallback to the current timestamp in case of parsing error
-            parsed_timestamp = datetime.now()
-
         message = RequestMessage(
             id=data.get("messageId"),
-            content=data.get("message"),
-            timestamp=parsed_timestamp,
+            message=data.get("message"),
+            timestamp=self.get_timestamp(data.get("timestamp", None)),
             session_id=data.get("sessionId"),
             model=data.get("model"),
             architecture_choice=data.get("architectureChoice"),
@@ -72,22 +59,17 @@ class SocketIOHandler:
         print(f"===> Message279: {message}")
         response = await self.message_processor.process_message(message)
 
-        response_json = {
-            "session_id": message.session_id,
-            "messageId": response.id,
-            "message": response.content,
-            "timestamp": response.timestamp.isoformat(),
-            "isComplete": response.is_complete,
-            "inputTokenCount": response.input_token_count,
-            "outputTokenCount": response.output_token_count,
-            "elapsedTime": response.elapsed_time,
-            "isUserMessage": response.is_user_message,
-            "model": response.model,
-        }
-
-        print(f"===> Response: {response_json}")
-
-        await self.sio.emit("textResponse", response_json, room=sid)
+        await self.sio.emit("textResponse", response.dict(), room=sid)
         print(f"Response sent to {sid}: {response}")
         self.session_manager.add_message(message)
         self.session_manager.add_message(response)
+
+    def get_timestamp(self, timestamp: str) -> str:
+        try:
+            parsed_timestamp = isoparse(timestamp)
+        except Exception as e:
+            print(f"Error parsing timestamp: {timestamp}, Error: {e}")
+            # Fallback to the current timestamp in case of parsing error
+            parsed_timestamp = datetime.now()
+
+        return parsed_timestamp

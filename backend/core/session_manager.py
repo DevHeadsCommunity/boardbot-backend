@@ -34,9 +34,9 @@ class SessionManager:
         formatted_history = []
         for msg in chat_history:
             if msg.is_user_message:
-                formatted_history.append({"role": "user", "content": msg.content})
+                formatted_history.append({"role": "user", "content": msg.message})
             else:
-                formatted_content = self._format_system_message_content(msg.content, format_type)
+                formatted_content = self._format_system_message_content(msg.message, format_type)
                 formatted_history.append({"role": "assistant", "content": formatted_content})
         return formatted_history
 

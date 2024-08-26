@@ -99,39 +99,40 @@ class VagueIntentAgent:
         start_time = time.time()
         system_message, user_message = self.prompt_manager.get_vague_intent_response_prompt(
             state["current_message"],
-            state["chat_history"],
             state["search_results"],
         )
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
-            user_message=user_message, system_message=system_message, temperature=0.1, model=state["model_name"]
+            user_message=user_message,
+            system_message=system_message,
+            formatted_chat_history=state["chat_history"],
+            temperature=0.1,
+            model=state["model_name"],
         )
 
         state["input_tokens"]["generate"] = input_tokens
         state["output_tokens"]["generate"] = output_tokens
         state["time_taken"]["generate"] = time.time() - start_time
 
-        metadata = {
-            "semantic_search_query": state["semantic_search_query"],
-            "product_count": state["product_count"],
-            "input_token_usage": state["input_tokens"],
-            "output_token_usage": state["output_tokens"],
-            "time_taken": state["time_taken"],
-        }
-
-        state["output"] = self.response_formatter.format_response("vague_intent_product", response, metadata)
+        state["output"] = response
 
         logger.info(f"Generated response: {state['output']}")
         return state
 
-    async def run(self, message: Message, chat_history: List[Message]) -> Tuple[str, Dict[str, Any]]:
+    async def run(self, message: Message, chat_history: List[Message]) -> VagueIntentState:
         logger.info(f"Running vague intent agent with message: {message}")
 
         initial_state = VagueIntentState(
             model_name=message.model,
             chat_history=chat_history,
-            current_message=message.content,
+            current_message=message.message,
             search_results=[],
+            semantic_search_query="",
+            product_count=0,
+            input_tokens={"query_generation": 0, "generate": 0},
+            output_tokens={"query_generation": 0, "generate": 0},
+            time_taken={"query_generation": 0.0, "search": 0.0, "generate": 0.0},
+            output={},
         )
 
         try:
@@ -139,22 +140,8 @@ class VagueIntentAgent:
             final_state = await self.workflow.ainvoke(initial_state)
             logger.info("Workflow execution completed")
 
-            output = json.dumps(final_state["output"], indent=2)
-            stats = {
-                "input_token_usage": final_state["input_tokens"],
-                "output_token_usage": final_state["output_tokens"],
-                "time_taken": final_state["time_taken"],
-            }
-
         except Exception as e:
             logger.error(f"Error during workflow execution: {str(e)}", exc_info=True)
-            output = json.dumps(
-                self.response_formatter.format_error_response("An unexpected error occurred during processing.")
-            )
-            stats = {
-                "input_token_usage": {"total": 0},
-                "output_token_usage": {"total": 0},
-                "time_taken": {"total": 0},
-            }
+            final_state = initial_state
 
-        return output, stats
+        return final_state

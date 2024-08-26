@@ -1,7 +1,7 @@
-import asyncio
 import json
-import logging
 import time
+import asyncio
+import logging
 from typing import List, Tuple, Dict, Any
 from models.message import Message
 from models.product import Product
@@ -85,6 +85,11 @@ class ClearIntentAgent:
 
         state["expanded_queries"] = expanded_queries
         state["attributes"] = attributes
+
+        logger.info(f"input_tokens: {input_tokens}")
+        logger.info(f"output_tokens: {output_tokens}")
+        logger.info(f"State: {state}")
+
         state["input_tokens"]["expansion"] = input_tokens
         state["output_tokens"]["expansion"] = output_tokens
         state["time_taken"]["expansion"] = time.time() - start_time
@@ -128,34 +133,45 @@ class ClearIntentAgent:
         state["output_tokens"]["rerank"] = output_tokens
         state["time_taken"]["rerank"] = time.time() - start_time
 
-        logger.info(f"Reranked results: {[p.name for p in state['final_results']]}")
+        logger.info(f"Reranked results: { state['reranking_result']}")
         return state
 
     async def response_generation_node(self, state: ClearIntentState) -> ClearIntentState:
         start_time = time.time()
-        system_message, user_message = self.prompt_manager.get_clear_intent_product_prompt(
+
+        relevant_products = {
+            json.dumps(
+                [
+                    {
+                        "name": p.name,
+                        **{attr: getattr(p, attr) for attr in state["attributes"]},
+                        "summary": p.full_product_description,
+                    }
+                    for p in state["final_results"]
+                ],
+                indent=2,
+            )
+        }
+
+        system_message, user_message = self.prompt_manager.get_clear_intent_response_prompt(
             state["current_message"],
-            state["chat_history"],
-            state["final_results"],
+            relevant_products,
             state["reranking_result"],
         )
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
-            user_message=user_message, system_message=system_message, temperature=0.1, model=state["model_name"]
+            user_message=user_message,
+            system_message=system_message,
+            formatted_chat_history=state["chat_history"],
+            temperature=0.1,
+            model=state["model_name"],
         )
 
         state["input_tokens"]["generate"] = input_tokens
         state["output_tokens"]["generate"] = output_tokens
         state["time_taken"]["generate"] = time.time() - start_time
 
-        metadata = {
-            "reranking_result": state["reranking_result"],
-            "input_token_usage": state["input_tokens"],
-            "output_token_usage": state["output_tokens"],
-            "time_taken": state["time_taken"],
-        }
-
-        state["output"] = self.response_formatter.format_response("clear_intent_product", response, metadata)
+        state["output"] = response
 
         logger.info(f"Generated response: {state['output']}")
         return state
@@ -174,16 +190,20 @@ class ClearIntentAgent:
         attributes = list(extracted_attributes.keys())
         return queries, attributes
 
-    async def run(self, message: Message, chat_history: List[Message]) -> Tuple[str, Dict[str, Any]]:
+    async def run(self, message: Message, chat_history: List[Message]) -> ClearIntentState:
         logger.info(f"Running agent with message: {message}")
 
         initial_state = ClearIntentState(
             model_name=message.model,
             chat_history=chat_history,
-            current_message=message.content,
+            current_message=message.message,
             expanded_queries=[],
             search_results=[],
             final_results=[],
+            reranking_result={},
+            input_tokens={"expansion": 0, "rerank": 0, "generate": 0},
+            output_tokens={"expansion": 0, "rerank": 0, "generate": 0},
+            time_taken={"expansion": 0.0, "search": 0.0, "rerank": 0.0, "generate": 0.0},
         )
 
         try:
@@ -191,22 +211,8 @@ class ClearIntentAgent:
             final_state = await self.workflow.ainvoke(initial_state)
             logger.info("Workflow execution completed")
 
-            output = json.dumps(final_state["output"], indent=2)
-            stats = {
-                "input_token_usage": final_state["input_tokens"],
-                "output_token_usage": final_state["output_tokens"],
-                "time_taken": final_state["time_taken"],
-            }
-
         except Exception as e:
-            logger.error(f"Error during workflow execution: {str(e)}", exc_info=True)
-            output = json.dumps(
-                self.response_formatter.format_error_response("An unexpected error occurred during processing.")
-            )
-            stats = {
-                "input_token_usage": {"total": 0},
-                "output_token_usage": {"total": 0},
-                "time_taken": {"total": 0},
-            }
+            logger.error(f"Error running agent: {e}")
+            final_state = initial_state
 
-        return output, stats
+        return final_state

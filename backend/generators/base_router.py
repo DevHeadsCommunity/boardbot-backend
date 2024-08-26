@@ -37,18 +37,18 @@ class BaseRouter:
             message.session_id, message.history_management_choice, "message_only"
         )
         classification, input_tokens, output_tokens, time_taken = await self.determine_route(
-            message.content, json.dumps(chat_history)
+            message, json.dumps(chat_history, indent=2)
         )
         response = await self.handle_route(
             classification, message, json.dumps(chat_history), input_tokens, output_tokens, time_taken
         )
-        return json.dumps(response, indent=2), {
-            "input_token_count": sum(response["input_token_usage"].values()),
-            "output_token_count": sum(response["output_token_usage"].values()),
-        }
+        logger.info(f"\n\n===:> Response: {response}")
+        return response
 
     async def determine_route(
-        self, query: str, chat_history: List[Dict[str, str]]
+        self,
+        message: Message,
+        chat_history: List[Dict[str, str]],
     ) -> Tuple[Dict[str, Any], int, int, float]:
         raise NotImplementedError("Subclasses must implement determine_route method")
 
@@ -93,9 +93,7 @@ class BaseRouter:
         base_metadata: Dict[str, Any],
     ) -> Dict[str, Any]:
         start_time = time.time()
-        system_message, user_message = self.prompt_manager.get_low_confidence_prompt(
-            message.content, chat_history, classification
-        )
+        system_message, user_message = self.prompt_manager.get_low_confidence_prompt(message.message, classification)
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
             user_message=user_message,
@@ -110,7 +108,9 @@ class BaseRouter:
 
         return self.response_formatter.format_response("low_confidence", response, base_metadata)
 
-    async def handle_politics(self, base_metadata: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle_politics(
+        self, message: Message, chat_history: List[Dict[str, str]], base_metadata: Dict[str, Any]
+    ) -> Dict[str, Any]:
         return self.response_formatter.format_response(
             "politics",
             json.dumps(
@@ -126,13 +126,14 @@ class BaseRouter:
         self, message: Message, chat_history: List[Dict[str, str]], base_metadata: Dict[str, Any]
     ) -> Dict[str, Any]:
         start_time = time.time()
-        system_message, user_message = self.prompt_manager.get_chitchat_prompt(message.content, chat_history)
+        system_message, user_message = self.prompt_manager.get_chitchat_prompt(message.message)
         print("system_message", system_message)
         print("user_message", user_message)
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
             user_message=user_message,
             system_message=system_message,
+            formatted_chat_history=chat_history,
             model=message.model,
         )
 
@@ -145,29 +146,28 @@ class BaseRouter:
     async def handle_vague_intent(
         self, message: Message, chat_history: List[Dict[str, str]], base_metadata: Dict[str, Any]
     ) -> Dict[str, Any]:
-        agent_response, agent_stats = await self.vague_intent_agent.run(message, chat_history)
-        agent_response_dict = json.loads(agent_response)
+        response = await self.vague_intent_agent.run(message, chat_history)
 
-        base_metadata["input_token_usage"].update(agent_stats["input_token_usage"])
-        base_metadata["output_token_usage"].update(agent_stats["output_token_usage"])
-        base_metadata["time_taken"].update(agent_stats["time_taken"])
+        base_metadata["input_token_usage"].update(response["input_tokens"])
+        base_metadata["output_token_usage"].update(response["output_tokens"])
+        base_metadata["time_taken"].update(response["time_taken"])
 
         return self.response_formatter.format_response(
-            "vague_intent_product", json.dumps(agent_response_dict), base_metadata
+            "vague_intent_product", response["output"], base_metadata, response["search_results"]
         )
 
     async def handle_clear_intent(
         self, message: Message, chat_history: List[Dict[str, str]], base_metadata: Dict[str, Any]
     ) -> Dict[str, Any]:
-        agent_response, agent_stats = await self.clear_intent_agent.run(message, chat_history)
-        agent_response_dict = json.loads(agent_response)
+        response = await self.clear_intent_agent.run(message, chat_history)
 
-        base_metadata["input_token_usage"].update(agent_stats["input_token_usage"])
-        base_metadata["output_token_usage"].update(agent_stats["output_token_usage"])
-        base_metadata["time_taken"].update(agent_stats["time_taken"])
+        base_metadata["reranking_result"] = response["reranking_result"]
+        base_metadata["input_token_usage"].update(response["input_tokens"])
+        base_metadata["output_token_usage"].update(response["output_tokens"])
+        base_metadata["time_taken"].update(response["time_taken"])
 
         return self.response_formatter.format_response(
-            "clear_intent_product", json.dumps(agent_response_dict), base_metadata
+            "clear_intent_product", response["output"], base_metadata, response["final_results"]
         )
 
     async def handle_do_not_respond(self, base_metadata: Dict[str, Any]) -> Dict[str, Any]:

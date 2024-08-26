@@ -151,6 +151,36 @@ class ProductRerankingPrompt(BaseChatPrompt):
         super().__init__(system_template, human_template, ["query", "products", "attribute_mapping_str", "top_k"])
 
 
+# class SemanticSearchQueryPrompt(BaseChatPrompt):
+#     def __init__(self):
+#         system_template = (
+#             PROCESSING_BASE
+#             + """
+#         Your task is to generate a semantic search query based on the user's vague product-related question.
+#         Also, determine the number of products that should be returned based on the user's query.
+
+#         Respond in JSON format as follows:
+#         {
+#             "query": "The generated semantic search query",
+#             "product_count": 5  // Number of products to return, default to 5 if not specified
+#         }
+
+#         Guidelines:
+#         - The query should be more detailed and specific than the user's original question.
+#         - Include relevant technical terms and specifications that might help in finding appropriate products.
+#         - If the user specifies a number of products they want to see, use that number for product_count.
+#         - If no number is specified, use 5 as the default product_count.
+#         """
+#         )
+
+#         human_template = """
+#         User Query: {query}
+
+#         Generated Search Query:
+#         """
+#         super().__init__(system_template, human_template, ["query"])
+
+
 class SemanticSearchQueryPrompt(BaseChatPrompt):
     def __init__(self):
         system_template = (
@@ -160,10 +190,10 @@ class SemanticSearchQueryPrompt(BaseChatPrompt):
         Also, determine the number of products that should be returned based on the user's query.
 
         Respond in JSON format as follows:
-        {
+        {{
             "query": "The generated semantic search query",
             "product_count": 5  // Number of products to return, default to 5 if not specified
-        }
+        }}
 
         Guidelines:
         - The query should be more detailed and specific than the user's original question.
@@ -235,32 +265,64 @@ class LowConfidencePrompt(BaseChatPrompt):
         super().__init__(system_template, human_template, ["query", "classification"])
 
 
+# class VagueIntentResponsePrompt(BaseChatPrompt):
+#     def __init__(self):
+#         system_template = (
+#             USER_FACING_BASE
+#             + """
+#         Your task is to generate a response to a user's vague product-related question.
+#         Use the provided search results to craft an informative and helpful response.
+
+#         Always respond in JSON format with the following structure:
+#         {
+#             "message": "A concise introductory message addressing the user's query",
+#             "products": [
+#                 {
+#                     "name": "Product Name", // We only need the name of the product
+#                 }
+#                 // ... more products if applicable
+#             ],
+#             "reasoning": "Clear and concise reasoning for the provided response and product selection",
+#             "follow_up_question": "A single, clear follow-up question to help narrow down the user's needs"
+#         }
+
+#         Guidelines:
+#         - Provide a general overview of the product category if applicable.
+#         - Highlight key factors to consider when choosing products in this domain.
+#         - Include relevant products from the search results, explaining why they might be of interest.
+#         - If the search results don't fully address the user's query, acknowledge this and suggest how to refine the search.
+#         """
+#         )
+
+#         human_template = """
+#         Relevant Products: {products}
+#         User Query: {query}
+
+#         Response:
+#         """
+#         super().__init__(system_template, human_template, ["query", "products"])
+
+
 class VagueIntentResponsePrompt(BaseChatPrompt):
     def __init__(self):
         system_template = (
             USER_FACING_BASE
             + """
-        Your task is to generate a response to a user's vague product-related question.
-        Use the provided search results to craft an informative and helpful response.
+        Generate a response to a user's vague product-related question using the provided search results.
+        Your response should be clear, informative, and directly address the user's query.
 
         Always respond in JSON format with the following structure:
-        {
+        {{
             "message": "A concise introductory message addressing the user's query",
             "products": [
-                {
-                    "name": "Product Name", // We only need the name of the product
-                }
+                {{
+                    "name": "Product Name" // We only need the name of the product
+                }}
                 // ... more products if applicable
             ],
             "reasoning": "Clear and concise reasoning for the provided response and product selection",
-            "follow_up_question": "A single, clear follow-up question to help narrow down the user's needs"
-        }
-
-        Guidelines:
-        - Provide a general overview of the product category if applicable.
-        - Highlight key factors to consider when choosing products in this domain.
-        - Include relevant products from the search results, explaining why they might be of interest.
-        - If the search results don't fully address the user's query, acknowledge this and suggest how to refine the search.
+            "follow_up_question": "A single, clear follow-up question based on the user's query and the products found"
+        }}
         """
         )
 
@@ -273,7 +335,7 @@ class VagueIntentResponsePrompt(BaseChatPrompt):
         super().__init__(system_template, human_template, ["query", "products"])
 
 
-class ClearIntentProductPrompt(BaseChatPrompt):
+class ClearIntentResponsePrompt(BaseChatPrompt):
     def __init__(self):
         system_template = (
             USER_FACING_BASE

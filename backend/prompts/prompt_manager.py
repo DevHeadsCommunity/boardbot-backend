@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, List, Tuple
 from .templates import (
     RouteClassificationPrompt,
@@ -7,13 +8,15 @@ from .templates import (
     ChitchatPrompt,
     LowConfidencePrompt,
     VagueIntentResponsePrompt,
-    ClearIntentProductPrompt,
+    ClearIntentResponsePrompt,
     DynamicAgentPrompt,
     SimpleDataExtractionPrompt,
     DataExtractionPrompt,
     ContextualExtractionPrompt,
     FeatureRefinementPrompt,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class PromptManager:
@@ -26,7 +29,7 @@ class PromptManager:
             "chitchat": ChitchatPrompt(),
             "low_confidence": LowConfidencePrompt(),
             "vague_intent_response": VagueIntentResponsePrompt(),
-            "clear_intent_product": ClearIntentProductPrompt(),
+            "clear_intent_response": ClearIntentResponsePrompt(),
             "dynamic_agent": DynamicAgentPrompt(),
             "simple_data_extraction": SimpleDataExtractionPrompt(),
             "data_extraction": DataExtractionPrompt(),
@@ -86,6 +89,7 @@ class PromptManager:
         )
 
     def get_semantic_search_query_prompt(self, query: str) -> Tuple[str, str]:
+        logger.info(f"Generating semantic search query prompt for query: {query}")
         return self.get_prompt("semantic_search_query", query=query)
 
     def get_chitchat_prompt(self, query: str) -> Tuple[str, str]:
@@ -97,9 +101,9 @@ class PromptManager:
     def get_vague_intent_response_prompt(self, query: str, products: str) -> Tuple[str, str]:
         return self.get_prompt("vague_intent_response", query=query, products=products)
 
-    def get_clear_intent_product_prompt(self, query: str, products: str, reranking_result: str) -> Tuple[str, str]:
+    def get_clear_intent_response_prompt(self, query: str, products: str, reranking_result: str) -> Tuple[str, str]:
         return self.get_prompt(
-            "clear_intent_product",
+            "clear_intent_response",
             query=query,
             products=products,
             reranking_result=reranking_result,

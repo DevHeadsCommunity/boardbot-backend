@@ -4,7 +4,6 @@ from openai import AsyncOpenAI
 from typing import List, Optional, Tuple, Dict, Any
 from config import Config
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 

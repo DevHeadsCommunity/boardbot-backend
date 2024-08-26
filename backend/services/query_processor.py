@@ -1,8 +1,12 @@
 import json
+import logging
 from typing import List, Dict, Any
 from prompts.prompt_manager import PromptManager
 from services.openai_service import OpenAIService
 from models.product import attribute_descriptions
+
+
+logger = logging.getLogger(__name__)
 
 
 class QueryProcessor:
@@ -24,11 +28,11 @@ class QueryProcessor:
         temperature: float = 0.1,
     ) -> Dict[str, Any]:
         system_message, user_message = self.prompt_manager.get_query_processor_prompt(
-            query, chat_history, num_expansions, attribute_descriptions=attribute_descriptions
+            query, num_expansions, attribute_descriptions=attribute_descriptions
         )
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
-            user_message, system_message, temperature=temperature, model=model
+            user_message, system_message, formatted_chat_history=chat_history, temperature=temperature, model=model
         )
         processed_response = self._clean_response(response)
         return processed_response, input_tokens, output_tokens
@@ -44,11 +48,11 @@ class QueryProcessor:
     ) -> List[Dict[str, Any]]:
         attribute_mapping_str = self._generate_attribute_mapping_str(products)
         system_message, user_message = self.prompt_manager.get_product_reranking_prompt(
-            query, chat_history, products, attribute_mapping_str, top_k=top_k
+            query, products, attribute_mapping_str, top_k=top_k
         )
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
-            user_message, system_message, temperature=temperature, model=model
+            user_message, system_message, formatted_chat_history=chat_history, temperature=temperature, model=model
         )
         response = self._clean_response(response)
         print(f"rerank_products response from OpenAI: {response}")
@@ -70,10 +74,11 @@ class QueryProcessor:
         model: str = "gpt-4o",
         temperature: float = 0.1,
     ) -> Dict[str, Any]:
-        system_message, user_message = self.prompt_manager.get_semantic_search_query_prompt(query, chat_history)
+        logger.info(f"Generating semantic search query for: {query}")
+        system_message, user_message = self.prompt_manager.get_semantic_search_query_prompt(query)
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
-            user_message, system_message, temperature=temperature, model=model
+            user_message, system_message, formatted_chat_history=chat_history, temperature=temperature, model=model
         )
         processed_response = self._clean_response(response)
         return processed_response, input_tokens, output_tokens

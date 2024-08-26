@@ -5,6 +5,9 @@ from typing import List, Dict, Any, Optional
 from weaviate.weaviate_interface import WeaviateInterface
 
 
+logger = logging.getLogger(__name__)
+
+
 class WeaviateService:
     def __init__(self):
         self.wi = None
@@ -65,24 +68,8 @@ class WeaviateService:
 
     async def search_products(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
         try:
-            features = [
-                "name",
-                "ids",
-                "manufacturer",
-                "form_factor",
-                "processor",
-                "core_count",
-                "processor_tdp",
-                "memory",
-                "io",
-                "operating_system",
-                "environmentals",
-                "certifications",
-                "short_summary",
-                "full_summary",
-                "full_product_description",
-            ]
-            products = await self.wi.product.search(query, limit=limit, fields=features)
+            products = await self.wi.product.search(query, limit=limit)
+            logger.info(f"Found products: {products}")
             return products
         except Exception as e:
             print(f"Error in Weaviate search: {str(e)}")

@@ -1,5 +1,7 @@
 import time
 import logging
+
+from models.message import Message
 from .base_router import BaseRouter
 from typing import Any, Dict, List, Tuple
 
@@ -9,16 +11,22 @@ logger = logging.getLogger(__name__)
 class HybridRouter(BaseRouter):
 
     async def determine_route(
-        self, query: str, chat_history: List[Dict[str, str]]
+        self,
+        message: Message,
+        chat_history: List[Dict[str, str]],
     ) -> Tuple[Dict[str, Any], int, int, float]:
         start_time = time.time()
 
-        routes, similarity_score = await self.weaviate_service.search_routes(query)
+        routes, similarity_score = await self.weaviate_service.search_routes(message.message)
 
         if similarity_score < 0.7:  # You can adjust this threshold
-            system_message, user_message = self.prompt_manager.get_route_classification_prompt(query, chat_history)
+            system_message, user_message = self.prompt_manager.get_route_classification_prompt(message.message)
             response, input_tokens, output_tokens = await self.openai_service.generate_response(
-                user_message=user_message, system_message=system_message, temperature=0.1, model="gpt-4o"
+                user_message=user_message,
+                system_message=system_message,
+                formatted_chat_history=chat_history,
+                temperature=0.1,
+                model=message.model,
             )
             classification = self._clean_response(response)
         else:
