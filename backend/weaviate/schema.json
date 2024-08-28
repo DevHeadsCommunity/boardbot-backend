@@ -85,17 +85,17 @@
     },
     {
       "class": "Route",
-      "description": "A class representing a route with various attributes.",
+      "description": "A class representing a route with multiple descriptive aspects.",
       "properties": [
-        {
-          "name": "prompt",
-          "description": "example prompts for a given route",
-          "dataType": ["text"]
-        },
         {
           "name": "route",
           "description": "The route to follow",
           "dataType": ["text"]
+        },
+        {
+          "name": "descriptions",
+          "description": "Multiple descriptions capturing different aspects of the route",
+          "dataType": ["text[]"]
         }
       ],
       "vectorizer": "text2vec-openai"

@@ -42,7 +42,7 @@ class BaseRouter:
         response = await self.handle_route(
             classification, message, json.dumps(chat_history), input_tokens, output_tokens, time_taken
         )
-        logger.info(f"\n\n===:> Response: {response}")
+        # logger.info(f"\n\n===:> Response: {response}")
         return response
 
     async def determine_route(

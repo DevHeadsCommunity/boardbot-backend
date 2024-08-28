@@ -17,7 +17,12 @@ class HybridRouter(BaseRouter):
     ) -> Tuple[Dict[str, Any], int, int, float]:
         start_time = time.time()
 
-        routes, similarity_score = await self.weaviate_service.search_routes(message.message)
+        routes = await self.weaviate_service.search_routes(message.message)
+
+        if not routes:
+            similarity_score = 0
+        else:
+            route, similarity_score = routes[0]  # Get the top result
 
         if similarity_score < 0.7:  # You can adjust this threshold
             system_message, user_message = self.prompt_manager.get_route_classification_prompt(message.message)
@@ -31,7 +36,7 @@ class HybridRouter(BaseRouter):
             classification = self._clean_response(response)
         else:
             classification = {
-                "category": routes,
+                "category": route,
                 "confidence": similarity_score * 100,  # Convert to percentage
                 "justification": "Determined by semantic search",
             }

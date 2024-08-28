@@ -31,10 +31,14 @@ class QueryProcessor:
             query, num_expansions, attribute_descriptions=attribute_descriptions
         )
 
+        logger.info(f"\n\n\nsystem_message: {system_message}\n\n\n")
+        logger.info(f"Chat history: {chat_history}")
+
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
             user_message, system_message, formatted_chat_history=chat_history, temperature=temperature, model=model
         )
         processed_response = self._clean_response(response)
+        logger.info(f"processed_response: {processed_response}")
         return processed_response, input_tokens, output_tokens
 
     async def rerank_products(
@@ -58,6 +62,26 @@ class QueryProcessor:
         print(f"rerank_products response from OpenAI: {response}")
         return response, input_tokens, output_tokens
 
+    async def expanded_search(
+        self,
+        query: str,
+        chat_history: List[Dict[str, str]],
+        limit: int = 10,
+        model: str = "gpt-4o",
+        temperature: float = 0.1,
+    ) -> Dict[str, Any]:
+        expanded_result, _, _ = await self.process_query_comprehensive(query, chat_history, model=model)
+        expanded_queries = expanded_result["expanded_queries"]
+
+        all_results = []
+        for exp_query in expanded_queries:
+            results = await self.weaviate_service.search_products(exp_query, limit)
+            all_results.extend(results)
+
+        reranked_results, _, _ = await self.rerank_products(query, chat_history, all_results, limit, model=model)
+
+        return reranked_results
+
     def _generate_attribute_mapping_str(self, products: List[Dict[str, Any]]) -> str:
         attribute_mapping = {}
         for product in products:
@@ -74,7 +98,7 @@ class QueryProcessor:
         model: str = "gpt-4o",
         temperature: float = 0.1,
     ) -> Dict[str, Any]:
-        logger.info(f"Generating semantic search query for: {query}")
+        # logger.info(f"Generating semantic search query for: {query}")
         system_message, user_message = self.prompt_manager.get_semantic_search_query_prompt(query)
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(

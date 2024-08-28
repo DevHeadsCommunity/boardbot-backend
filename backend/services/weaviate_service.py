@@ -1,11 +1,73 @@
 import logging
 import weaviate
 import pandas as pd
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from weaviate.weaviate_interface import WeaviateInterface
 
 
 logger = logging.getLogger(__name__)
+route_descriptions = {
+    "politics": [
+        "Queries related to current political events or situations.",
+        "Questions or statements about political figures or parties.",
+        "Discussions about government policies or legislation.",
+        "Expressions of political opinions or ideologies.",
+        "Inquiries about electoral processes or voting.",
+        "Debates on political issues or controversies.",
+        "Comments on international relations or diplomacy.",
+        "Questions about political systems or structures.",
+        "Discussions of political history or movements.",
+        "Inquiries about political activism or civic engagement.",
+    ],
+    "chitchat": [
+        "General greetings or conversational openers.",
+        "Personal questions not related to products or technical topics.",
+        "Requests for jokes, fun facts, or casual entertainment.",
+        "Comments about weather, time, or general observations.",
+        "Expressions of emotions or casual opinions.",
+        "Small talk about daily life or common experiences.",
+        "Casual questions about the AI's capabilities or personality.",
+        "Non-technical questions about general knowledge topics.",
+        "Playful or humorous interactions not related to products.",
+        "Social pleasantries or polite conversation fillers.",
+    ],
+    "vague_intent_product": [
+        "General inquiries about product categories without specific criteria.",
+        "Requests for basic information about types of hardware or systems.",
+        "Open-ended questions about product capabilities or use cases.",
+        "Broad comparisons between product types or categories.",
+        "Queries about trends or developments in hardware technology.",
+        "Requests for explanations of technical terms or concepts.",
+        "General questions about compatibility or integration.",
+        "Inquiries about product availability or market presence.",
+        "Requests for recommendations without specific requirements.",
+        "Questions about general features common to a product category.",
+    ],
+    "clear_intent_product": [
+        "Requests for products with specific technical specifications.",
+        "Queries including numerical criteria for product features.",
+        "Inquiries about products with particular processor types or brands.",
+        "Questions specifying memory requirements or storage capacities.",
+        "Requests for products with specific connectivity or interface requirements.",
+        "Queries about products certified for particular standards or environments.",
+        "Inquiries specifying power consumption or thermal requirements.",
+        "Requests for products with particular physical dimensions or form factors.",
+        "Questions about compatibility with specific software or operating systems.",
+        "Inquiries about products with particular performance benchmarks or capabilities.",
+    ],
+    "do_not_respond": [
+        "Queries containing offensive or inappropriate language.",
+        "Requests for information about illegal activities.",
+        "Personal questions that violate privacy or ethical boundaries.",
+        "Commands to perform actions outside the AI's capabilities.",
+        "Requests for sensitive personal or financial information.",
+        "Queries promoting harmful or discriminatory ideologies.",
+        "Attempts to engage the AI in role-play scenarios.",
+        "Requests for medical or legal advice beyond the AI's scope.",
+        "Queries completely unrelated to technology or general knowledge.",
+        "Attempts to override or manipulate the AI's ethical guidelines.",
+    ],
+}
 
 
 class WeaviateService:
@@ -30,28 +92,14 @@ class WeaviateService:
                 except Exception as e:
                     print(f"Error inserting products at index {i}: {e}")
 
-            chitchat_data = pd.read_csv("data/chitchat.csv")
-            chitchat_prompts = chitchat_data["prompt"].tolist()
-
-            political_data = pd.read_csv("data/politics.csv")
-            political_prompts = political_data["prompt"].tolist()
-
-            clear_intent_data = pd.read_csv("data/clear_intent.csv")
-            clear_intent_prompts = clear_intent_data["prompt"].tolist()
-
-            vague_intent_data = pd.read_csv("data/vague_intent.csv")
-            vague_intent_prompts = vague_intent_data["prompt"].tolist()
-
-            # Load and insert routes data
-            routes_data = {
-                "politics": political_prompts,
-                "chitchat": chitchat_prompts,
-                "clear_intent_product": clear_intent_prompts,
-                "vague_intent_product": vague_intent_prompts,
-            }
-
-            for route, prompts in routes_data.items():
-                route_data = [{"prompt": message, "route": route} for message in prompts]
+            for route, descriptions in route_descriptions.items():
+                route_data = [
+                    {
+                        "route": route,
+                        "description": desc,
+                    }
+                    for desc in descriptions
+                ]
                 await weaviate_interface.route.batch_upsert(route_data)
 
         is_valid = await weaviate_interface.schema.is_valid()
@@ -61,15 +109,15 @@ class WeaviateService:
 
         self.wi = weaviate_interface
 
-    async def search_routes(self, query: str) -> List[Dict[str, Any]]:
+    async def search_routes(self, query: str) -> List[Tuple[str, float]]:
         routes = await self.wi.route.search(query, ["route"], limit=1)
-        print(f"Found routes: {routes}")
-        return routes[0].get("route")
+        # print(f"Found routes: {routes}")
+        return routes
 
-    async def search_products(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
+    async def search_products(self, query: str, limit: int = 5) -> List[Tuple[Dict[str, Any], float]]:
         try:
             products = await self.wi.product.search(query, limit=limit)
-            logger.info(f"Found products: {products}")
+            # logger.info(f"Found products: {products}")
             return products
         except Exception as e:
             print(f"Error in Weaviate search: {str(e)}")

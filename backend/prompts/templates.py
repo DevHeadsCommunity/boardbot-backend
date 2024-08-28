@@ -25,8 +25,8 @@ class RouteClassificationPrompt(BaseChatPrompt):
         Your task is to categorize the given query into one of the following categories:
         1. politics - for queries related to political topics.
         2. chitchat - for general conversation or small talk.
-        3. vague_intent_product - for product-related queries that are general or lack specific criteria.
-        4. clear_intent_product - for product-related queries with specific criteria or constraints.
+        3. vague_intent_product - for product-related queries that are general, lack specific criteria, or request listings without detailed specifications.
+        4. clear_intent_product - for product-related queries with specific technical criteria or constraints.
         5. do_not_respond - for queries that are inappropriate, offensive, or outside the system's scope.
 
         Provide your classification along with a brief justification and a confidence score (0-100).
@@ -39,22 +39,26 @@ class RouteClassificationPrompt(BaseChatPrompt):
         }}
 
         Guidelines:
-        - If a query contains any clear product-related intent or specific criteria, classify it as clear_intent_product, regardless of other elements in the query.
+        - Classify as clear_intent_product only if the query contains specific technical criteria or constraints about product features (e.g., processor type, RAM size, specific interfaces).
+        - Classify as vague_intent_product if the query is about products but lacks specific technical criteria, or if it's a request for a list of products without detailed specifications.
+        - The number of products requested (e.g., "List 5 products") does not qualify as a specific criterion for clear intent.
         - Consider the chat history when making your classification. A vague query might become clear in the context of previous messages.
         - Classify as politics only if the query is primarily about political topics.
         - Use do_not_respond for queries that are inappropriate, offensive, or completely unrelated to computer hardware and embedded systems.
         - Be decisive - always choose the most appropriate category even if the query is ambiguous.
 
         Examples:
-        - clear_intent_product: Queries with specific criteria about products.
+        - clear_intent_product:
             - "Find me a board with an Intel processor and at least 8GB of RAM"
             - "List Single Board Computers with a processor frequency of 1.5 GHz or higher"
-            - "What are the top 5 ARM-based development kits with built-in Wi-Fi?"
+            - "What are the top ARM-based development kits with built-in Wi-Fi and 4GB or more RAM?"
 
-        - vague_intent_product: General product queries without specific criteria.
+        - vague_intent_product:
             - "Tell me about single board computers"
             - "What are some good development kits?"
             - "I'm looking for industrial communication devices"
+            - "List 12 Single Board Computers"
+            - "Show me the best microcontrollers"
 
         """
         )
@@ -73,30 +77,61 @@ class QueryProcessorPrompt(BaseChatPrompt):
             PROCESSING_BASE
             + """
         Your task is to process and expand the given query to improve product search results.
-        Generate expanded queries and extract relevant product attributes.
+        Extract relevant product attributes, generate expanded queries, and identify additional query context.
 
-        Here's a description of the key features and data types stored for each product:
+        Here's a description of all the product attributes and data types stored for each product:
         {attribute_descriptions}
 
         Perform the following tasks:
-        1. Extract relevant product attributes mentioned or implied in the query.
-        2. Generate {num_expansions} expanded queries that could help find relevant products.
-        3. Generate search parameters based on the query and extracted attributes.
+        1. Extract relevant product attributes mentioned or implied in the query. Only use attributes that are explicitly listed in the product feature descriptions above.
+        2. If the query mentions attributes not in the list (e.g., processor frequency), map them to the most relevant existing attribute (e.g., 'processor') and include the specific details in that attribute's value.
+        3. Generate {num_expansions} expanded queries that could help find relevant products. These should be based on the original query and the extracted attributes.
+        4. Identify any additional query context, such as the number of products requested or any sorting preferences.
 
         Respond in JSON format as follows:
         {{
             "extracted_attributes": {{
-                // Include only relevant, non-null attributes
+                // Include only relevant attributes that exist in the product feature descriptions
+                // If an attribute is not mentioned or cannot be inferred, do not include it
+                // For attributes not in the list, map to the most relevant existing attribute
             }},
             "expanded_queries": [
-                // List of expanded queries
+                // List of {num_expansions} expanded queries
             ],
-            "search_params": {{
-                // Include only relevant, non-null attributes
+            "query_context": {{
+                "num_products_requested": null, // Number of products explicitly requested, or null if not specified
+                "sort_preference": null // Any sorting preference mentioned (e.g., "cheapest", "newest"), or null if not specified
             }}
         }}
 
-        Ensure all values are specific and aligned with our product database format. Use technical specifications and numeric values where applicable, rather than general terms like "high" or "large".
+        Guidelines:
+        - Only use attribute names that are explicitly listed in the product feature descriptions.
+        - For attributes mentioned in the query but not in our list (e.g., processor frequency), include them in the most relevant existing attribute (e.g., 'processor').
+        - Ensure all values are specific and aligned with our product database format.
+        - Use technical specifications and numeric values where applicable, rather than general terms like "high" or "large".
+        - If the query doesn't provide enough information to extract specific attributes, it's okay to leave the "extracted_attributes" empty.
+        - Expanded queries should provide variations that might help in finding relevant products, considering different phrasings or related terms.
+        - In the query_context, capture any explicit request for a specific number of products or sorting preference.
+
+        Example:
+        For a query like "List Single Board Computers with a processor frequency of 1.5 GHz or higher and manufactured by Broadcom", your response might look like:
+
+        {{
+            "extracted_attributes": {{
+                "name": "Single Board Computers",
+                "manufacturer": "Broadcom",
+                "processor": "1.5 GHz or higher"
+            }},
+            "expanded_queries": [
+                "Broadcom Single Board Computers with high-speed processors",
+                "Single Board Computers by Broadcom with processors over 1.5 GHz",
+                "Fast Broadcom SBCs with 1.5 GHz+ processors"
+            ],
+            "query_context": {{
+                "num_products_requested": null,
+                "sort_preference": null
+            }}
+        }}
         """
         )
         human_template = """
@@ -149,36 +184,6 @@ class ProductRerankingPrompt(BaseChatPrompt):
         Response:
         """
         super().__init__(system_template, human_template, ["query", "products", "attribute_mapping_str", "top_k"])
-
-
-# class SemanticSearchQueryPrompt(BaseChatPrompt):
-#     def __init__(self):
-#         system_template = (
-#             PROCESSING_BASE
-#             + """
-#         Your task is to generate a semantic search query based on the user's vague product-related question.
-#         Also, determine the number of products that should be returned based on the user's query.
-
-#         Respond in JSON format as follows:
-#         {
-#             "query": "The generated semantic search query",
-#             "product_count": 5  // Number of products to return, default to 5 if not specified
-#         }
-
-#         Guidelines:
-#         - The query should be more detailed and specific than the user's original question.
-#         - Include relevant technical terms and specifications that might help in finding appropriate products.
-#         - If the user specifies a number of products they want to see, use that number for product_count.
-#         - If no number is specified, use 5 as the default product_count.
-#         """
-#         )
-
-#         human_template = """
-#         User Query: {query}
-
-#         Generated Search Query:
-#         """
-#         super().__init__(system_template, human_template, ["query"])
 
 
 class SemanticSearchQueryPrompt(BaseChatPrompt):
@@ -265,44 +270,6 @@ class LowConfidencePrompt(BaseChatPrompt):
         super().__init__(system_template, human_template, ["query", "classification"])
 
 
-# class VagueIntentResponsePrompt(BaseChatPrompt):
-#     def __init__(self):
-#         system_template = (
-#             USER_FACING_BASE
-#             + """
-#         Your task is to generate a response to a user's vague product-related question.
-#         Use the provided search results to craft an informative and helpful response.
-
-#         Always respond in JSON format with the following structure:
-#         {
-#             "message": "A concise introductory message addressing the user's query",
-#             "products": [
-#                 {
-#                     "name": "Product Name", // We only need the name of the product
-#                 }
-#                 // ... more products if applicable
-#             ],
-#             "reasoning": "Clear and concise reasoning for the provided response and product selection",
-#             "follow_up_question": "A single, clear follow-up question to help narrow down the user's needs"
-#         }
-
-#         Guidelines:
-#         - Provide a general overview of the product category if applicable.
-#         - Highlight key factors to consider when choosing products in this domain.
-#         - Include relevant products from the search results, explaining why they might be of interest.
-#         - If the search results don't fully address the user's query, acknowledge this and suggest how to refine the search.
-#         """
-#         )
-
-#         human_template = """
-#         Relevant Products: {products}
-#         User Query: {query}
-
-#         Response:
-#         """
-#         super().__init__(system_template, human_template, ["query", "products"])
-
-
 class VagueIntentResponsePrompt(BaseChatPrompt):
     def __init__(self):
         system_template = (
@@ -381,24 +348,59 @@ class DynamicAgentPrompt(BaseChatPrompt):
         You are an AI assistant specializing in computer hardware, particularly embedded systems, development kits, and industrial communication devices. Your task is to assist users with their queries about these products.
 
         You have access to the following tools:
-        1. semantic_search: Search for products based on a query
-        2. rerank_products: Rerank a list of products based on relevance to a query
-        3. expand_query: Expand a query to improve search results
+
+        1. direct_search:
+           - Input: query (string), limit (optional int, default 5)
+           - Output: List of products matching the query, each with a certainty score
+           - Description: Simple semantic search for products based on the query
+           - When to use: For straightforward queries, when the user is not specific about what they are looking for
+
+        2. expanded_search:
+           - Input: query (string), limit (optional int, default 10)
+           - Output: List of reranked products based on expanded queries, each with a relevance score
+           - Description: Expands the query, performs semantic search, and reranks results
+           - When to use: For complex queries or when the user is specif about what they are looking for.
 
         When you need to use a tool, respond with the following format:
         ACTION: {"tool": "tool_name", "input": {"param1": "value1", "param2": "value2"}}
 
-        If you don't need to use a tool and can respond directly, simply provide your response.
+        If you don't need to use a tool and can respond directly, provide your response in the specified JSON format.
 
         Always strive to provide accurate, up-to-date information and clarify any ambiguities in user queries.
-        Maintain a professional yet approachable tone in your responses
+        Maintain a professional yet approachable tone in your responses.
+
+        After using a tool, analyze the results and provide a comprehensive response to the user's query.
+        Include relevant product information, comparisons, and recommendations based on the tool results.
+
+        Guidelines for tool usage:
+        - Use direct_search for simple, straightforward queries about specific products
+        - Use expanded_search for more complex queries or when you need a broader range of results
+        - Use detailed_product_analysis when the user needs in-depth comparisons or detailed recommendations
+
+        Remember to interpret the tool outputs correctly and use the information to formulate your final response to the user.
+
+        IMPORTANT: Always provide your final response in the following JSON format:
+
+        {{
+            "message": "A concise response to the user's query",
+            "products": [
+                {{
+                    "name": "Product Name", // We only need the name of the product
+                }},
+                // ... more products if applicable
+            ],
+            "reasoning": "Explanation of your thought process and how you arrived at this response",
+            "follow_up_question": "A question to clarify the user's needs or to get more information",
+        }}
+
+        Ensure all fields are filled appropriately based on the query and tool results. If a field is not applicable, use an empty string, empty list, or empty object as appropriate.
         """
         )
 
         human_template = """
         User Query: {query}
 
-        Please process this query and respond appropriately.
+        Please process this query and respond appropriately, using tools as necessary. Provide your final response in the specified JSON format.
         """
         super().__init__(system_template, human_template, ["query"])
 

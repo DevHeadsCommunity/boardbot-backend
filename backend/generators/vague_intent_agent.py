@@ -20,7 +20,7 @@ class VagueIntentState(Dict[str, Any]):
     current_message: str
     semantic_search_query: str
     product_count: int
-    search_results: List[Product]
+    search_results: List[Tuple[Product, float]]  # Updated to include certainty
     input_tokens: Dict[str, int] = {
         "query_generation": 0,
         "generate": 0,
@@ -89,7 +89,7 @@ class VagueIntentAgent:
         results = await self.weaviate_service.search_products(
             state["semantic_search_query"], limit=state["product_count"]
         )
-        state["search_results"] = [Product(**result) for result in results]
+        state["search_results"] = [(Product(**result), certainty) for result, certainty in results]
         state["time_taken"]["search"] = time.time() - start_time
 
         logger.info(f"Found {len(state['search_results'])} products")
@@ -97,9 +97,16 @@ class VagueIntentAgent:
 
     async def response_generation_node(self, state: VagueIntentState) -> VagueIntentState:
         start_time = time.time()
+
+        logger.info(f"Generating response for:\n\n {state['search_results']}")
+
+        products_with_certainty = [
+            {**product.dict(), "certainty": certainty} for product, certainty in state["search_results"]
+        ]
+
         system_message, user_message = self.prompt_manager.get_vague_intent_response_prompt(
             state["current_message"],
-            state["search_results"],
+            products_with_certainty,
         )
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
@@ -143,5 +150,10 @@ class VagueIntentAgent:
         except Exception as e:
             logger.error(f"Error during workflow execution: {str(e)}", exc_info=True)
             final_state = initial_state
+            final_state["output"] = json.dumps(
+                {
+                    "message": f"An error occurred while processing your request. {str(e)}",
+                }
+            )
 
         return final_state

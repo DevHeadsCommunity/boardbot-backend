@@ -163,5 +163,8 @@ class WeaviateClient:
         where_filter: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
         near_text = {"concepts": [query]}
-        response = await self.query_near_text(class_name, properties, near_text, limit, where_filter)
-        return response.get("data", {}).get("Get", {}).get(class_name, [])
+        response = await self.query_near_text(
+            class_name, properties + ["_additional {certainty}"], near_text, limit, where_filter
+        )
+        results = response.get("data", {}).get("Get", {}).get(class_name, [])
+        return [(result, result.get("_additional", {}).get("certainty", 0)) for result in results]

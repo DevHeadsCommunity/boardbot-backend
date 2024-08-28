@@ -20,6 +20,26 @@ class Product:
     full_summary: str
     full_product_description: str
 
+    def dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "ids": self.ids,
+            "manufacturer": self.manufacturer,
+            "form_factor": self.form_factor,
+            "processor": self.processor,
+            "core_count": self.core_count,
+            "processor_tdp": self.processor_tdp,
+            "memory": self.memory,
+            "io": self.io,
+            "operating_system": self.operating_system,
+            "environmentals": self.environmentals,
+            "certifications": self.certifications,
+            "short_summary": self.short_summary,
+            "full_summary": self.full_summary,
+            "full_product_description": self.full_product_description,
+        }
+
 
 attribute_descriptions = {
     "name": "The official name of the product (e.g., 'SOM Intel 11th Gen Core Processors', 'ET COM Express').",

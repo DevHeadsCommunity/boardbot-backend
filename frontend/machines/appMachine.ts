@@ -7,7 +7,7 @@ export const MODEL_VALUES = ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-tu
 export type Model = (typeof MODEL_VALUES)[number];
 export const ARCHITECTURE_VALUES = ["semantic-router", "llm-router", "hybrid-router", "dynamic-agent"] as const;
 export type Architecture = (typeof ARCHITECTURE_VALUES)[number];
-export const HISTORY_MANAGEMENT_VALUES = ["keep-all", "keep-none", "keep-last-5"] as const;
+export const HISTORY_MANAGEMENT_VALUES = ["keep-none", "keep-last-5", "keep-all"] as const;
 export type HistoryManagement = (typeof HISTORY_MANAGEMENT_VALUES)[number];
 
 const serializeAppState = (context: any) => ({
@@ -131,27 +131,27 @@ export const appMachine = setup({
           chatRef: spawn(chatMachine, {
             input: {
               model: "gpt-4o",
-              architecture: "semantic-router",
-              historyManagement: "keep-all",
+              architecture: "llm-router",
+              historyManagement: "keep-last-5",
             },
           }),
           testRef: spawn(testMachine, {
             input: {
               model: "gpt-4o",
-              architecture: "semantic-router",
-              historyManagement: "keep-all",
+              architecture: "llm-router",
+              historyManagement: "keep-last-5",
             },
           }),
           prodRef: spawn(productMachine, {
             input: {
               model: "gpt-4o",
-              architecture: "semantic-router-v1",
-              historyManagement: "keep-all",
+              architecture: "llm-router",
+              historyManagement: "keep-last-5",
             },
           }),
           model: "gpt-4o",
-          architecture: "semantic-router-v1",
-          historyManagement: "keep-all",
+          architecture: "llm-router",
+          historyManagement: "keep-last-5",
         };
   },
   id: "appActor",
@@ -372,23 +372,23 @@ export const appMachine = setup({
               actions: [
                 assign({
                   model: "gpt-4o",
-                  architecture: "semantic-router-v1",
-                  historyManagement: "keep-all",
+                  architecture: "llm-router",
+                  historyManagement: "keep-last-5",
                 }),
                 sendTo(({ context }) => context.chatRef!, {
                   type: "app.updateState",
                   data: {
                     model: "gpt-4o",
-                    architecture: "semantic-router-v1",
-                    historyManagement: "keep-all",
+                    architecture: "llm-router",
+                    historyManagement: "keep-last-5",
                   },
                 }),
                 sendTo(({ context }) => context.testRef!, {
                   type: "app.updateState",
                   data: {
                     model: "gpt-4o",
-                    architecture: "semantic-router-v1",
-                    historyManagement: "keep-all",
+                    architecture: "llm-router",
+                    historyManagement: "keep-last-5",
                   },
                 }),
               ],
