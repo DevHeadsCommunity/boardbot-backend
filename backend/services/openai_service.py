@@ -4,7 +4,6 @@ from openai import AsyncOpenAI
 from typing import List, Optional, Tuple, Dict, Any
 from config import Config
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -31,11 +30,12 @@ class OpenAIService:
     ) -> Tuple[str, int, int]:
         try:
             model = model or self.config.DEFAULT_MODEL
-            # logger.info(f"===> Using model: {model}")
+            logger.info(f"===> Using model: {model}")
             encoder = self._get_encoder(model)
+            logger.info(f"===> Messages: {messages}")
 
             input_token_count = sum(len(encoder.encode(msg["content"])) for msg in messages)
-            # logger.info(f"Input token count: {input_token_count}")
+            logger.info(f"Input token count: {input_token_count}")
 
             kwargs = {
                 "model": model,
@@ -84,7 +84,7 @@ class OpenAIService:
         if system_message:
             messages.append({"role": "system", "content": system_message})
 
-        if formatted_chat_history:
+        if formatted_chat_history and isinstance(formatted_chat_history, list):
             messages.extend(formatted_chat_history)
 
         messages.append({"role": "user", "content": user_message})

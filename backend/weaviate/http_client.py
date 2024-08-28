@@ -35,6 +35,7 @@ class HttpHandler:
                 json_response = response.json()
             else:
                 json_response = {}
+            # print(f"Response: {json_response}")
             return json_response
         except httpx.HTTPError as e:
             raise e

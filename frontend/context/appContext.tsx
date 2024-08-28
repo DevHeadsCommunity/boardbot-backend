@@ -1,13 +1,13 @@
 "use client";
 
 import { appMachine } from "@/machines/appMachine";
-// import { createBrowserInspector } from "@statelyai/inspect";
+import { createBrowserInspector } from "@statelyai/inspect";
 import { createContext } from "react";
 import { ActorRefFrom, createActor } from "xstate";
 
-// const { inspect } = createBrowserInspector();
+const { inspect } = createBrowserInspector();
 const appActor = createActor(appMachine, {
-  // inspect,
+  inspect,
 }).start();
 
 export const AppContext = createContext<ActorRefFrom<typeof appMachine> | null>(null);
