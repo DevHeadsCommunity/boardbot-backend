@@ -56,11 +56,11 @@ class SocketIOHandler:
             architecture_choice=data.get("architectureChoice"),
             history_management_choice=data.get("historyManagementChoice"),
         )
-        print(f"===> Message279: {message}")
+        print(f"\n\n===:> Message Received: {message}\n\n")
         response = await self.message_processor.process_message(message)
 
         await self.sio.emit("textResponse", response.dict(), room=sid)
-        print(f"Response sent to {sid}: {response}")
+        # print(f"Response sent to {sid}: {response}")
         self.session_manager.add_message(message)
         self.session_manager.add_message(response)
 

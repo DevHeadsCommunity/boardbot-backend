@@ -5,6 +5,7 @@ import operator
 from typing import List, Dict, Any, Tuple, Annotated
 from langgraph.graph import StateGraph, END
 from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage, ToolMessage
+from core.session_manager import SessionManager
 from models.message import Message
 from services.openai_service import OpenAIService
 from services.weaviate_service import WeaviateService
@@ -29,13 +30,16 @@ class AgentState(Dict[str, Any]):
 
 
 class DynamicAgent:
+
     def __init__(
         self,
+        session_manager: SessionManager,
         openai_service: OpenAIService,
         weaviate_service: WeaviateService,
         query_processor: QueryProcessor,
         prompt_manager: PromptManager,
     ):
+        self.session_manager = session_manager
         self.openai_service = openai_service
         self.weaviate_service = weaviate_service
         self.query_processor = query_processor
@@ -64,16 +68,12 @@ class DynamicAgent:
 
     async def agent_step(self, state: AgentState) -> Dict[str, Any]:
         start_time = time.time()
-        system_message, user_message = self.prompt_manager.get_dynamic_agent_prompt(
-            state["current_message"], state["chat_history"]
-        )
-
-        messages = [SystemMessage(content=system_message)] + state["messages"]
+        system_message, user_message = self.prompt_manager.get_dynamic_agent_prompt(state["current_message"])
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
             user_message=user_message,
             system_message=system_message,
-            formatted_chat_history=messages,
+            formatted_chat_history=state["chat_history"],
             model=state["model_name"],
         )
 
@@ -133,7 +133,10 @@ class DynamicAgent:
             messages=[HumanMessage(content=message.message)],
             chat_history=chat_history,
             current_message=message,
-            model_name=message.model_name,
+            model_name=message.model,
+            input_tokens={},
+            output_tokens={},
+            time_taken={},
         )
 
         try:

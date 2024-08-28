@@ -79,6 +79,7 @@ class Container(containers.DeclarativeContainer):
 
     dynamic_agent = providers.Singleton(
         DynamicAgent,
+        session_manager=session_manager,
         openai_service=openai_service,
         weaviate_service=weaviate_service,
         query_processor=query_processor,
