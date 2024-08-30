@@ -64,20 +64,21 @@ export const productMachine = setup({
         throw error;
       }
     }),
-    fetchProducts: fromPromise(async () => {
-      try {
-        const result = await apiCall("GET", "/products");
-        const products = result.data.Get.Product.map(ProductFromJson);
-        return { products };
-      } catch (error) {
-        throw error;
-      }
-    }),
     fetchProduct: fromPromise(async ({ input }: { input: { productName: string } }) => {
       try {
         const result = await apiCall("GET", `/products/${input.productName}`);
         console.log("result ::: ", result);
         return ProductFromJson(result.product.data.get.product);
+      } catch (error) {
+        throw error;
+      }
+    }),
+    fetchProducts: fromPromise(async () => {
+      try {
+        const result = await apiCall("GET", "/products");
+        console.log("result ::: ", result);
+        const products = result.products.map(ProductFromJson);
+        return { products };
       } catch (error) {
         throw error;
       }

@@ -50,8 +50,18 @@ class ProductService(WeaviateService):
     async def get(self, uuid: str) -> Dict[str, Any]:
         return await self.client.get_object(uuid, self.object_type)
 
-    async def get_all(self) -> Dict[str, Any]:
-        return await self.client.query_objects(self.object_type, self.properties)
+    async def get_all(self, limit: int = 10, offset: int = 0) -> List[Dict[str, Any]]:
+        query = f"""
+        {{
+          Get {{
+            {self.object_type}(limit: {limit}, offset: {offset}) {{
+              {', '.join(self.properties)}
+            }}
+          }}
+        }}
+        """
+        response = await self.client.run_query(query)
+        return response.get("data", {}).get("Get", {}).get(self.object_type, [])
 
     async def update(self, uuid: str, updated_data: Dict[str, Any]) -> bool:
         return await self.client.update_object(uuid, updated_data, self.object_type)
@@ -95,3 +105,20 @@ class ProductService(WeaviateService):
             )
         # logger.info(f"Products2: {products}")
         return products
+
+    async def count(self) -> int:
+        query = f"""
+        {{
+          Aggregate {{
+            {self.object_type} {{
+              meta {{
+                count
+              }}
+            }}
+          }}
+        }}
+        """
+        response = await self.client.run_query(query)
+        return (
+            response.get("data", {}).get("Aggregate", {}).get(self.object_type, [{}])[0].get("meta", {}).get("count", 0)
+        )

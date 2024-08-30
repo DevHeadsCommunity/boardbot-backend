@@ -362,7 +362,7 @@ class DynamicAgentPrompt(BaseChatPrompt):
            - When to use: For complex queries or when the user is specif about what they are looking for.
 
         When you need to use a tool, respond with the following format:
-        ACTION: {"tool": "tool_name", "input": {"param1": "value1", "param2": "value2"}}
+        ACTION: {{"tool": "tool_name", "input": {{"param1": "value1", "param2": "value2"}}}}
 
         If you don't need to use a tool and can respond directly, provide your response in the specified JSON format.
 

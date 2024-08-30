@@ -1,6 +1,9 @@
 import json
+import logging
 from typing import Dict, List, Literal
 from models.message import Message
+
+logger = logging.getLogger(__name__)
 
 
 class SessionManager:

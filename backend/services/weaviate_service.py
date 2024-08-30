@@ -137,3 +137,16 @@ class WeaviateService:
 
     async def delete_product(self, product_id: str) -> bool:
         return await self.wi.product.delete(product_id)
+
+    async def get_products(self, limit: int = 10, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
+        try:
+            # Get total count of products
+            total_count = await self.wi.product.count()
+
+            # Get paginated products
+            products = await self.wi.product.get_all(limit=limit, offset=offset)
+
+            return products, total_count
+        except Exception as e:
+            print(f"Error in getting products: {str(e)}")
+            raise

@@ -1,3 +1,4 @@
+import logging
 from enum import Enum
 import pandas as pd
 from io import StringIO
@@ -7,6 +8,8 @@ from services.simple_feature_extractor import SimpleFeatureExtractor
 from services.agentic_feature_extractor import AgenticFeatureExtractor
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from dependencies import get_weaviate_service, get_agentic_feature_extractor, get_simple_feature_extractor
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -22,7 +25,9 @@ async def get_products(
     offset: int = Query(0, ge=0),
     weaviate_service: WeaviateService = Depends(get_weaviate_service),
 ):
+    logger.info(f"Getting products with limit: {limit}, offset: {offset}")
     products, total_count = await weaviate_service.get_products(limit, offset)
+    logger.info(f"Found {len(products)} products")
     return {"total": total_count, "limit": limit, "offset": offset, "products": products}
 
 

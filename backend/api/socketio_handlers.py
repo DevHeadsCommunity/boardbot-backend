@@ -1,10 +1,12 @@
-import json
+import logging
 import socketio
 from dateutil.parser import isoparse
 from models.message import RequestMessage
 from core.session_manager import SessionManager
 from core.message_processor import MessageProcessor
 import datetime
+
+logger = logging.getLogger(__name__)
 
 
 class SocketIOHandler:
