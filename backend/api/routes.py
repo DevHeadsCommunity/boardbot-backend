@@ -1,5 +1,7 @@
+import json
 import logging
 from enum import Enum
+from typing import Optional
 import pandas as pd
 from io import StringIO
 from models.product import Product
@@ -19,16 +21,31 @@ class FeatureExtractorType(str, Enum):
     simple = "simple"
 
 
+# @router.get("/products")
+# async def get_products(
+#     limit: int = Query(10, ge=1, le=100),
+#     offset: int = Query(0, ge=0),
+#     weaviate_service: WeaviateService = Depends(get_weaviate_service),
+# ):
+#     logger.info(f"Getting products with limit: {limit}, offset: {offset}")
+#     products, total_count = await weaviate_service.get_products(limit, offset)
+#     logger.info(f"Found {len(products)} products")
+#     return {"total": total_count, "limit": limit, "offset": offset, "products": products}
+
+
 @router.get("/products")
 async def get_products(
-    limit: int = Query(10, ge=1, le=100),
-    offset: int = Query(0, ge=0),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    filter: Optional[str] = Query(None),
     weaviate_service: WeaviateService = Depends(get_weaviate_service),
 ):
-    logger.info(f"Getting products with limit: {limit}, offset: {offset}")
-    products, total_count = await weaviate_service.get_products(limit, offset)
+    logger.info(f"Getting products with page: {page}, page_size: {page_size}, filter: {filter}")
+    offset = (page - 1) * page_size
+    filter_dict = json.loads(filter) if filter else None
+    products, total_count = await weaviate_service.get_products(page_size, offset, filter_dict)
     logger.info(f"Found {len(products)} products")
-    return {"total": total_count, "limit": limit, "offset": offset, "products": products}
+    return {"total": total_count, "page": page, "page_size": page_size, "products": products}
 
 
 @router.get("/products/{product_id}")
@@ -43,6 +60,16 @@ async def get_product(product_id: str, weaviate_service: WeaviateService = Depen
 async def add_product(product: Product, weaviate_service: WeaviateService = Depends(get_weaviate_service)):
     product_id = await weaviate_service.add_product(product.dict())
     return {"id": product_id}
+
+
+# @router.put("/products/{product_id}")
+# async def update_product(
+#     product_id: str, product: Product, weaviate_service: WeaviateService = Depends(get_weaviate_service)
+# ):
+#     success = await weaviate_service.update_product(product_id, product.dict())
+#     if not success:
+#         raise HTTPException(status_code=404, detail="Product not found")
+#     return {"message": "Product updated successfully"}
 
 
 @router.put("/products/{product_id}")

@@ -1,197 +1,165 @@
-import { RequestData, ResponseData } from "@/types";
+import { RequestData, RequestDataSchema, ResponseMessage, requestDataToJson } from "@/types";
 import { Socket, io } from "socket.io-client";
 import { EventObject, assign, emit, fromCallback, fromPromise, sendParent, setup } from "xstate";
+import { z } from "zod";
 
-// const SOCKET_URL = "https://api.boardbot.ai";
-// const SOCKET_URL = "http://0.0.0.0:6789";
-// const SOCKET_URL = "http://0.0.0.0:5678";
-const SOCKET_URL = "http://192.168.197.59:5678";
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5678";
+const MAX_RECONNECTION_ATTEMPTS = 5;
+const RECONNECTION_DELAY = 2000;
+
+const WebSocketContextSchema = z.object({
+  socket: z.any().nullable(), // Can't directly validate Socket with Zod
+  sessionId: z.string().nullable(),
+  reconnectionAttempts: z.number(),
+});
+
+type WebSocketContext = z.infer<typeof WebSocketContextSchema>;
 
 export const webSocketMachine = setup({
   types: {
-    context: {} as { socket: Socket | null; sessionId: string | null },
+    context: {} as WebSocketContext,
     events: {} as
       | { type: "parentActor.connect"; data: { sessionId: string } }
       | { type: "parentActor.sendMessage"; data: RequestData }
       | { type: "parentActor.disconnect" }
-      | { type: "listener.textResponseReceived" }
-      | { type: "listener.disconnected" }
-      | { type: "closer.connectionClosed" },
+      | { type: "socketListener.messageReceived"; data: ResponseMessage }
+      | { type: "socketListener.disconnected" },
   },
   actions: {
-    sendMessage: function ({ context, event }, params: RequestData) {
-      const message = {
-        ...params,
+    sendMessage: ({ context, event }) => {
+      if (event.type !== "parentActor.sendMessage") return;
+      const message = RequestDataSchema.parse({
+        ...event.data,
         sessionId: context.sessionId,
-      };
-      context.socket?.emit("textMessage", message);
+      });
+      const snakeCaseMessage = requestDataToJson(message);
+      context.socket?.emit("textMessage", snakeCaseMessage);
     },
   },
   actors: {
-    initializeSocket: fromPromise(
-      async ({
-        input,
-      }: {
-        input: { sessionId: string };
-      }): Promise<{
-        socket: Socket;
-        data: ResponseData;
-      }> => {
-        const sessionId = input.sessionId;
-        console.log("===:> sessionId", sessionId);
-        try {
-          const socket = io(SOCKET_URL, {
-            reconnectionAttempts: 5,
-            reconnectionDelay: 2000,
-          });
+    socketConnector: fromPromise(async ({ input }: { input: { sessionId: string } }): Promise<{ socket: Socket; data: ResponseMessage }> => {
+      return new Promise((resolve, reject) => {
+        const socket = io(SOCKET_URL, {
+          reconnectionAttempts: MAX_RECONNECTION_ATTEMPTS,
+          reconnectionDelay: RECONNECTION_DELAY,
+        });
 
-          return new Promise((resolve, reject) => {
-            socket.on("connect", () => socket.emit("connectionInit"));
-            socket.on("connectionAck", () => socket.emit("sessionInit", { sessionId }));
-            socket.on("sessionInit", (data: ResponseData) => {
-              resolve({ socket, data });
-            });
-            socket.on("connect_error", reject);
-          });
+        socket.on("connect", () => socket.emit("connectionInit"));
+        socket.on("connectionAck", () => socket.emit("sessionInit", { sessionId: input.sessionId }));
+        socket.on("sessionInit", (data: any) => {
+          console.log("Session init data:", data);
+          resolve({ socket, data });
+        });
+        socket.on("connect_error", reject);
+      });
+    }),
+    socketListener: fromCallback<EventObject, { socket: Socket }>(({ sendBack, input }) => {
+      const { socket } = input;
+
+      const handleTextResponse = (data: unknown) => {
+        try {
+          const validatedData = responseMessageFromJson(data);
+          sendBack({ type: "socketListener.messageReceived", data: validatedData });
         } catch (error) {
-          throw error;
+          console.error("Invalid response data:", error);
         }
-      }
-    ),
-    listener: fromCallback<EventObject, { socket: Socket; sessionId: string }>(({ sendBack, receive, input }) => {
-      const socket = input.socket;
-      socket.on("textResponse", (data: ResponseData) => sendBack({ type: "listener.textResponseReceived", data }));
-      socket.on("disconnect", () => sendBack({ type: "listener.disconnected" }));
+      };
+
+      socket.on("textResponse", handleTextResponse);
+      socket.on("disconnect", () => sendBack({ type: "socketListener.disconnected" }));
 
       return () => {
-        socket.off("connect");
-        socket.off("connectionAck");
-        socket.off("sessionInit");
-        socket.off("textResponse");
-        socket.off("connect_error");
+        socket.off("textResponse", handleTextResponse);
+        socket.off("disconnect");
       };
     }),
-    closer: fromCallback<EventObject, { socket: Socket }>(({ sendBack, receive, input }) => {
-      const socket = input.socket;
-      socket.close();
-      sendBack({ type: "closer.connectionClosed" });
-    }),
+  },
+  guards: {
+    canReconnect: ({ context }) => context.reconnectionAttempts < MAX_RECONNECTION_ATTEMPTS,
   },
 }).createMachine({
-  context: {
+  context: WebSocketContextSchema.parse({
     socket: null,
     sessionId: null,
-  },
+    reconnectionAttempts: 0,
+  }),
   id: "webSocketActor",
   initial: "idle",
   states: {
     idle: {
       on: {
         "parentActor.connect": {
-          target: "Initializing",
+          target: "connecting",
           actions: assign({
             sessionId: ({ event }) => event.data.sessionId,
+            reconnectionAttempts: 0,
           }),
         },
       },
     },
-    Initializing: {
+    connecting: {
       invoke: {
-        id: "initializeSocket",
-        input: ({ context }) => {
-          if (!context.sessionId) {
-            throw new Error("No session id provided");
-          }
-          return { sessionId: context.sessionId };
-        },
+        src: "socketConnector",
+        input: ({ context }) => ({ sessionId: context.sessionId! }),
         onDone: {
-          target: "Connected",
+          target: "connected",
           actions: [
-            assign({
-              socket: ({ event }) => event.output.socket,
-            }),
-            sendParent(({ event }) => ({
-              type: "webSocket.connected",
-              data: event.output.data,
-            })),
+            assign({ socket: ({ event }) => event.output.socket }),
+            sendParent({ type: "webSocket.connected" }),
             emit({
               type: "notification",
-              data: {
-                type: "success",
-                message: "Connected to the server",
-              },
+              data: { type: "success", message: "Connected to the server" },
             }),
           ],
         },
         onError: {
-          target: "Initializing",
+          target: "reconnecting",
           actions: emit({
             type: "notification",
-            data: {
-              type: "error",
-              message: "Failed to connect to the server",
-            },
+            data: { type: "error", message: "Failed to connect to the server" },
           }),
         },
-        src: "initializeSocket",
       },
     },
-    Connected: {
+    connected: {
+      invoke: {
+        src: "socketListener",
+        input: ({ context }) => ({ socket: context.socket! }),
+      },
       on: {
-        "listener.textResponseReceived": {
-          actions: sendParent(({ event }: any) => ({
+        "parentActor.sendMessage": { actions: "sendMessage" },
+        "socketListener.messageReceived": {
+          actions: sendParent(({ event }) => ({
             type: "webSocket.messageReceived",
             data: event.data,
           })),
         },
-        "parentActor.sendMessage": {
-          actions: {
-            type: "sendMessage",
-            params: ({ event }: any) => event.data,
-          },
-        },
-        "listener.disconnected": {
-          target: "Disconnecting",
-        },
-        "parentActor.disconnect": {
-          target: "Disconnecting",
-        },
-      },
-      invoke: {
-        id: "listener",
-        input: ({ context }) => {
-          if (context.socket && context.sessionId) {
-            return { socket: context.socket, sessionId: context.sessionId };
-          } else {
-            throw new Error("Socket is not available");
-          }
-        },
-        src: "listener",
+        "socketListener.disconnected": { target: "reconnecting" },
+        "parentActor.disconnect": { target: "disconnecting" },
       },
     },
-    Disconnecting: {
-      on: {
-        "closer.connectionClosed": {
-          target: "Disconnected",
-          actions: sendParent({ type: "webSocket.disconnected" }),
+    reconnecting: {
+      entry: assign({
+        reconnectionAttempts: ({ context }) => context.reconnectionAttempts + 1,
+      }),
+      always: [
+        {
+          guard: "canReconnect",
+          target: "idle",
+          actions: emit({
+            type: "notification",
+            data: { type: "error", message: "Failed to reconnect after multiple attempts" },
+          }),
         },
-      },
-      invoke: {
-        id: "closer",
-        input: ({ context }) => {
-          if (context.socket) {
-            return { socket: context.socket };
-          } else {
-            throw new Error("Socket is not available");
-          }
-        },
-        src: "closer",
-      },
+        { target: "connecting" },
+      ],
     },
-    Disconnected: {
-      always: {
-        target: "idle",
-      },
+    disconnecting: {
+      entry: [({ context }) => context.socket?.close(), sendParent({ type: "webSocket.disconnected" })],
+      always: { target: "idle" },
     },
   },
 });
+function responseMessageFromJson(data: unknown) {
+  throw new Error("Function not implemented.");
+}

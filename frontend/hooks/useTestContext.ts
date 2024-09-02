@@ -1,8 +1,6 @@
-import { testMachine } from "@/machines/testMachine";
 import { TestCase } from "@/types";
 import { useSelector } from "@xstate/react";
 import { useCallback, useMemo } from "react";
-import { StateFrom } from "xstate";
 import { useAppContext } from "./useAppContext";
 import { useToast } from "./useToast";
 
@@ -12,17 +10,23 @@ export enum TestState {
   DisplayingTestPage = "DisplayingTestPage",
   DisplayingSelectedTest = "DisplayingSelectedTest",
   DisplayingTestDetailsModal = "DisplayingTestDetailsModal",
-  RunningTest = "RunningTest",
 }
 
-const testStateMap: Record<keyof StateFrom<typeof testMachine> | string, TestState> = {
+const stateMap: Record<string, TestState> = {
   idle: TestState.Idle,
-  DisplayingTest: TestState.DisplayingTest,
-  "DisplayingTest.Connected.DisplayingTestPage": TestState.DisplayingTestPage,
-  "DisplayingTest.Connected.DisplayingTestDetails.DisplayingSelectedTest": TestState.DisplayingSelectedTest,
-  "DisplayingTest.Connected.DisplayingTestDetails.DisplayingTestDetailsModal": TestState.DisplayingTestDetailsModal,
-  "DisplayingTest.Connected.DisplayingTestDetails.RunningTest": TestState.RunningTest,
+  displayingTest: TestState.DisplayingTest,
+  "displayingTest.displayingTestPage": TestState.DisplayingTestPage,
+  "displayingTest.displayingTestDetails.displayingSelectedTest": TestState.DisplayingSelectedTest,
+  "displayingTest.displayingTestDetails.displayingTestDetailsModal": TestState.DisplayingTestDetailsModal,
 };
+
+type TestAction =
+  | { type: "app.startTest" }
+  | { type: "app.stopTest" }
+  | { type: "user.createTest"; data: { testType: string; name: string; id: string; testCase: TestCase[]; createdAt: string } }
+  | { type: "user.selectTest"; data: { testId: string } }
+  | { type: "user.clickSingleTestResult" }
+  | { type: "user.closeTestResultModal" };
 
 export const useTestContext = () => {
   const { actorRef } = useAppContext();
@@ -33,30 +37,12 @@ export const useTestContext = () => {
   const testState = useMemo(() => {
     if (!testActorState) return TestState.Idle;
     const currentState = testActorState.value as string;
-    return testStateMap[currentState] || TestState.Idle;
+    return stateMap[currentState] || TestState.Idle;
   }, [testActorState]);
 
-  const handleStartTest = useCallback(() => {
-    testActorRef?.send({ type: "app.startTest" });
-  }, [testActorRef]);
-  const handleStopTest = useCallback(() => {
-    testActorRef?.send({ type: "app.stopTest" });
-  }, [testActorRef]);
-  const handleCreateTest = useCallback(
-    (data: { name: string; id: string; testCase: TestCase[]; createdAt: string }) => {
-      testActorRef?.send({ type: "user.createTest", data: data });
-    },
-    [testActorRef]
-  );
-  const handleSelectSingleTestResult = useCallback(() => {
-    testActorRef?.send({ type: "user.clickSingleTestResult" });
-  }, [testActorRef]);
-  const handleCloseTestResultModal = useCallback(() => {
-    testActorRef?.send({ type: "user.closeTestResultModal" });
-  }, [testActorRef]);
-  const handleSelectTest = useCallback(
-    (testId: string) => {
-      testActorRef?.send({ type: "user.selectTest", data: { testId } });
+  const testDispatch = useCallback(
+    (action: TestAction) => {
+      testActorRef?.send(action);
     },
     [testActorRef]
   );
@@ -70,17 +56,17 @@ export const useTestContext = () => {
       selectedTest: useSelector(testActorRef, (state) => state?.context.selectedTest || null),
     },
     actions: {
-      click: {
-        startTest: handleStartTest,
-        stopTest: handleStopTest,
-        createTest: handleCreateTest,
-      },
       select: {
-        test: handleSelectTest,
-        testResult: handleSelectSingleTestResult,
+        startTest: () => testDispatch({ type: "app.startTest" }),
+        stopTest: () => testDispatch({ type: "app.stopTest" }),
+        test: (testId: string) => testDispatch({ type: "user.selectTest", data: { testId } }),
+        testResult: () => testDispatch({ type: "user.clickSingleTestResult" }),
+      },
+      submit: {
+        createTest: (data: { testType: string; name: string; id: string; testCase: TestCase[]; createdAt: string }) => testDispatch({ type: "user.createTest", data }),
       },
       close: {
-        testResultModal: handleCloseTestResultModal,
+        testResultModal: () => testDispatch({ type: "user.closeTestResultModal" }),
       },
     },
   };

@@ -2,32 +2,31 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { TestCase } from "@/types";
 import { Product } from "@/types/Product";
 import { UploadIcon } from "lucide-react";
-import Papa from "papaparse";
 import React, { useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { v4 as uuidv4 } from "uuid";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 interface CreateTestCardProps {
-  addTest: (data: { name: string; id: string; testCase: TestCase[]; createdAt: string }) => void;
+  addTest: (data: { name: string; id: string; testCases: TestCase[]; createdAt: string }) => void;
 }
 
 interface FormData {
   testName: string;
+  testType: "accuracy" | "consistency";
 }
 
-interface CSVRow {
+interface ConsistencyTestCase {
   prompt: string;
-  name: string;
-  size: string;
-  form: string;
-  processor: string;
-  memory: string;
-  io: string;
-  manufacturer: string;
-  summary: string;
+  variations: string[];
+}
+
+interface AccuracyTestCase {
+  prompt: string;
+  products: Product[];
 }
 
 const CreateTestCard: React.FC<CreateTestCardProps> = ({ addTest }) => {
@@ -36,23 +35,77 @@ const CreateTestCard: React.FC<CreateTestCardProps> = ({ addTest }) => {
   const {
     register,
     handleSubmit,
+    control,
     reset,
+    watch,
     formState: { errors },
-  } = useForm<FormData>();
+  } = useForm<FormData>({
+    defaultValues: {
+      testType: "accuracy",
+    },
+  });
 
-  const validateCSVData = (data: CSVRow[]): string | null => {
-    const requiredFields = ["prompt", "name", "size", "form", "processor", "memory", "io", "manufacturer", "summary"];
+  const testType = watch("testType");
 
-    for (let i = 0; i < data.length; i++) {
-      const row = data[i];
-      for (const field of requiredFields) {
-        if (!row[field as keyof CSVRow]) {
-          return `Row ${i + 1}: Missing ${field}`;
-        }
-      }
+  console.log("testType", testType);
+
+  const validateTestCases = (testCases: any[]): string | null => {
+    if (!Array.isArray(testCases) || testCases.length === 0) {
+      return "Invalid test cases format";
     }
 
+    if (testType === "consistency") {
+      return validateConsistencyTestCases(testCases);
+    } else {
+      return validateAccuracyTestCases(testCases);
+    }
+  };
+
+  const validateConsistencyTestCases = (testCases: ConsistencyTestCase[]): string | null => {
+    for (let i = 0; i < testCases.length; i++) {
+      const testCase = testCases[i];
+      if (!testCase.prompt || !Array.isArray(testCase.variations) || testCase.variations.length < 5) {
+        return `Invalid consistency test case at index ${i}`;
+      }
+    }
     return null;
+  };
+
+  const validateAccuracyTestCases = (testCases: AccuracyTestCase[]): string | null => {
+    for (let i = 0; i < testCases.length; i++) {
+      const testCase = testCases[i];
+      if (!testCase.prompt || !Array.isArray(testCase.products) || testCase.products.length === 0) {
+        return `Invalid accuracy test case at index ${i}`;
+      }
+    }
+    return null;
+  };
+
+  const parseTestCases = (testCases: any[]): TestCase[] => {
+    if (testType === "consistency") {
+      return parseConsistencyTestCases(testCases);
+    } else {
+      return parseAccuracyTestCases(testCases);
+    }
+  };
+
+  const parseConsistencyTestCases = (testCases: ConsistencyTestCase[]): TestCase[] => {
+    return testCases.map((testCase) => ({
+      messageId: uuidv4(),
+      input: testCase.prompt,
+      expectedProducts: [],
+      testType: "consistency",
+      consistencyPrompts: testCase.variations,
+    }));
+  };
+
+  const parseAccuracyTestCases = (testCases: AccuracyTestCase[]): TestCase[] => {
+    return testCases.map((testCase) => ({
+      messageId: uuidv4(),
+      input: testCase.prompt,
+      expectedProducts: testCase.products,
+      testType: "accuracy",
+    }));
   };
 
   const onSubmit = async (data: FormData) => {
@@ -61,70 +114,38 @@ const CreateTestCard: React.FC<CreateTestCardProps> = ({ addTest }) => {
       return;
     }
 
-    Papa.parse(file, {
-      complete: (results) => {
-        const csvData = results.data as CSVRow[];
-        const validationError = validateCSVData(csvData);
+    try {
+      const fileContent = await file.text();
+      const jsonData = JSON.parse(fileContent);
 
-        if (validationError) {
-          toast.error(`Invalid CSV data: ${validationError}`);
-          return;
-        }
+      const validationError = validateTestCases(jsonData);
+      if (validationError) {
+        toast.error(`Invalid JSON data: ${validationError}`);
+        return;
+      }
 
-        const testCasesMap = new Map<string, TestCase>();
+      const testCases = parseTestCases(jsonData);
 
-        csvData.forEach((row) => {
-          const product: Product = {
-            name: row.name,
-            size: row.size,
-            form: row.form,
-            processor: row.processor,
-            memory: row.memory,
-            io: row.io,
-            manufacturer: row.manufacturer,
-            summary: row.summary,
-            processorTDP: "0",
-            operatingSystem: "0",
-            environmental: "0",
-            certifications: "0",
-          };
+      addTest({
+        name: data.testName,
+        id: uuidv4(),
+        testCases: testCases,
+        createdAt: new Date().toISOString(),
+      });
 
-          if (testCasesMap.has(row.prompt)) {
-            testCasesMap.get(row.prompt)!.expectedProducts.push(product);
-          } else {
-            testCasesMap.set(row.prompt, {
-              messageId: uuidv4(),
-              input: row.prompt,
-              expectedProducts: [product],
-            });
-          }
-        });
-
-        const testCases = Array.from(testCasesMap.values());
-
-        addTest({
-          name: data.testName,
-          id: uuidv4(),
-          testCase: testCases,
-          createdAt: new Date().toISOString(),
-        });
-
-        setFile(null);
-        reset();
-      },
-      header: true,
-      skipEmptyLines: true,
-      error: (error) => {
-        toast.error(`Failed to parse the CSV file: ${error.message}`);
-      },
-    });
+      setFile(null);
+      reset();
+      toast.success("Test created successfully");
+    } catch (error) {
+      toast.error(`Failed to parse the JSON file: ${(error as Error).message}`);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
-      if (selectedFile.type !== "text/csv") {
-        toast.error("Please upload a CSV file.");
+      if (selectedFile.type !== "application/json") {
+        toast.error("Please upload a JSON file.");
         return;
       }
       setFile(selectedFile);
@@ -146,7 +167,27 @@ const CreateTestCard: React.FC<CreateTestCardProps> = ({ addTest }) => {
             {errors.testName && <p className="mt-1 text-sm text-red-500">{errors.testName.message}</p>}
           </div>
           <div>
-            <p className="mb-1 text-sm font-medium text-muted-foreground">Upload the test document (CSV)</p>
+            <label htmlFor="testType" className="mb-1 block text-sm font-medium text-muted-foreground">
+              Test Type
+            </label>
+            <Controller
+              name="testType"
+              control={control}
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select test type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="accuracy">Accuracy</SelectItem>
+                    <SelectItem value="consistency">Consistency</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+          <div>
+            <p className="mb-1 text-sm font-medium text-muted-foreground">Upload the test document (JSON)</p>
             <div
               className="flex flex-1 cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed border-muted p-6 text-muted-foreground transition-colors hover:border-primary-foreground"
               onClick={() => fileInputRef.current?.click()}
@@ -157,7 +198,7 @@ const CreateTestCard: React.FC<CreateTestCardProps> = ({ addTest }) => {
               <UploadIcon className="mb-2 h-8 w-8" />
               <p>{file ? file.name : "Click or drag file to upload"}</p>
             </div>
-            <input ref={fileInputRef} type="file" accept=".csv" onChange={handleFileChange} className="hidden" />
+            <input ref={fileInputRef} type="file" accept=".json" onChange={handleFileChange} className="hidden" />
           </div>
         </CardContent>
         <CardFooter>

@@ -138,15 +138,17 @@ class WeaviateService:
     async def delete_product(self, product_id: str) -> bool:
         return await self.wi.product.delete(product_id)
 
-    async def get_products(self, limit: int = 10, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
+    async def get_products(
+        self, limit: int = 10, offset: int = 0, filter_dict: Optional[Dict[str, Any]] = None
+    ) -> Tuple[List[Dict[str, Any]], int]:
         try:
-            # Get total count of products
-            total_count = await self.wi.product.count()
+            # Get total count of products (considering the filter)
+            total_count = await self.wi.product.count(filter_dict)
 
             # Get paginated products
-            products = await self.wi.product.get_all(limit=limit, offset=offset)
+            products = await self.wi.product.get_all(limit=limit, offset=offset, where_filter=filter_dict)
 
             return products, total_count
         except Exception as e:
-            print(f"Error in getting products: {str(e)}")
+            logger.error(f"Error in getting products: {str(e)}")
             raise

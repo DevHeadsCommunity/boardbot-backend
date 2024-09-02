@@ -1,7 +1,7 @@
-import { Test, TestCase } from "@/types";
+import { Architecture, HistoryManagement, Model, Test, TestCase } from "@/types";
 import { ActorRefFrom, assign, ContextFrom, emit, setup } from "xstate";
-import { Architecture, HistoryManagement, Model } from "./appMachine";
-import { testRunnerMachine } from "./testRunnerMachine";
+import { accuracyTestRunnerMachine } from "./accuracyTestRunnerMachine";
+import { consistencyTestRunnerMachine } from "./consistencyTestRunnerMachine";
 
 export const testMachine = setup({
   types: {
@@ -22,7 +22,7 @@ export const testMachine = setup({
       | { type: "app.startTest" }
       | { type: "app.stopTest" }
       | { type: "app.updateState"; data: { model: Model; architecture: Architecture; historyManagement: HistoryManagement } }
-      | { type: "user.createTest"; data: { name: string; id: string; testCase: TestCase[]; createdAt: string } }
+      | { type: "user.createTest"; data: { testType: string; name: string; id: string; testCase: TestCase[]; createdAt: string } }
       | { type: "user.selectTest"; data: { testId: string } }
       | { type: "user.clickSingleTestResult" }
       | { type: "user.closeTestResultModal" },
@@ -51,18 +51,19 @@ export const testMachine = setup({
     idle: {
       on: {
         "app.startTest": {
-          target: "DisplayingTest",
+          target: "displayingTest",
         },
       },
     },
-    DisplayingTest: {
-      initial: "DisplayingTestPage",
+    displayingTest: {
+      initial: "displayingTestPage",
       on: {
         "user.createTest": {
-          target: "#testActor.DisplayingTest.DisplayingTestDetails",
+          target: "#testActor.displayingTest.displayingTestDetails",
           actions: [
             assign({
               tests: ({ context, event, spawn }) => {
+                const testRunnerMachine = event.data.testType === "accuracy" ? accuracyTestRunnerMachine : consistencyTestRunnerMachine;
                 const newTest = {
                   testId: event.data.id,
                   name: event.data.name,
@@ -91,7 +92,7 @@ export const testMachine = setup({
           ],
         },
         "user.selectTest": {
-          target: "#testActor.DisplayingTest.DisplayingTestDetails",
+          target: "#testActor.displayingTest.displayingTestDetails",
           actions: assign({
             selectedTest: ({ context, event }) => context.tests.find((test) => test.testId === event.data.testId) || null,
           }),
@@ -101,21 +102,21 @@ export const testMachine = setup({
         },
       },
       states: {
-        DisplayingTestPage: {},
-        DisplayingTestDetails: {
-          initial: "DisplayingSelectedTest",
+        displayingTestPage: {},
+        displayingTestDetails: {
+          initial: "displayingSelectedTest",
           states: {
-            DisplayingSelectedTest: {
+            displayingSelectedTest: {
               on: {
                 "user.clickSingleTestResult": {
-                  target: "DisplayingTestDetailsModal",
+                  target: "displayingTestDetailsModal",
                 },
               },
             },
-            DisplayingTestDetailsModal: {
+            displayingTestDetailsModal: {
               on: {
                 "user.closeTestResultModal": {
-                  target: "DisplayingSelectedTest",
+                  target: "displayingSelectedTest",
                 },
               },
             },
@@ -141,14 +142,13 @@ export const serializeTestState = (testRef: ActorRefFrom<typeof testMachine>) =>
   };
 };
 
-export const serializeTestRunnerState = (testRunnerRef: ActorRefFrom<typeof testRunnerMachine>) => {
+export const serializeTestRunnerState = (testRunnerRef: ActorRefFrom<typeof accuracyTestRunnerMachine | typeof consistencyTestRunnerMachine>) => {
   const snapshot = testRunnerRef.getSnapshot();
   return {
     name: snapshot.context.name,
     sessionId: snapshot.context.sessionId,
     testCases: snapshot.context.testCases,
     testResults: snapshot.context.testResults,
-    fullTestResult: snapshot.context.fullTestResult,
     currentTestIndex: snapshot.context.currentTestIndex,
     batchSize: snapshot.context.batchSize,
     testTimeout: snapshot.context.testTimeout,
@@ -165,7 +165,7 @@ export const deserializeTestState = (savedState: any, spawn: any): ContextFrom<t
     ...savedState,
     tests: savedState.tests.map((test: any) => ({
       ...test,
-      testRunnerRef: spawn(testRunnerMachine, {
+      testRunnerRef: spawn(test.testType === "accuracy" ? accuracyTestRunnerMachine : consistencyTestRunnerMachine, {
         id: test.testId,
         input: deserializeTestRunnerState(test.testRunnerState),
       }),
@@ -173,14 +173,13 @@ export const deserializeTestState = (savedState: any, spawn: any): ContextFrom<t
   };
 };
 
-export const deserializeTestRunnerState = (savedState: any): ContextFrom<typeof testRunnerMachine> => {
+export const deserializeTestRunnerState = (savedState: any): ContextFrom<typeof accuracyTestRunnerMachine | typeof consistencyTestRunnerMachine> => {
   return {
     webSocketRef: undefined,
     name: savedState.name,
     sessionId: savedState.sessionId,
     testCases: savedState.testCases,
     testResults: savedState.testResults,
-    fullTestResult: savedState.fullTestResult,
     currentTestIndex: savedState.currentTestIndex,
     batchSize: savedState.batchSize,
     testTimeout: savedState.testTimeout,

@@ -1,7 +1,8 @@
-import { testRunnerMachine } from "@/machines/testRunnerMachine";
+import { accuracyTestRunnerMachine } from "@/machines/accuracyTestRunnerMachine";
+import { consistencyTestRunnerMachine } from "@/machines/consistencyTestRunnerMachine";
 import { useSelector } from "@xstate/react";
 import { useCallback, useMemo } from "react";
-import { StateFrom } from "xstate";
+import { ActorRefFrom } from "xstate";
 import { useAppContext } from "./useAppContext";
 import { useToast } from "./useToast";
 
@@ -14,64 +15,56 @@ export enum TestRunnerState {
   Disconnecting = "Disconnecting",
 }
 
-const testRunnerStateMap: Record<keyof StateFrom<typeof testRunnerMachine> | string, TestRunnerState> = {
+const stateMap: Record<string, TestRunnerState> = {
   idle: TestRunnerState.Idle,
-  Connecting: TestRunnerState.Connecting,
-  "Connected.RunningBatchTest": TestRunnerState.Running,
-  "Connected.TestPaused": TestRunnerState.Paused,
-  "Connected.EvaluatingFullTestResult": TestRunnerState.Evaluating,
-  Disconnecting: TestRunnerState.Disconnecting,
+  connecting: TestRunnerState.Connecting,
+  running: TestRunnerState.Running,
+  "running.paused": TestRunnerState.Paused,
+  "running.evaluatingResults": TestRunnerState.Evaluating,
+  disconnecting: TestRunnerState.Disconnecting,
 };
+
+type TestRunnerAction = { type: "user.startTest" } | { type: "user.stopTest" } | { type: "user.pauseTest" } | { type: "user.continueTest" };
 
 export const useTestRunnerContext = () => {
   const { actorRef } = useAppContext();
   const testActorRef = actorRef.test;
   const testActorState = useSelector(testActorRef, (state) => state);
-  const testRunnerActorRef = testActorState?.context.selectedTest?.testRunnerRef ?? undefined;
+  const testRunnerActorRef = testActorState?.context.selectedTest?.testRunnerRef as
+    | ActorRefFrom<typeof accuracyTestRunnerMachine | typeof consistencyTestRunnerMachine>
+    | undefined;
   const testRunnerActorState = useSelector(testRunnerActorRef, (state) => state);
   useToast(testRunnerActorRef);
-  const webSocketActorRef = testRunnerActorState?.context.webSocketRef ?? undefined;
-  const webSocketActorState = useSelector(webSocketActorRef, (state) => state);
-  useToast(webSocketActorRef);
 
   const testRunnerState = useMemo(() => {
     if (!testRunnerActorState) return TestRunnerState.Idle;
-    const currentState = testRunnerActorState.value as string;
-    return testRunnerStateMap[currentState] || TestRunnerState.Idle;
+    const stateValue = testRunnerActorState.value as string;
+    return stateMap[stateValue] || TestRunnerState.Idle;
   }, [testRunnerActorState]);
 
-  const handleStartTest = useCallback(() => {
-    testRunnerActorRef?.send({ type: "user.startTest" });
-  }, [testRunnerActorRef]);
-  const handleStopTest = useCallback(() => {
-    testRunnerActorRef?.send({ type: "user.stopTest" });
-  }, [testRunnerActorRef]);
-  const handlePauseTest = useCallback(() => {
-    testRunnerActorRef?.send({ type: "user.pauseTest" });
-  }, [testRunnerActorRef]);
-  const handleResumeTest = useCallback(() => {
-    testRunnerActorRef?.send({ type: "user.continueTest" });
-  }, [testRunnerActorRef]);
+  const testRunnerDispatch = useCallback(
+    (action: TestRunnerAction) => {
+      testRunnerActorRef?.send(action);
+    },
+    [testRunnerActorRef]
+  );
 
   return {
     state: {
       testRunnerState,
     },
     data: {
-      name: useSelector(testRunnerActorRef, (state: any) => state.context.name || ""),
-      testCases: useSelector(testRunnerActorRef, (state: any) => state.context.testCases || []),
-      testResults: useSelector(testRunnerActorRef, (state: any) => state.context.testResults || []),
-      fullTestResult: useSelector(testRunnerActorRef, (state: any) => state.context.fullTestResult || null),
-      currentTestIndex: useSelector(testRunnerActorRef, (state: any) => state.context.currentTestIndex || 0),
-      progress: useSelector(testRunnerActorRef, (state: any) => state.context.progress || 0),
+      name: useSelector(testRunnerActorRef, (state) => state?.context.name),
+      testCases: useSelector(testRunnerActorRef, (state) => state?.context.testCases),
+      testResults: useSelector(testRunnerActorRef, (state) => state?.context.testResults),
+      currentTestIndex: useSelector(testRunnerActorRef, (state) => state?.context.currentTestIndex),
+      progress: useSelector(testRunnerActorRef, (state) => state?.context.progress),
     },
     actions: {
-      click: {
-        startTest: handleStartTest,
-        stopTest: handleStopTest,
-        pauseTest: handlePauseTest,
-        resumeTest: handleResumeTest,
-      },
+      startTest: () => testRunnerDispatch({ type: "user.startTest" }),
+      stopTest: () => testRunnerDispatch({ type: "user.stopTest" }),
+      pauseTest: () => testRunnerDispatch({ type: "user.pauseTest" }),
+      resumeTest: () => testRunnerDispatch({ type: "user.continueTest" }),
     },
   };
 };

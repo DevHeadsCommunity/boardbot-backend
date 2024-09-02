@@ -72,3 +72,11 @@ class WhereClauseBuilder(ClauseBuilder):
             return f"{key}: {json.dumps(value)}"
         else:
             raise ValueError(f"Unsupported key in dict part: {key}")
+
+
+class OffsetClauseBuilder(ClauseBuilder):
+    def __init__(self, offset: int):
+        self.offset = offset
+
+    def build(self) -> str:
+        return f"offset: {self.offset}" if self.offset is not None else ""

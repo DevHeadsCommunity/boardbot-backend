@@ -6,25 +6,68 @@ import { useAppContext } from "./useAppContext";
 export enum ProductState {
   Idle = "Idle",
   FetchingProducts = "FetchingProducts",
-  DisplayingProducts = "DisplayingProducts.DisplayingProductsTable",
-  DisplayingProduct = "DisplayingProducts.DisplayingProductsDetailModal",
-  AddingProduct = "DisplayingProducts.DisplayingAddProductsForm",
+  DisplayingProductsTable = "DisplayingProductsTable",
+  DisplayingProductsDetailModal = "DisplayingProductsDetailModal",
+  DisplayingAddProductsForm = "DisplayingAddProductsForm",
 }
+
 export enum DisplayProductState {
   Idle = "Idle",
-  DisplayingProduct = "DisplayingProducts.DisplayingProductsDetailModal",
-  DisplayingUpdateProductForm = "DisplayingProducts.DisplayingProductsDetailModal.DisplayingUpdateProductForm",
-  DisplayingDeleteProductForm = "DisplayingProducts.DisplayingProductsDetailModal.DisplayingDeleteProductForm",
-  UpdatingProduct = "DisplayingProducts.DisplayingProductsDetailModal.DisplayingUpdateProductForm.UpdatingProduct",
-  DeletingProduct = "DisplayingProducts.DisplayingProductsDetailModal.DisplayingDeleteProductForm.DeletingProduct",
+  DisplayingProduct = "DisplayingProduct",
+  DisplayingUpdateProductForm = "DisplayingUpdateProductForm",
+  DisplayingDeleteProductForm = "DisplayingDeleteProductForm",
+  UpdatingProduct = "UpdatingProduct",
+  DeletingProduct = "DeletingProduct",
 }
+
 export enum AddProductState {
   Idle = "Idle",
-  DisplayingForm = "DisplayingProducts.DisplayingAddProductsForm",
-  AddingProduct = "DisplayingProducts.DisplayingAddProductsForm.AddingProduct",
-  AddingProductFormRawData = "DisplayingProducts.DisplayingAddProductsForm.AddingProductFormRawData",
-  AddingProductsFormRawData = "DisplayingProducts.DisplayingAddProductsForm.AddingProductsFormRawData",
+  DisplayingForm = "DisplayingForm",
+  AddingProduct = "AddingProduct",
+  AddingProductFormRawData = "AddingProductFormRawData",
+  AddingProductsFormRawData = "AddingProductsFormRawData",
 }
+
+const prodStateMap: Record<string, ProductState> = {
+  idle: ProductState.Idle,
+  "displayingProducts.fetchingProducts": ProductState.FetchingProducts,
+  "displayingProducts.displayingProductsTable": ProductState.DisplayingProductsTable,
+  "displayingProducts.displayingProductsDetailModal": ProductState.DisplayingProductsDetailModal,
+  "displayingProducts.displayingAddProductsForm": ProductState.DisplayingAddProductsForm,
+};
+
+const dispProdStateMap: Record<string, DisplayProductState> = {
+  "displayingProducts.displayingProductsDetailModal": DisplayProductState.DisplayingProduct,
+  "displayingProducts.displayingProductsDetailModal.displayingUpdateProductForm": DisplayProductState.DisplayingUpdateProductForm,
+  "displayingProducts.displayingProductsDetailModal.displayingDeleteProductForm": DisplayProductState.DisplayingDeleteProductForm,
+  "displayingProducts.displayingProductsDetailModal.displayingUpdateProductForm.updatingProduct": DisplayProductState.UpdatingProduct,
+  "displayingProducts.displayingProductsDetailModal.displayingDeleteProductForm.deletingProduct": DisplayProductState.DeletingProduct,
+};
+
+const addProdStateMap: Record<string, AddProductState> = {
+  "displayingProducts.displayingAddProductsForm": AddProductState.DisplayingForm,
+  "displayingProducts.displayingAddProductsForm.addingProduct": AddProductState.AddingProduct,
+  "displayingProducts.displayingAddProductsForm.addingProductFormRawData": AddProductState.AddingProductFormRawData,
+  "displayingProducts.displayingAddProductsForm.addingProductsFormRawData": AddProductState.AddingProductsFormRawData,
+};
+
+type ProductAction =
+  | { type: "user.selectProduct"; product: Product }
+  | { type: "user.selectUpdateProduct" }
+  | { type: "user.selectDeleteProduct" }
+  | { type: "user.submitDeleteProduct"; productId: string }
+  | { type: "user.submitUpdateProduct"; productData: Partial<Product> }
+  | { type: "user.cancelProductUpdate" }
+  | { type: "user.closeProductDetailModal" }
+  | { type: "user.addProducts" }
+  | { type: "user.submitAddProduct"; productData: Product }
+  | { type: "user.submitAddProductRawData"; productId: string; rawData: string }
+  | { type: "user.submitAddProductsRawData"; file: File }
+  | { type: "user.cancelAddProduct" }
+  | { type: "user.closeAddProducts" }
+  | { type: "user.nextPage" }
+  | { type: "user.previousPage" }
+  | { type: "user.applyFilter"; filter: Record<string, string> };
 
 export const useProductContext = () => {
   const { actorRef } = useAppContext();
@@ -33,92 +76,28 @@ export const useProductContext = () => {
 
   const productState = useMemo(() => {
     if (!productActorState) return ProductState.Idle;
-    for (const key in ProductState) {
-      if (productActorState.matches(ProductState[key as keyof typeof ProductState] as any)) {
-        return ProductState[key as keyof typeof ProductState];
-      }
-    }
-    throw new Error(`Invalid product state: ${productActorState.value}`);
+    const currentState = productActorState.value as string;
+    return prodStateMap[currentState] || ProductState.Idle;
   }, [productActorState]);
 
   const displayProductState = useMemo(() => {
-    if (productState !== ProductState.DisplayingProduct) return DisplayProductState.Idle;
-    for (const key in DisplayProductState) {
-      if (productActorState.matches(DisplayProductState[key as keyof typeof DisplayProductState] as any)) {
-        return DisplayProductState[key as keyof typeof DisplayProductState];
-      }
-    }
-    throw new Error(`Invalid display product state: ${productActorState.value}`);
+    if (productState !== ProductState.DisplayingProductsDetailModal) return DisplayProductState.Idle;
+    const currentState = productActorState.value as string;
+    return dispProdStateMap[currentState] || DisplayProductState.Idle;
   }, [productActorState, productState]);
 
   const addProductState = useMemo(() => {
-    if (productState !== ProductState.AddingProduct) return AddProductState.Idle;
-    for (const key in AddProductState) {
-      if (productActorState.matches(AddProductState[key as keyof typeof AddProductState] as any)) {
-        return AddProductState[key as keyof typeof AddProductState];
-      }
-    }
-    throw new Error(`Invalid add product state: ${productActorState.value}`);
+    if (productState !== ProductState.DisplayingAddProductsForm) return AddProductState.Idle;
+    const currentState = productActorState.value as string;
+    return addProdStateMap[currentState] || AddProductState.Idle;
   }, [productActorState, productState]);
 
-  const handleSelectProduct = useCallback(
-    (product: Product) => {
-      productActorRef?.send({ type: "user.selectProduct", product });
+  const productDispatch = useCallback(
+    (action: ProductAction) => {
+      productActorRef?.send(action);
     },
     [productActorRef]
   );
-  const handleSelectUpdateProduct = useCallback(() => {
-    productActorRef?.send({ type: "user.selectUpdateProduct" });
-  }, [productActorRef]);
-  const handleSelectDeleteProduct = useCallback(() => {
-    productActorRef?.send({ type: "user.selectDeleteProduct" });
-  }, [productActorRef]);
-  const handleSubmitDeleteProduct = useCallback(
-    (productName: string) => {
-      productActorRef?.send({ type: "user.submitDeleteProduct", productName });
-    },
-    [productActorRef]
-  );
-  const handleSubmitUpdateProduct = useCallback(
-    (productData: Partial<Product>) => {
-      productActorRef?.send({ type: "user.submitUpdateProduct", productData });
-    },
-    [productActorRef]
-  );
-  const handleCancelProductUpdate = useCallback(() => {
-    productActorRef?.send({ type: "user.cancelProductUpdate" });
-  }, [productActorRef]);
-  const handleCloseProductDetailModal = useCallback(() => {
-    productActorRef?.send({ type: "user.closeProductDetailModal" });
-  }, [productActorRef]);
-
-  const handleAddProducts = useCallback(() => {
-    productActorRef?.send({ type: "user.addProducts" });
-  }, [productActorRef]);
-  const handleSubmitAddProduct = useCallback(
-    (productData: Product) => {
-      productActorRef?.send({ type: "user.submitAddProduct", productData });
-    },
-    [productActorRef]
-  );
-  const handleSubmitAddProductRawData = useCallback(
-    (productId: string, rawData: string) => {
-      productActorRef?.send({ type: "user.submitAddProductRawData", productId, rawData });
-    },
-    [productActorRef]
-  );
-  const handleSubmitAddProductsRawData = useCallback(
-    (file: File) => {
-      productActorRef?.send({ type: "user.submitAddProductsRawData", file });
-    },
-    [productActorRef]
-  );
-  const handleCancelAddProduct = useCallback(() => {
-    productActorRef?.send({ type: "user.cancelAddProduct" });
-  }, [productActorRef]);
-  const handleCloseAddProducts = useCallback(() => {
-    productActorRef?.send({ type: "user.closeAddProducts" });
-  }, [productActorRef]);
 
   return {
     state: {
@@ -129,28 +108,34 @@ export const useProductContext = () => {
     data: {
       product: useSelector(productActorRef, (state) => state?.context.product || null),
       products: useSelector(productActorRef, (state) => state?.context.products || []),
+      currentPage: useSelector(productActorRef, (state) => state?.context.currentPage || 0),
+      totalProducts: useSelector(productActorRef, (state) => state?.context.totalProducts || 0),
+      filter: useSelector(productActorRef, (state) => state?.context.filter),
     },
     actions: {
       click: {
-        selectProduct: handleSelectProduct,
-        selectUpdateProduct: handleSelectUpdateProduct,
-        selectDeleteProduct: handleSelectDeleteProduct,
-        addProducts: handleAddProducts,
+        selectProduct: (product: Product) => productDispatch({ type: "user.selectProduct", product }),
+        selectUpdateProduct: () => productDispatch({ type: "user.selectUpdateProduct" }),
+        selectDeleteProduct: () => productDispatch({ type: "user.selectDeleteProduct" }),
+        addProducts: () => productDispatch({ type: "user.addProducts" }),
+        nextPage: () => productDispatch({ type: "user.nextPage" }),
+        previousPage: () => productDispatch({ type: "user.previousPage" }),
       },
       submit: {
-        deleteProduct: handleSubmitDeleteProduct,
-        updateProduct: handleSubmitUpdateProduct,
-        addProduct: handleSubmitAddProduct,
-        addProductRawData: handleSubmitAddProductRawData,
-        addProductsRawData: handleSubmitAddProductsRawData,
+        deleteProduct: (productId: string) => productDispatch({ type: "user.submitDeleteProduct", productId }),
+        updateProduct: (productData: Partial<Product>) => productDispatch({ type: "user.submitUpdateProduct", productData }),
+        addProduct: (productData: Product) => productDispatch({ type: "user.submitAddProduct", productData }),
+        addProductRawData: (productId: string, rawData: string) => productDispatch({ type: "user.submitAddProductRawData", productId, rawData }),
+        addProductsRawData: (file: File) => productDispatch({ type: "user.submitAddProductsRawData", file }),
+        applyFilter: (filter: Record<string, string>) => productDispatch({ type: "user.applyFilter", filter }),
       },
       close: {
-        productDetailModal: handleCloseProductDetailModal,
-        addProducts: handleCloseAddProducts,
+        productDetailModal: () => productDispatch({ type: "user.closeProductDetailModal" }),
+        addProducts: () => productDispatch({ type: "user.closeAddProducts" }),
       },
       cancel: {
-        productUpdate: handleCancelProductUpdate,
-        addProduct: handleCancelAddProduct,
+        productUpdate: () => productDispatch({ type: "user.cancelProductUpdate" }),
+        addProduct: () => productDispatch({ type: "user.cancelAddProduct" }),
       },
     },
   };

@@ -1,186 +1,225 @@
 import { apiCall } from "@/lib/api";
-import { Product, ProductFromJson } from "@/types";
+import { Product, productFromJson, ProductSchema, productToJson } from "@/types";
 import { ActorRefFrom, assign, ContextFrom, emit, fromPromise, setup } from "xstate";
+import { z } from "zod";
+
+const PAGE_SIZE = 20; // Number of products per page
+
+const ProductMachineContextSchema = z.object({
+  product: ProductSchema.optional(),
+  products: z.array(ProductSchema),
+  currentPage: z.number(),
+  totalProducts: z.number(),
+  filter: z.record(z.string(), z.string()).optional(),
+});
+
+type ProductMachineContext = z.infer<typeof ProductMachineContextSchema>;
 
 export const productMachine = setup({
   types: {
-    context: {} as {
-      product: Product;
-      products: Product[];
-    },
+    context: {} as ProductMachineContext,
     events: {} as
-      | { type: "app.updateState" }
+      | { type: "app.startManagingProducts" }
+      | { type: "app.stopManagingProducts" }
       | { type: "user.addProducts" }
       | { type: "user.selectProduct"; product: Product }
       | { type: "user.closeAddProducts" }
-      | { type: "app.stopManagingProducts" }
-      | { type: "app.startManagingProducts" }
       | { type: "user.closeProductDetailModal" }
       | { type: "user.selectUpdateProduct" }
       | { type: "user.selectDeleteProduct" }
-      | { type: "user.submitDeleteProduct"; productName: string }
-      | { type: "user.submitUpdateProduct"; productData: Partial<Product> }
+      | { type: "user.submitDeleteProduct"; productId: string }
+      | { type: "user.submitUpdateProduct"; productData: Product }
       | { type: "user.cancelProductUpdate" }
       | { type: "user.submitAddProduct"; productData: Product }
       | { type: "user.submitAddProductRawData"; productId: string; rawData: string }
       | { type: "user.submitAddProductsRawData"; file: File }
-      | { type: "user.cancelAddProduct" },
+      | { type: "user.cancelAddProduct" }
+      | { type: "user.nextPage" }
+      | { type: "user.previousPage" }
+      | { type: "user.applyFilter"; filter: Record<string, string> },
   },
   actors: {
-    productUpdater: fromPromise(async ({ input }: { input: { productName: string; productData: Partial<Product> } }) => {
-      try {
-        return await apiCall("PUT", `/products/${input.productName}`, input.productData);
-      } catch (error) {
-        throw error;
-      }
+    productUpdater: fromPromise(async ({ input }: { input: { productId: string; productData: Product } }) => {
+      const response = await apiCall("PUT", `/products/${input.productId}`, productToJson(input.productData));
+      return productFromJson(response);
     }),
-    productDeleter: fromPromise(async ({ input }: { input: { productName: string } }) => {
-      try {
-        return await apiCall("DELETE", `/products/${input.productName}`);
-      } catch (error) {
-        throw error;
-      }
+    productDeleter: fromPromise(async ({ input }: { input: { productId: string } }) => {
+      await apiCall("DELETE", `/products/${input.productId}`);
+      return input.productId;
     }),
     productAdder: fromPromise(async ({ input }: { input: { productData: Product } }) => {
-      try {
-        return await apiCall("POST", "/products", input.productData);
-      } catch (error) {
-        throw error;
-      }
+      const response = await apiCall("POST", "/products", productToJson(input.productData));
+      return productFromJson(response);
     }),
     rawProductAdder: fromPromise(async ({ input }: { input: { rawData: string } }) => {
-      try {
-        return await apiCall("POST", "/products/raw", { rawData: input.rawData });
-      } catch (error) {
-        throw error;
-      }
+      const response = await apiCall("POST", "/products/raw", { rawData: input.rawData });
+      return productFromJson(response);
     }),
     rawProductsAdder: fromPromise(async ({ input }: { input: { file: File } }) => {
-      try {
-        const formData = new FormData();
-        formData.append("file", input.file);
-        return await apiCall("POST", "/products/batch", formData);
-      } catch (error) {
-        throw error;
-      }
+      const formData = new FormData();
+      formData.append("file", input.file);
+      const response = await apiCall("POST", "/products/batch", formData);
+      return response.map(productFromJson);
     }),
-    fetchProduct: fromPromise(async ({ input }: { input: { productName: string } }) => {
-      try {
-        const result = await apiCall("GET", `/products/${input.productName}`);
-        console.log("result ::: ", result);
-        return ProductFromJson(result.product.data.get.product);
-      } catch (error) {
-        throw error;
-      }
-    }),
-    fetchProducts: fromPromise(async () => {
-      try {
-        const result = await apiCall("GET", "/products");
-        console.log("result ::: ", result);
-        const products = result.products.map(ProductFromJson);
-        return { products };
-      } catch (error) {
-        throw error;
-      }
+    productsFetcher: fromPromise(async ({ input }: { input: { page: number; pageSize: number; filter?: Record<string, string> } }) => {
+      const queryParams = new URLSearchParams({
+        page: input.page.toString(),
+        pageSize: input.pageSize.toString(),
+        ...(input.filter || {}),
+      });
+      const response = await apiCall("GET", `/products?${queryParams.toString()}`);
+      return {
+        products: response.products.map(productFromJson),
+        totalProducts: response.total,
+      };
     }),
   },
   guards: {
-    productsExist: ({ context }) => context.products.length > 0,
+    canGoToNextPage: ({ context }) => (context.currentPage + 1) * PAGE_SIZE < context.totalProducts,
+    canGoToPreviousPage: ({ context }) => context.currentPage > 0,
   },
 }).createMachine({
-  context: {
-    product: {} as Product,
-    products: [] as Product[],
-  },
+  context: ProductMachineContextSchema.parse({
+    product: undefined,
+    products: [],
+    currentPage: 0,
+    totalProducts: 0,
+    filter: undefined,
+  }),
   id: "productActor",
   initial: "idle",
-  on: {
-    "app.updateState": {},
-  },
   states: {
     idle: {
       on: {
-        "app.startManagingProducts": [
-          {
-            target: "DisplayingProducts",
-            guard: {
-              type: "productsExist",
-            },
-          },
-          {
-            target: "FetchingProducts",
-          },
-        ],
+        "app.startManagingProducts": {
+          target: "displayingProducts",
+        },
       },
     },
-    DisplayingProducts: {
-      initial: "DisplayingProductsTable",
+    displayingProducts: {
+      initial: "fetchingProducts",
       on: {
         "app.stopManagingProducts": {
           target: "idle",
         },
       },
       states: {
-        DisplayingProductsTable: {
-          on: {
-            "user.selectProduct": {
-              target: "DisplayingProductsDetailModal",
+        fetchingProducts: {
+          invoke: {
+            id: "productsFetcher",
+            input: ({ context }) => ({
+              page: context.currentPage,
+              pageSize: PAGE_SIZE,
+              filter: context.filter,
+            }),
+            onDone: {
+              target: "displayingProductsTable",
               actions: assign({
-                product: ({ event }) => event.product,
+                products: ({ event }) => event.output.products,
+                totalProducts: ({ event }) => event.output.totalProducts,
               }),
             },
+            onError: {
+              target: "#productActor.idle",
+              actions: emit({
+                type: "notification",
+                data: {
+                  type: "error",
+                  message: "Failed to fetch products",
+                },
+              }),
+            },
+            src: "productsFetcher",
+          },
+        },
+        displayingProductsTable: {
+          on: {
+            "user.selectProduct": {
+              target: "displayingProductsDetailModal",
+              actions: assign({ product: ({ event }) => event.product }),
+            },
             "user.addProducts": {
-              target: "DisplayingAddProductsForm",
+              target: "displayingAddProductsForm",
+            },
+            "user.nextPage": {
+              target: "fetchingProducts",
+              actions: assign({
+                currentPage: ({ context }) => context.currentPage + 1,
+              }),
+              guard: {
+                type: "canGoToNextPage",
+              },
+            },
+            "user.previousPage": {
+              target: "fetchingProducts",
+              actions: assign({
+                currentPage: ({ context }) => context.currentPage - 1,
+              }),
+              guard: {
+                type: "canGoToPreviousPage",
+              },
+            },
+            "user.applyFilter": {
+              target: "fetchingProducts",
+              actions: assign({
+                filter: ({ event }) => event.filter,
+                currentPage: 0,
+              }),
             },
           },
         },
-        DisplayingProductsDetailModal: {
-          initial: "DisplayingProduct",
+        displayingProductsDetailModal: {
+          initial: "displayingProduct",
           on: {
             "user.closeProductDetailModal": {
-              target: "DisplayingProductsTable",
+              target: "displayingProductsTable",
             },
             "user.cancelProductUpdate": {
-              target: "#productActor.DisplayingProducts.DisplayingProductsDetailModal.DisplayingProduct",
+              target: "#productActor.displayingProducts.displayingProductsDetailModal.displayingProduct",
             },
           },
           states: {
-            DisplayingProduct: {
+            displayingProduct: {
               on: {
                 "user.selectUpdateProduct": {
-                  target: "DisplayingUpdateProductForm",
+                  target: "displayingUpdateProductForm",
                 },
                 "user.selectDeleteProduct": {
-                  target: "DisplayingDeleteProductForm",
+                  target: "displayingDeleteProductForm",
                 },
               },
             },
-            DisplayingUpdateProductForm: {
+            displayingUpdateProductForm: {
               on: {
                 "user.submitUpdateProduct": {
-                  target: "UpdatingProduct",
+                  target: "updatingProduct",
                 },
               },
             },
-            DisplayingDeleteProductForm: {
+            displayingDeleteProductForm: {
               on: {
                 "user.submitDeleteProduct": {
-                  target: "DeletingProduct",
+                  target: "deletingProduct",
                 },
               },
             },
-            UpdatingProduct: {
+            updatingProduct: {
               invoke: {
                 id: "productUpdater",
                 input: ({ context, event }) => {
-                  if (event.type !== "user.submitUpdateProduct") throw new Error("Invalid event type");
+                  if (!context.product) {
+                    throw new Error("No product selected");
+                  }
+                  if (event.type !== "user.submitUpdateProduct") {
+                    throw new Error("Invalid event");
+                  }
                   return {
-                    productName: context.product.name,
+                    productId: context.product.ids,
                     productData: event.productData,
                   };
                 },
                 onDone: {
-                  target: "DisplayingProduct",
+                  target: "displayingProduct",
                   actions: [
                     assign({
                       product: ({ event }) => event.output,
@@ -196,7 +235,7 @@ export const productMachine = setup({
                   ],
                 },
                 onError: {
-                  target: "DisplayingUpdateProductForm",
+                  target: "displayingUpdateProductForm",
                   actions: emit({
                     type: "notification",
                     data: {
@@ -208,29 +247,24 @@ export const productMachine = setup({
                 src: "productUpdater",
               },
             },
-            DeletingProduct: {
+            deletingProduct: {
               invoke: {
                 id: "productDeleter",
                 input: ({ context }) => ({
-                  productName: context.product.name,
+                  productId: context.product?.id!,
                 }),
                 onDone: {
-                  target: "#productActor.DisplayingProducts.DisplayingProductsTable",
-                  actions: [
-                    assign({
-                      products: ({ context }) => context.products.filter((p) => p.ids !== context.product.ids),
-                    }),
-                    emit({
-                      type: "notification",
-                      data: {
-                        type: "success",
-                        message: "Product deleted successfully",
-                      },
-                    }),
-                  ],
+                  target: "#productActor.displayingProducts.fetchingProducts",
+                  actions: emit({
+                    type: "notification",
+                    data: {
+                      type: "success",
+                      message: "Product deleted successfully",
+                    },
+                  }),
                 },
                 onError: {
-                  target: "DisplayingDeleteProductForm",
+                  target: "displayingDeleteProductForm",
                   actions: emit({
                     type: "notification",
                     data: {
@@ -244,56 +278,49 @@ export const productMachine = setup({
             },
           },
         },
-        DisplayingAddProductsForm: {
-          initial: "DisplayingForm",
+        displayingAddProductsForm: {
+          initial: "displayingForm",
           on: {
             "user.closeAddProducts": {
-              target: "DisplayingProductsTable",
+              target: "displayingProductsTable",
             },
             "user.cancelAddProduct": {
-              target: "#productActor.DisplayingProducts.DisplayingAddProductsForm.DisplayingForm",
+              target: "#productActor.displayingProducts.displayingAddProductsForm.displayingForm",
             },
           },
           states: {
-            DisplayingForm: {
+            displayingForm: {
               on: {
                 "user.submitAddProduct": {
-                  target: "AddingProduct",
+                  target: "addingProduct",
                 },
                 "user.submitAddProductRawData": {
-                  target: "AddingProductFormRawData",
+                  target: "addingProductFormRawData",
                 },
                 "user.submitAddProductsRawData": {
-                  target: "AddingProductsFormRawData",
+                  target: "addingProductsFormRawData",
                 },
               },
             },
-            AddingProduct: {
+            addingProduct: {
               invoke: {
                 id: "productAdder",
                 input: ({ event }) => {
                   if (event.type !== "user.submitAddProduct") throw new Error("Invalid event type");
-                  return {
-                    productData: event.productData,
-                  };
+                  return { productData: event.productData };
                 },
                 onDone: {
-                  target: "#productActor.DisplayingProducts.DisplayingProductsTable",
-                  actions: [
-                    assign({
-                      products: ({ context, event }) => [...context.products, event.output],
-                    }),
-                    emit({
-                      type: "notification",
-                      data: {
-                        type: "success",
-                        message: "Product added successfully",
-                      },
-                    }),
-                  ],
+                  target: "#productActor.displayingProducts.fetchingProducts",
+                  actions: emit({
+                    type: "notification",
+                    data: {
+                      type: "success",
+                      message: "Product added successfully",
+                    },
+                  }),
                 },
                 onError: {
-                  target: "DisplayingForm",
+                  target: "displayingForm",
                   actions: emit({
                     type: "notification",
                     data: {
@@ -305,32 +332,25 @@ export const productMachine = setup({
                 src: "productAdder",
               },
             },
-            AddingProductFormRawData: {
+            addingProductFormRawData: {
               invoke: {
                 id: "rawProductAdder",
                 input: ({ event }) => {
                   if (event.type !== "user.submitAddProductRawData") throw new Error("Invalid event type");
-                  return {
-                    rawData: event.rawData,
-                  };
+                  return { rawData: event.rawData };
                 },
                 onDone: {
-                  target: "#productActor.DisplayingProducts.DisplayingProductsTable",
-                  actions: [
-                    assign({
-                      products: ({ context, event }) => [...context.products, event.output],
-                    }),
-                    emit({
-                      type: "notification",
-                      data: {
-                        type: "success",
-                        message: "Product added successfully",
-                      },
-                    }),
-                  ],
+                  target: "#productActor.displayingProducts.fetchingProducts",
+                  actions: emit({
+                    type: "notification",
+                    data: {
+                      type: "success",
+                      message: "Product added successfully",
+                    },
+                  }),
                 },
                 onError: {
-                  target: "DisplayingForm",
+                  target: "displayingForm",
                   actions: emit({
                     type: "notification",
                     data: {
@@ -342,32 +362,25 @@ export const productMachine = setup({
                 src: "rawProductAdder",
               },
             },
-            AddingProductsFormRawData: {
+            addingProductsFormRawData: {
               invoke: {
                 id: "rawProductsAdder",
                 input: ({ event }) => {
                   if (event.type !== "user.submitAddProductsRawData") throw new Error("Invalid event type");
-                  return {
-                    file: event.file,
-                  };
+                  return { file: event.file };
                 },
                 onDone: {
-                  target: "#productActor.DisplayingProducts.DisplayingProductsTable",
-                  actions: [
-                    assign({
-                      products: ({ context, event }) => [...context.products, ...event.output],
-                    }),
-                    emit({
-                      type: "notification",
-                      data: {
-                        type: "success",
-                        message: "Products added successfully",
-                      },
-                    }),
-                  ],
+                  target: "#productActor.displayingProducts.fetchingProducts",
+                  actions: emit({
+                    type: "notification",
+                    data: {
+                      type: "success",
+                      message: "Products added successfully",
+                    },
+                  }),
                 },
                 onError: {
-                  target: "DisplayingForm",
+                  target: "displayingForm",
                   actions: emit({
                     type: "notification",
                     data: {
@@ -383,40 +396,24 @@ export const productMachine = setup({
         },
       },
     },
-    FetchingProducts: {
-      invoke: {
-        input: {},
-        onDone: {
-          target: "DisplayingProducts",
-          actions: assign({
-            products: ({ event }) => event.output.products,
-          }),
-        },
-        onError: {
-          target: "idle",
-          actions: emit({
-            type: "notification",
-            data: {
-              type: "error",
-              message: "Failed to fetch products",
-            },
-          }),
-        },
-        src: "fetchProducts",
-      },
-    },
   },
 });
 
 export const serializeProductState = (productRef: ActorRefFrom<typeof productMachine>) => {
   const snapshot = productRef.getSnapshot();
   return {
+    products: snapshot.context.products,
+    currentPage: snapshot.context.currentPage,
+    totalProducts: snapshot.context.totalProducts,
+    filter: snapshot.context.filter,
     currentState: snapshot.value,
   };
 };
 
-export const deserializeProductState = (savedState: any): ContextFrom<typeof productMachine> => {
+export const deserializeProductState = (savedState: unknown): ContextFrom<typeof productMachine> => {
+  const parsedState = ProductMachineContextSchema.parse(savedState);
   return {
-    ...savedState,
+    ...parsedState,
+    product: undefined, // Reset selected product on deserialization
   };
 };

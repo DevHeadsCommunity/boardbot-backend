@@ -1,22 +1,50 @@
 "use client";
 
 import { useToast } from "@/hooks/useToast";
-import { Architecture, HistoryManagement, Model } from "@/machines/appMachine";
+import { Architecture, HistoryManagement, Model } from "@/types";
 import { useSelector } from "@xstate/react";
-import { useCallback, useContext, useEffect } from "react";
+import { useCallback, useContext, useEffect, useMemo } from "react";
 import { AppContext } from "../context/appContext";
 
 export enum AppState {
-  Testing = "Open.Testing",
-  ManagingProducts = "Open.ManagingProducts",
-  Chatting = "Open.Chatting",
-  DisplayingImportStateForm = "ImportingState.DisplayingImportStateForm",
-  ImportingState = "ImportingState.ImportingState",
-  DisplayingExportStateForm = "ExportingState.DisplayingExportStateForm",
-  ExportingState = "ExportingState.ExportingState",
-  DisplayingUpdateSettingForm = "UpdatingSettings.DisplayingUpdateSettingForm",
-  UpdatingSettings = "UpdatingSettings.UpdatingSettings",
+  Testing = "Testing",
+  Managing = "Managing",
+  Chatting = "Chatting",
+  Importing = "Importing",
+  Exporting = "Exporting",
+  Updating = "Updating",
 }
+const stateMap: Record<string, AppState> = {
+  "open.testing": AppState.Testing,
+  "open.managing": AppState.Managing,
+  "open.chatting": AppState.Chatting,
+  "importingState.displayingImportStateForm": AppState.Importing,
+  "importingState.importingState": AppState.Importing,
+  "exportingState.displayingExportStateForm": AppState.Exporting,
+  "exportingState.exportingState": AppState.Exporting,
+  "updatingSettings.displayingUpdateSettingForm": AppState.Updating,
+  "updatingSettings.updatingSettings": AppState.Updating,
+};
+
+type AppActions =
+  | { type: "user.selectTest" }
+  | { type: "user.selectManageProducts" }
+  | { type: "user.selectChat" }
+  | { type: "user.importState" }
+  | { type: "user.exportState" }
+  | { type: "user.updateSetting" }
+  | { type: "user.submitImportStateForm"; file: File }
+  | { type: "user.submitExportStateForm"; fileName: string }
+  | {
+      type: "user.submitUpdateSettingForm";
+      model: Model;
+      architecture: Architecture;
+      historyManagement: HistoryManagement;
+    }
+  | { type: "user.submitResetSettings" }
+  | { type: "user.cancelImportState" }
+  | { type: "user.cancelExportState" }
+  | { type: "user.cancelUpdateSetting" };
 
 export const useAppContext = () => {
   const appActorRef = useContext(AppContext);
@@ -26,71 +54,24 @@ export const useAppContext = () => {
   const state = useSelector(appActorRef, (state) => state);
   useToast(appActorRef);
 
-  const appState: AppState = useSelector(appActorRef, (state) => {
-    console.log(`state++: ${JSON.stringify(state.value)}`);
-    for (const key in AppState) {
-      if (state.matches(AppState[key as keyof typeof AppState] as any)) {
-        return AppState[key as keyof typeof AppState];
-      }
-    }
-    throw new Error(`Invalid app state: ${state.value}`);
-  });
+  const appState = useMemo(() => {
+    const currentState = state.value as string;
+    return stateMap[currentState] || AppState.Testing;
+  }, [state]);
+
+  const appDispatch = useCallback(
+    (action: AppActions) => {
+      appActorRef.send(action);
+    },
+    [appActorRef]
+  );
 
   useEffect(() => {
     const saveInterval = setInterval(() => {
       appActorRef.send({ type: "sys.saveState" });
-    }, 30000); // Save every 30 seconds
+    }, 120000); // Save every 2 minutes
 
     return () => clearInterval(saveInterval);
-  }, [appActorRef]);
-
-  const handleSelectTest = useCallback(() => {
-    appActorRef.send({ type: "user.selectTest" });
-  }, [appActorRef]);
-  const handleSelectManageProducts = useCallback(() => {
-    appActorRef.send({ type: "user.selectManageProducts" });
-  }, [appActorRef]);
-  const handleSelectChat = useCallback(() => {
-    appActorRef.send({ type: "user.selectChat" });
-  }, [appActorRef]);
-  const handleImportState = useCallback(() => {
-    appActorRef.send({ type: "user.importState" });
-  }, [appActorRef]);
-  const handleExportState = useCallback(() => {
-    appActorRef.send({ type: "user.exportState" });
-  }, [appActorRef]);
-  const handleUpdateSetting = useCallback(() => {
-    appActorRef.send({ type: "user.updateSetting" });
-  }, [appActorRef]);
-  const handleSubmitImportStateForm = useCallback(
-    (data: { file: File }) => {
-      appActorRef.send({ type: "user.submitImportStateForm", data });
-    },
-    [appActorRef]
-  );
-  const handleSubmitExportStateForm = useCallback(
-    (data: { fileName: string }) => {
-      appActorRef.send({ type: "user.submitExportStateForm", data });
-    },
-    [appActorRef]
-  );
-  const handleSubmitUpdateSettingForm = useCallback(
-    (data: { model: Model; architecture: Architecture; historyManagement: HistoryManagement }) => {
-      appActorRef.send({ type: "user.submitUpdateSettingForm", data });
-    },
-    [appActorRef]
-  );
-  const handleSubmitResetSettings = useCallback(() => {
-    appActorRef.send({ type: "user.submitResetSettings" });
-  }, [appActorRef]);
-  const handleCancelImportState = useCallback(() => {
-    appActorRef.send({ type: "user.cancelImportState" });
-  }, [appActorRef]);
-  const handleCancelExportState = useCallback(() => {
-    appActorRef.send({ type: "user.cancelExportState" });
-  }, [appActorRef]);
-  const handleCancelUpdateSetting = useCallback(() => {
-    appActorRef.send({ type: "user.cancelUpdateSetting" });
   }, [appActorRef]);
 
   return {
@@ -109,25 +90,24 @@ export const useAppContext = () => {
     },
     actions: {
       select: {
-        test: handleSelectTest,
-        manageProducts: handleSelectManageProducts,
-        chat: handleSelectChat,
-      },
-      click: {
-        importState: handleImportState,
-        exportState: handleExportState,
-        updateSetting: handleUpdateSetting,
+        test: () => appDispatch({ type: "user.selectTest" }),
+        manageProducts: () => appDispatch({ type: "user.selectManageProducts" }),
+        chat: () => appDispatch({ type: "user.selectChat" }),
+        importState: () => appDispatch({ type: "user.importState" }),
+        exportState: () => appDispatch({ type: "user.exportState" }),
+        updateSetting: () => appDispatch({ type: "user.updateSetting" }),
       },
       submit: {
-        importState: handleSubmitImportStateForm,
-        exportState: handleSubmitExportStateForm,
-        updateSetting: handleSubmitUpdateSettingForm,
-        resetSettings: handleSubmitResetSettings,
+        importState: (file: File) => appDispatch({ type: "user.submitImportStateForm", file }),
+        exportState: (fileName: string) => appDispatch({ type: "user.submitExportStateForm", fileName }),
+        updateSetting: (model: Model, architecture: Architecture, historyManagement: HistoryManagement) =>
+          appDispatch({ type: "user.submitUpdateSettingForm", model, architecture, historyManagement }),
+        resetSettings: () => appDispatch({ type: "user.submitResetSettings" }),
       },
       cancel: {
-        importState: handleCancelImportState,
-        exportState: handleCancelExportState,
-        updateSetting: handleCancelUpdateSetting,
+        importState: () => appDispatch({ type: "user.cancelImportState" }),
+        exportState: () => appDispatch({ type: "user.cancelExportState" }),
+        updateSetting: () => appDispatch({ type: "user.cancelUpdateSetting" }),
       },
     },
   };

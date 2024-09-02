@@ -52,8 +52,8 @@ const TestStatus = ({ status }: TestStatusProps) => {
 const TestListCard = ({ tests, onTestSelect }: TestListCardProps) => {
   const columns: TableColumn[] = [
     { header: "Name", accessor: "name" },
+    { header: "Type", accessor: "testType" },
     { header: "Created At", accessor: "createdAt" },
-    { header: "Id", accessor: "testId" },
   ];
 
   const transformedTests = tests.map((test) => ({
