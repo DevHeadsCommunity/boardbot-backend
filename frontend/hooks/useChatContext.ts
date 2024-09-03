@@ -1,4 +1,6 @@
 import { useToast } from "@/hooks/useToast";
+import { convertStateToString } from "@/lib/stateToStr";
+import { ChatHistory } from "@/types";
 import { useSelector } from "@xstate/react";
 import { useCallback, useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
@@ -10,11 +12,12 @@ export enum ChatState {
   Typing = "Typing",
   ReceivingResponse = "ReceivingResponse",
 }
+
 const stateMap: Record<string, ChatState> = {
-  Idle: ChatState.Idle,
-  "DisplayingChat.Connecting": ChatState.Connecting,
-  "DisplayingChat.Connected.Typing": ChatState.Typing,
-  "DisplayingChat.Connected.ReceivingResponse": ChatState.ReceivingResponse,
+  idle: ChatState.Idle,
+  connecting: ChatState.Connecting,
+  "chatting.awaitingUserInput": ChatState.Typing,
+  "chatting.processingMessage": ChatState.ReceivingResponse,
 };
 
 type ChatAction = { type: "user.sendMessage"; messageId: string; message: string };
@@ -27,7 +30,9 @@ export const useChatContext = () => {
 
   const chatState = useMemo(() => {
     if (!chatActorState) return ChatState.Idle;
-    const currentState = chatActorState.value as string;
+    const currentState = convertStateToString(chatActorState.value);
+    console.log("chatActorState.value", currentState);
+
     return stateMap[currentState] || ChatState.Idle;
   }, [chatActorState]);
 
@@ -45,7 +50,7 @@ export const useChatContext = () => {
       chatState,
     },
     data: {
-      chatHistory: useSelector(chatActorRef, (state) => state.context.chatHistory || []),
+      chatHistory: useSelector(chatActorRef, (state) => state.context.chatHistory) as ChatHistory,
     },
     actions: {
       sendMessage: (message: string) => chatDispatch({ type: "user.sendMessage", messageId: uuidv4(), message }),

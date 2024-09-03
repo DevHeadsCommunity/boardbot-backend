@@ -1,6 +1,7 @@
 "use client";
 
 import { useToast } from "@/hooks/useToast";
+import { convertStateToString } from "@/lib/stateToStr";
 import { Architecture, HistoryManagement, Model } from "@/types";
 import { useSelector } from "@xstate/react";
 import { useCallback, useContext, useEffect, useMemo } from "react";
@@ -55,7 +56,7 @@ export const useAppContext = () => {
   useToast(appActorRef);
 
   const appState = useMemo(() => {
-    const currentState = state.value as string;
+    const currentState = convertStateToString(state.value);
     return stateMap[currentState] || AppState.Testing;
   }, [state]);
 

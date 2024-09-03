@@ -2,19 +2,16 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import React, { useRef, useState } from "react";
+import React, { memo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 
-interface StateFormProps {
+interface ImportStateFormProps {
   isOpen: boolean;
+  onSubmit: (data: { file: File }) => void;
   onCancel: () => void;
 }
 
-interface ImportStateFormProps extends StateFormProps {
-  onSubmit: (data: { file: File }) => void;
-}
-
-const ImportStateForm: React.FC<ImportStateFormProps> = ({ isOpen, onSubmit, onCancel }) => {
+const ImportStateForm: React.FC<ImportStateFormProps> = memo(function ImportStateForm({ isOpen, onSubmit, onCancel }) {
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,9 +36,7 @@ const ImportStateForm: React.FC<ImportStateFormProps> = ({ isOpen, onSubmit, onC
   };
 
   const handleFileSelect = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
+    fileInputRef.current?.click();
   };
 
   return (
@@ -60,7 +55,9 @@ const ImportStateForm: React.FC<ImportStateFormProps> = ({ isOpen, onSubmit, onC
             <input type="file" ref={fileInputRef} accept=".json" style={{ display: "none" }} onChange={handleFileChange} />
           </div>
           <DialogFooter>
-            <Button type="submit">Import</Button>
+            <Button type="submit" disabled={!file}>
+              Import
+            </Button>
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancel
             </Button>
@@ -69,6 +66,6 @@ const ImportStateForm: React.FC<ImportStateFormProps> = ({ isOpen, onSubmit, onC
       </DialogContent>
     </Dialog>
   );
-};
+});
 
 export default ImportStateForm;

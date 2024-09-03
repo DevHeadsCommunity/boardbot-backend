@@ -1,13 +1,14 @@
 import {
   Architecture,
   ArchitectureSchema,
-  ChatMessage,
-  ChatMessageSchema,
+  ChatHistory,
+  ChatHistoryItemSchema,
   HistoryManagement,
   HistoryManagementSchema,
   Model,
   ModelSchema,
   RequestDataSchema,
+  RequestMessage,
   ResponseMessage,
 } from "@/types";
 import { v4 as uuidv4 } from "uuid";
@@ -18,7 +19,7 @@ import { webSocketMachine } from "./webSocketMachine";
 const ChatContextSchema = z.object({
   sessionId: z.string(),
   webSocketRef: z.any(), // Can't directly validate ActorRef with Zod
-  chatHistory: z.array(ChatMessageSchema),
+  chatHistory: z.array(ChatHistoryItemSchema),
   model: ModelSchema,
   architecture: ArchitectureSchema,
   historyManagement: HistoryManagementSchema,
@@ -31,7 +32,7 @@ export const chatMachine = setup({
     context: {} as ChatContext,
     input: {} as {
       sessionId?: string;
-      chatHistory?: ChatMessage[];
+      chatHistory?: ChatHistory;
       model: Model;
       architecture: Architecture;
       historyManagement: HistoryManagement;
@@ -109,7 +110,6 @@ export const chatMachine = setup({
                       sessionId: context.sessionId,
                       messageId: event.messageId,
                       message: event.message,
-                      isComplete: true,
                       timestamp: new Date().toISOString(),
                       model: context.model,
                       architectureChoice: context.architecture,
@@ -120,8 +120,7 @@ export const chatMachine = setup({
                 assign({
                   chatHistory: ({ context, event }) => [
                     ...context.chatHistory,
-                    ChatMessageSchema.parse({
-                      sessionId: context.sessionId,
+                    {
                       messageId: event.messageId,
                       timestamp: new Date(),
                       isUserMessage: true,
@@ -130,7 +129,7 @@ export const chatMachine = setup({
                       architectureChoice: context.architecture,
                       historyManagementChoice: context.historyManagement,
                       message: event.message,
-                    }),
+                    } as RequestMessage,
                   ],
                 }),
               ],
@@ -142,20 +141,7 @@ export const chatMachine = setup({
             "webSocket.messageReceived": {
               target: "awaitingUserInput",
               actions: assign({
-                chatHistory: ({ context, event }) => [
-                  ...context.chatHistory,
-                  ChatMessageSchema.parse({
-                    sessionId: context.sessionId,
-                    messageId: event.data.messageId,
-                    timestamp: new Date(),
-                    isUserMessage: false,
-                    isComplete: true,
-                    model: event.data.model,
-                    architectureChoice: context.architecture,
-                    historyManagementChoice: context.historyManagement,
-                    message: event.data.message,
-                  }),
-                ],
+                chatHistory: ({ context, event }) => [...context.chatHistory, event.data],
               }),
             },
           },

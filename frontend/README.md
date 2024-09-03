@@ -4,6 +4,8 @@
 
 BoardBot is an AI-powered system designed to assist users with queries about computer hardware products, particularly focusing on embedded systems, development kits, and industrial communication devices. This frontend application streamlines and automates the testing process for the BoardBot system and manages the products in the BoardBot database. Built with Next.js, XState 5, and TypeScript, it provides a robust, type-safe, and state-driven approach to handling complex workflows.
 
+![Alt text](public/img/architecture.png)
+
 ## Table of Contents
 
 1. [Features](#features)
@@ -17,6 +19,8 @@ BoardBot is an AI-powered system designed to assist users with queries about com
 ## Features
 
 ### Configurability
+
+![Alt text](public/img/configurability.png)
 
 The application offers various configuration options to tailor the BoardBot system's behavior:
 
@@ -40,6 +44,8 @@ The application offers various configuration options to tailor the BoardBot syst
   - Keep All: Maintains the entire conversation history
 
 ### State Persistence
+
+![Alt text](public/img/state_management.png)
 
 The application provides robust state management capabilities:
 
@@ -162,12 +168,12 @@ The project follows a modular structure:
 
 ```
 /
+├── app/             # Next.js app router
 ├── components/      # Reusable React components
 ├── context/         # React context providers
 ├── hooks/           # Custom React hooks
 ├── lib/             # Utility functions and helpers
 ├── machines/        # XState machine definitions
-├── pages/           # Next.js pages
 ├── public/          # Static assets
 ├── styles/          # CSS and styling files
 ├── types/           # TypeScript type definitions

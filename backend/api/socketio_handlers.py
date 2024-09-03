@@ -50,13 +50,13 @@ class SocketIOHandler:
         print(f"Received message from {sid}: {data}")
 
         message = RequestMessage(
-            id=data.get("messageId"),
+            id=data.get("message_id"),
             message=data.get("message"),
             timestamp=self.get_timestamp(data.get("timestamp", None)),
-            session_id=data.get("sessionId"),
+            session_id=data.get("session_id"),
             model=data.get("model"),
-            architecture_choice=data.get("architectureChoice"),
-            history_management_choice=data.get("historyManagementChoice"),
+            architecture_choice=data.get("architecture_choice"),
+            history_management_choice=data.get("history_management_choice"),
         )
         print(f"\n\n===:> Message Received: {message}\n\n")
         response = await self.message_processor.process_message(message)
