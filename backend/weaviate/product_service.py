@@ -54,17 +54,19 @@ class ProductService(WeaviateService):
     async def get(self, uuid: str) -> Dict[str, Any]:
         return await self.client.get_object(uuid, self.object_type)
 
-    # async def get_all(self, limit: int = 10, offset: int = 0) -> List[Dict[str, Any]]:
-    #     query = f"""
-    #     {{
-    #       Get {{
-    #         {self.object_type}(limit: {limit}, offset: {offset}) {{
-    #           {', '.join(self.properties)}
-    #         }}
-    #       }}
-    #     }}
-    #     """
-    #     response = await self.client.run_query(query)
+    # async def get_all(
+    #     self, limit: int = 10, offset: int = 0, where_filter: Optional[Dict[str, Any]] = None
+    # ) -> List[Dict[str, Any]]:
+    #     query_builder = GraphQLQueryBuilder()
+    #     query_builder.set_operation("Get").set_class_name(self.object_type).set_properties(self.properties)
+    #     query_builder.add_clauses(LimitClauseBuilder(limit))
+    #     query_builder.add_clauses(OffsetClauseBuilder(offset))
+
+    #     if where_filter:
+    #         query_builder.add_clauses(WhereClauseBuilder(where_filter))
+
+    #     graphql_query = query_builder.build()
+    #     response = await self.client.run_query(graphql_query)
     #     return response.get("data", {}).get("Get", {}).get(self.object_type, [])
 
     async def get_all(
@@ -79,6 +81,10 @@ class ProductService(WeaviateService):
             query_builder.add_clauses(WhereClauseBuilder(where_filter))
 
         graphql_query = query_builder.build()
+
+        # Log the generated GraphQL query
+        logger.info(f"Generated GraphQL query: {graphql_query}")
+
         response = await self.client.run_query(graphql_query)
         return response.get("data", {}).get("Get", {}).get(self.object_type, [])
 
@@ -92,6 +98,7 @@ class ProductService(WeaviateService):
             query_builder.add_clauses(WhereClauseBuilder(where_filter))
 
         graphql_query = query_builder.build()
+        logger.info(f"Count GraphQL query: {graphql_query}")
         response = await self.client.run_query(graphql_query)
         return (
             response.get("data", {}).get("Aggregate", {}).get(self.object_type, [{}])[0].get("meta", {}).get("count", 0)

@@ -32,6 +32,10 @@ async def get_products(
     logger.info(f"Getting products with page: {page}, page_size: {page_size}, filter: {filter}")
     offset = (page - 1) * page_size
     filter_dict = json.loads(filter) if filter else None
+
+    # Log the parsed filter_dict
+    logger.info(f"Parsed filter_dict: {filter_dict}")
+
     products, total_count = await weaviate_service.get_products(page_size, offset, filter_dict)
     logger.info(f"Found {len(products)} products")
     return {"total": total_count, "page": page, "page_size": page_size, "products": products}

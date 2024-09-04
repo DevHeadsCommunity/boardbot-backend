@@ -73,11 +73,11 @@ export const productMachine = setup({
     }),
     productsFetcher: fromPromise(async ({ input }: { input: { page: number; pageSize: number; filter?: Record<string, string> } }) => {
       const queryParams = new URLSearchParams({
-        page: (input.page + 1).toString(), // Adding 1 because the backend expects 1-based indexing
+        page: (input.page + 1).toString(),
         page_size: input.pageSize.toString(),
       });
 
-      if (input.filter) {
+      if (input.filter && Object.keys(input.filter).length > 0) {
         queryParams.append("filter", JSON.stringify(input.filter));
       }
 
