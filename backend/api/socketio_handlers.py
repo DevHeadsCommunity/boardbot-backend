@@ -13,7 +13,8 @@ class SocketIOHandler:
     def __init__(self, session_manager: SessionManager, message_processor: MessageProcessor):
         self.session_manager = session_manager
         self.message_processor = message_processor
-        self.sio = socketio.AsyncServer(cors_allowed_origins="*", async_mode="asgi")
+        # self.sio = socketio.AsyncServer(cors_allowed_origins="*", async_mode="asgi")
+        self.sio = socketio.AsyncServer(async_mode="asgi")
         self.socket_app = socketio.ASGIApp(self.sio)
         self.setup_event_handlers()
 

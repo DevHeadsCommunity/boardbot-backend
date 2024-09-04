@@ -63,11 +63,12 @@ export const productMachine = setup({
     }),
     productsFetcher: fromPromise(async ({ input }: { input: { page: number; pageSize: number; filter?: Record<string, string> } }) => {
       const queryParams = new URLSearchParams({
-        page: input.page.toString(),
+        page: input.page.toString() + 1,
         pageSize: input.pageSize.toString(),
         ...(input.filter || {}),
       });
       const response = await apiCall("GET", `/products?${queryParams.toString()}`);
+      console.log("response", response);
       return {
         products: response.products.map(productFromJson),
         totalProducts: response.total,

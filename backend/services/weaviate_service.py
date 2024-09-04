@@ -148,6 +148,10 @@ class WeaviateService:
             # Get paginated products
             products = await self.wi.product.get_all(limit=limit, offset=offset, where_filter=filter_dict)
 
+            for product in products:
+                product["id"] = product["_additional"]["id"]
+                del product["_additional"]
+
             return products, total_count
         except Exception as e:
             logger.error(f"Error in getting products: {str(e)}")

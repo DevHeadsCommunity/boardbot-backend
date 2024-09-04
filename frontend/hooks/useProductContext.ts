@@ -1,3 +1,4 @@
+import { convertStateToString } from "@/lib/stateToStr";
 import { Product } from "@/types";
 import { useSelector } from "@xstate/react";
 import { useCallback, useMemo } from "react";
@@ -32,12 +33,12 @@ const prodStateMap: Record<string, ProductState> = {
   idle: ProductState.Idle,
   "displayingProducts.fetchingProducts": ProductState.FetchingProducts,
   "displayingProducts.displayingProductsTable": ProductState.DisplayingProductsTable,
-  "displayingProducts.displayingProductsDetailModal": ProductState.DisplayingProductsDetailModal,
-  "displayingProducts.displayingAddProductsForm": ProductState.DisplayingAddProductsForm,
+  "displayingProducts.displayingProductsDetailModal.displayingProduct": ProductState.DisplayingProductsDetailModal,
+  "displayingProducts.displayingAddProductsForm.displayingForm": ProductState.DisplayingAddProductsForm,
 };
 
 const dispProdStateMap: Record<string, DisplayProductState> = {
-  "displayingProducts.displayingProductsDetailModal": DisplayProductState.DisplayingProduct,
+  "displayingProducts.displayingProductsDetailModal.displayingProduct": DisplayProductState.DisplayingProduct,
   "displayingProducts.displayingProductsDetailModal.displayingUpdateProductForm": DisplayProductState.DisplayingUpdateProductForm,
   "displayingProducts.displayingProductsDetailModal.displayingDeleteProductForm": DisplayProductState.DisplayingDeleteProductForm,
   "displayingProducts.displayingProductsDetailModal.displayingUpdateProductForm.updatingProduct": DisplayProductState.UpdatingProduct,
@@ -45,7 +46,7 @@ const dispProdStateMap: Record<string, DisplayProductState> = {
 };
 
 const addProdStateMap: Record<string, AddProductState> = {
-  "displayingProducts.displayingAddProductsForm": AddProductState.DisplayingForm,
+  "displayingProducts.displayingAddProductsForm.displayingForm": AddProductState.DisplayingForm,
   "displayingProducts.displayingAddProductsForm.addingProduct": AddProductState.AddingProduct,
   "displayingProducts.displayingAddProductsForm.addingProductFormRawData": AddProductState.AddingProductFormRawData,
   "displayingProducts.displayingAddProductsForm.addingProductsFormRawData": AddProductState.AddingProductsFormRawData,
@@ -56,7 +57,7 @@ type ProductAction =
   | { type: "user.selectUpdateProduct" }
   | { type: "user.selectDeleteProduct" }
   | { type: "user.submitDeleteProduct"; productId: string }
-  | { type: "user.submitUpdateProduct"; productData: Partial<Product> }
+  | { type: "user.submitUpdateProduct"; productData: Product }
   | { type: "user.cancelProductUpdate" }
   | { type: "user.closeProductDetailModal" }
   | { type: "user.addProducts" }
@@ -74,21 +75,23 @@ export const useProductContext = () => {
   const productActorRef = actorRef.product;
   const productActorState = useSelector(productActorRef, (state) => state);
 
+  console.log(`productActorState: ${JSON.stringify(productActorState.value)}`);
   const productState = useMemo(() => {
     if (!productActorState) return ProductState.Idle;
-    const currentState = productActorState.value as string;
+    const currentState = convertStateToString(productActorState.value as any);
+    console.log(`currentState: ${currentState}`);
     return prodStateMap[currentState] || ProductState.Idle;
   }, [productActorState]);
 
   const displayProductState = useMemo(() => {
-    if (productState !== ProductState.DisplayingProductsDetailModal) return DisplayProductState.Idle;
-    const currentState = productActorState.value as string;
+    // if (productState !== ProductState.DisplayingProductsDetailModal) return DisplayProductState.Idle;
+    const currentState = convertStateToString(productActorState.value as any);
     return dispProdStateMap[currentState] || DisplayProductState.Idle;
   }, [productActorState, productState]);
 
   const addProductState = useMemo(() => {
-    if (productState !== ProductState.DisplayingAddProductsForm) return AddProductState.Idle;
-    const currentState = productActorState.value as string;
+    // if (productState !== ProductState.DisplayingAddProductsForm) return AddProductState.Idle;
+    const currentState = convertStateToString(productActorState.value as any);
     return addProdStateMap[currentState] || AddProductState.Idle;
   }, [productActorState, productState]);
 
@@ -123,7 +126,7 @@ export const useProductContext = () => {
       },
       submit: {
         deleteProduct: (productId: string) => productDispatch({ type: "user.submitDeleteProduct", productId }),
-        updateProduct: (productData: Partial<Product>) => productDispatch({ type: "user.submitUpdateProduct", productData }),
+        updateProduct: (productData: Product) => productDispatch({ type: "user.submitUpdateProduct", productData }),
         addProduct: (productData: Product) => productDispatch({ type: "user.submitAddProduct", productData }),
         addProductRawData: (productId: string, rawData: string) => productDispatch({ type: "user.submitAddProductRawData", productId, rawData }),
         addProductsRawData: (file: File) => productDispatch({ type: "user.submitAddProductsRawData", file }),

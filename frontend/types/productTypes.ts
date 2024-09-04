@@ -21,12 +21,21 @@ export const ProductSchema = z.object({
 });
 
 export const ExpectedProductSchema = ProductSchema.partial().required({ name: true });
+export const AddProductSchema = ProductSchema.omit({ id: true });
 
 export type Product = z.infer<typeof ProductSchema>;
 
 export const productFromJson = (productJson: unknown): Product => {
-  const camelCaseData = transformKeys(productJson as Record<string, any>, "snakeToCamel");
-  return ProductSchema.parse(camelCaseData);
+  try {
+    const camelCaseData = transformKeys(productJson as Record<string, any>, "snakeToCamel");
+    return ProductSchema.parse(camelCaseData);
+  } catch (e) {
+    console.error("Error parsing product from JSON:", e);
+    if (e instanceof z.ZodError) {
+      console.error("Zod validation errors:", JSON.stringify(e.errors, null, 2));
+    }
+    throw new Error("Invalid product data");
+  }
 };
 
 export const productToJson = (product: Product): unknown => {

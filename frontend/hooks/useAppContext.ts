@@ -17,7 +17,7 @@ export enum AppState {
 }
 const stateMap: Record<string, AppState> = {
   "open.testing": AppState.Testing,
-  "open.managing": AppState.Managing,
+  "open.managingProducts": AppState.Managing,
   "open.chatting": AppState.Chatting,
   "importingState.displayingImportStateForm": AppState.Importing,
   "importingState.importingState": AppState.Importing,

@@ -67,13 +67,24 @@ const SortableTable: React.FC<SortableTableProps> = ({ columns, data, onRowClick
           {columns.map((column) => (
             <TableHead
               key={column.accessor}
-              className="align-middle text-[16px] font-semibold capitalize text-gray-700 duration-300"
+              className={`align-middle text-[16px] font-semibold capitalize text-gray-700 duration-300 ${column.sortable ? "cursor-pointer" : ""}`}
               onClick={() => column.sortable && requestSort(column.accessor)}
-              style={{ cursor: column.sortable ? "pointer" : "default" }}
             >
-              <div className="flex items-center">
+              <div className="flex items-center justify-between">
                 {column.header}
-                {column.sortable && sortConfig?.key === column.accessor && (sortConfig.direction === "asc" ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
+                {column.sortable && (
+                  <span className="ml-2">
+                    {sortConfig?.key === column.accessor ? (
+                      sortConfig.direction === "asc" ? (
+                        <ChevronUp size={14} />
+                      ) : (
+                        <ChevronDown size={14} />
+                      )
+                    ) : (
+                      <ChevronDown size={14} className="opacity-0" />
+                    )}
+                  </span>
+                )}
               </div>
             </TableHead>
           ))}

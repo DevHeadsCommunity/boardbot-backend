@@ -71,11 +71,11 @@ class ProductService(WeaviateService):
     ) -> List[Dict[str, Any]]:
         query_builder = GraphQLQueryBuilder()
         query_builder.set_operation("Get").set_class_name(self.object_type).set_properties(self.properties)
-        query_builder.add_clause(LimitClauseBuilder(limit))
-        query_builder.add_clause(OffsetClauseBuilder(offset))
+        query_builder.add_clauses(LimitClauseBuilder(limit))
+        query_builder.add_clauses(OffsetClauseBuilder(offset))
 
         if where_filter:
-            query_builder.add_clause(WhereClauseBuilder(where_filter))
+            query_builder.add_clauses(WhereClauseBuilder(where_filter))
 
         graphql_query = query_builder.build()
         response = await self.client.run_query(graphql_query)
