@@ -23,6 +23,7 @@ const formatLabel = (key: string): string => {
 };
 
 const ProductDetail = ({ state, product, actions }: ProductDetailProps) => {
+  console.log(`ProductDetail state: ${state}`);
   const [editedProduct, setEditedProduct] = useState<Product | null>(product);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -79,6 +80,7 @@ const ProductDetail = ({ state, product, actions }: ProductDetailProps) => {
 
     switch (state) {
       case DisplayProductState.DisplayingProduct:
+        console.log(`ProductDetail product: ${JSON.stringify(product)}`);
         title = product.name;
         content = renderProductFields(false);
         footer = (
@@ -129,7 +131,7 @@ const ProductDetail = ({ state, product, actions }: ProductDetailProps) => {
     }
 
     return (
-      <Dialog open={state !== DisplayProductState.DisplayingProduct} onOpenChange={() => actions.close.productDetailModal()}>
+      <Dialog open={true} onOpenChange={() => actions.close.productDetailModal()}>
         <DialogContent className="sm:max-w-[800px]">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>

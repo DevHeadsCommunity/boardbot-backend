@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { AddProductState, ProductActions } from "@/hooks/useProductContext";
+import { FeatureExtractorType } from "@/machines/productMachine";
 import { AddProductSchema, Product } from "@/types";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
@@ -45,6 +46,8 @@ const AddProduct = ({ state, actions }: AddProductProps) => {
   const [newProduct, setNewProduct] = useState<z.infer<typeof AddProductSchema>>(initialProductState);
   const [rawData, setRawData] = useState("");
   const [rawDataIds, setRawDataIds] = useState("");
+  const [extractorType, setExtractorType] = useState<FeatureExtractorType>(FeatureExtractorType.Agentic);
+
   const [file, setFile] = useState<File | null>(null);
   const [activeTab, setActiveTab] = useState("newProduct");
 
@@ -65,11 +68,11 @@ const AddProduct = ({ state, actions }: AddProductProps) => {
         actions.submit.addProduct(newProduct as Product);
         break;
       case "rawData":
-        actions.submit.addProductRawData(rawDataIds, rawData);
+        actions.submit.addProductRawData(rawDataIds, rawData, extractorType);
         break;
       case "file":
         if (file) {
-          actions.submit.addProductsRawData(file);
+          actions.submit.addProductsRawData(file, extractorType);
         }
         break;
     }
@@ -105,6 +108,13 @@ const AddProduct = ({ state, actions }: AddProductProps) => {
         <Label htmlFor="rawData">Raw Data</Label>
         <Textarea id="rawData" value={rawData} onChange={(e) => setRawData(e.target.value)} required />
       </div>
+      <div>
+        <Label htmlFor="extractorType">Feature Extractor Type</Label>
+        <select id="extractorType" value={extractorType} onChange={(e) => setExtractorType(e.target.value as FeatureExtractorType)} className="w-full rounded border p-2">
+          <option value={FeatureExtractorType.Agentic}>Agentic</option>
+          <option value={FeatureExtractorType.Simple}>Simple</option>
+        </select>
+      </div>
     </div>
   );
 
@@ -112,6 +122,13 @@ const AddProduct = ({ state, actions }: AddProductProps) => {
     <div className="space-y-4">
       <Label htmlFor="file">CSV File</Label>
       <Input id="file" type="file" onChange={handleFileChange} required />
+      <div>
+        <Label htmlFor="fileExtractorType">Feature Extractor Type</Label>
+        <select id="fileExtractorType" value={extractorType} onChange={(e) => setExtractorType(e.target.value as FeatureExtractorType)} className="w-full rounded border p-2">
+          <option value={FeatureExtractorType.Agentic}>Agentic</option>
+          <option value={FeatureExtractorType.Simple}>Simple</option>
+        </select>
+      </div>
     </div>
   );
 

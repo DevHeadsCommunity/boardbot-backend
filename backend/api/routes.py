@@ -11,6 +11,7 @@ from services.agentic_feature_extractor import AgenticFeatureExtractor
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from dependencies import get_weaviate_service, get_agentic_feature_extractor, get_simple_feature_extractor
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -19,18 +20,6 @@ router = APIRouter()
 class FeatureExtractorType(str, Enum):
     agentic = "agentic"
     simple = "simple"
-
-
-# @router.get("/products")
-# async def get_products(
-#     limit: int = Query(10, ge=1, le=100),
-#     offset: int = Query(0, ge=0),
-#     weaviate_service: WeaviateService = Depends(get_weaviate_service),
-# ):
-#     logger.info(f"Getting products with limit: {limit}, offset: {offset}")
-#     products, total_count = await weaviate_service.get_products(limit, offset)
-#     logger.info(f"Found {len(products)} products")
-#     return {"total": total_count, "limit": limit, "offset": offset, "products": products}
 
 
 @router.get("/products")
@@ -58,18 +47,9 @@ async def get_product(product_id: str, weaviate_service: WeaviateService = Depen
 
 @router.post("/products")
 async def add_product(product: Product, weaviate_service: WeaviateService = Depends(get_weaviate_service)):
+    logger.info(f"Adding product: {product}")
     product_id = await weaviate_service.add_product(product.dict())
     return {"id": product_id}
-
-
-# @router.put("/products/{product_id}")
-# async def update_product(
-#     product_id: str, product: Product, weaviate_service: WeaviateService = Depends(get_weaviate_service)
-# ):
-#     success = await weaviate_service.update_product(product_id, product.dict())
-#     if not success:
-#         raise HTTPException(status_code=404, detail="Product not found")
-#     return {"message": "Product updated successfully"}
 
 
 @router.put("/products/{product_id}")
@@ -93,6 +73,7 @@ async def delete_product(product_id: str, weaviate_service: WeaviateService = De
 @router.post("/products/raw")
 async def add_raw_product(
     raw_data: str,
+    ids: str,  # Add this parameter
     extractor_type: FeatureExtractorType = Query(
         FeatureExtractorType.agentic, description="The type of feature extractor to use"
     ),
@@ -104,6 +85,9 @@ async def add_raw_product(
         extracted_data = await agentic_feature_extractor.extract_data(raw_data)
     else:
         extracted_data = await simple_feature_extractor.extract_data(raw_data)
+
+    # Add the 'ids' field to the extracted data
+    extracted_data["ids"] = ids
 
     product_id = await weaviate_service.add_product(extracted_data)
     return {"id": product_id}

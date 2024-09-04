@@ -1,4 +1,5 @@
 import { convertStateToString } from "@/lib/stateToStr";
+import { FeatureExtractorType } from "@/machines/productMachine";
 import { Product } from "@/types";
 import { useSelector } from "@xstate/react";
 import { useCallback, useMemo } from "react";
@@ -62,8 +63,8 @@ type ProductAction =
   | { type: "user.closeProductDetailModal" }
   | { type: "user.addProducts" }
   | { type: "user.submitAddProduct"; productData: Product }
-  | { type: "user.submitAddProductRawData"; productId: string; rawData: string }
-  | { type: "user.submitAddProductsRawData"; file: File }
+  | { type: "user.submitAddProductRawData"; productId: string; rawData: string; extractorType: FeatureExtractorType }
+  | { type: "user.submitAddProductsRawData"; file: File; extractorType: FeatureExtractorType }
   | { type: "user.cancelAddProduct" }
   | { type: "user.closeAddProducts" }
   | { type: "user.nextPage" }
@@ -128,8 +129,9 @@ export const useProductContext = () => {
         deleteProduct: (productId: string) => productDispatch({ type: "user.submitDeleteProduct", productId }),
         updateProduct: (productData: Product) => productDispatch({ type: "user.submitUpdateProduct", productData }),
         addProduct: (productData: Product) => productDispatch({ type: "user.submitAddProduct", productData }),
-        addProductRawData: (productId: string, rawData: string) => productDispatch({ type: "user.submitAddProductRawData", productId, rawData }),
-        addProductsRawData: (file: File) => productDispatch({ type: "user.submitAddProductsRawData", file }),
+        addProductRawData: (productId: string, rawData: string, extractorType: FeatureExtractorType) =>
+          productDispatch({ type: "user.submitAddProductRawData", productId, rawData, extractorType }),
+        addProductsRawData: (file: File, extractorType: FeatureExtractorType) => productDispatch({ type: "user.submitAddProductsRawData", file, extractorType }),
         applyFilter: (filter: Record<string, string>) => productDispatch({ type: "user.applyFilter", filter }),
       },
       close: {
@@ -138,7 +140,7 @@ export const useProductContext = () => {
       },
       cancel: {
         productUpdate: () => productDispatch({ type: "user.cancelProductUpdate" }),
-        addProduct: () => productDispatch({ type: "user.cancelAddProduct" }),
+        addProduct: () => productDispatch({ type: "user.closeAddProducts" }),
       },
     },
   };

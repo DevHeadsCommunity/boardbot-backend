@@ -5,6 +5,11 @@ import { z } from "zod";
 
 const PAGE_SIZE = 20; // Number of products per page
 
+export enum FeatureExtractorType {
+  Agentic = "agentic",
+  Simple = "simple",
+}
+
 const ProductMachineContextSchema = z.object({
   product: ProductSchema.optional(),
   products: z.array(ProductSchema),
@@ -31,8 +36,8 @@ export const productMachine = setup({
       | { type: "user.submitUpdateProduct"; productData: Product }
       | { type: "user.cancelProductUpdate" }
       | { type: "user.submitAddProduct"; productData: Product }
-      | { type: "user.submitAddProductRawData"; productId: string; rawData: string }
-      | { type: "user.submitAddProductsRawData"; file: File }
+      | { type: "user.submitAddProductRawData"; productId: string; rawData: string; extractorType: FeatureExtractorType }
+      | { type: "user.submitAddProductsRawData"; file: File; extractorType: FeatureExtractorType }
       | { type: "user.cancelAddProduct" }
       | { type: "user.nextPage" }
       | { type: "user.previousPage" }
@@ -51,22 +56,31 @@ export const productMachine = setup({
       const response = await apiCall("POST", "/products", productToJson(input.productData));
       return productFromJson(response);
     }),
-    rawProductAdder: fromPromise(async ({ input }: { input: { rawData: string } }) => {
-      const response = await apiCall("POST", "/products/raw", { rawData: input.rawData });
+    rawProductAdder: fromPromise(async ({ input }: { input: { ids: string; rawData: string; extractorType: FeatureExtractorType } }) => {
+      const response = await apiCall("POST", "/products/raw", {
+        ids: input.ids,
+        raw_data: input.rawData,
+        extractor_type: input.extractorType,
+      });
       return productFromJson(response);
     }),
-    rawProductsAdder: fromPromise(async ({ input }: { input: { file: File } }) => {
+    rawProductsAdder: fromPromise(async ({ input }: { input: { file: File; extractorType: FeatureExtractorType } }) => {
       const formData = new FormData();
       formData.append("file", input.file);
+      formData.append("extractorType", input.extractorType);
       const response = await apiCall("POST", "/products/batch", formData);
       return response.map(productFromJson);
     }),
     productsFetcher: fromPromise(async ({ input }: { input: { page: number; pageSize: number; filter?: Record<string, string> } }) => {
       const queryParams = new URLSearchParams({
-        page: input.page.toString() + 1,
-        pageSize: input.pageSize.toString(),
-        ...(input.filter || {}),
+        page: (input.page + 1).toString(), // Adding 1 because the backend expects 1-based indexing
+        page_size: input.pageSize.toString(),
       });
+
+      if (input.filter) {
+        queryParams.append("filter", JSON.stringify(input.filter));
+      }
+
       const response = await apiCall("GET", `/products?${queryParams.toString()}`);
       console.log("response", response);
       return {
@@ -154,7 +168,7 @@ export const productMachine = setup({
             "user.previousPage": {
               target: "fetchingProducts",
               actions: assign({
-                currentPage: ({ context }) => context.currentPage - 1,
+                currentPage: ({ context }) => Math.max(0, context.currentPage - 1),
               }),
               guard: {
                 type: "canGoToPreviousPage",
@@ -338,7 +352,7 @@ export const productMachine = setup({
                 id: "rawProductAdder",
                 input: ({ event }) => {
                   if (event.type !== "user.submitAddProductRawData") throw new Error("Invalid event type");
-                  return { rawData: event.rawData };
+                  return { rawData: event.rawData, extractorType: event.extractorType };
                 },
                 onDone: {
                   target: "#productActor.displayingProducts.fetchingProducts",
@@ -368,7 +382,7 @@ export const productMachine = setup({
                 id: "rawProductsAdder",
                 input: ({ event }) => {
                   if (event.type !== "user.submitAddProductsRawData") throw new Error("Invalid event type");
-                  return { file: event.file };
+                  return { file: event.file, extractorType: event.extractorType };
                 },
                 onDone: {
                   target: "#productActor.displayingProducts.fetchingProducts",

@@ -26,6 +26,8 @@ class WhereClauseBuilder(ClauseBuilder):
             return self._format_tuple_condition(key, value)
         elif isinstance(value, dict):
             return self._format_dict_condition(key, value)
+        elif isinstance(value, str):  # Add this condition
+            return f'path: ["{key}"], operator: Equal, valueString: "{value}"'
         else:
             raise ValueError(f"Unsupported where filter format for key '{key}': {value}")
 

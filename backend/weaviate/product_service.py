@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -86,7 +87,9 @@ class ProductService(WeaviateService):
         query_builder.set_operation("Aggregate").set_class_name(self.object_type).set_properties(["meta { count }"])
 
         if where_filter:
-            query_builder.add_clause(WhereClauseBuilder(where_filter))
+            if isinstance(where_filter, str):
+                where_filter = json.loads(where_filter)
+            query_builder.add_clauses(WhereClauseBuilder(where_filter))
 
         graphql_query = query_builder.build()
         response = await self.client.run_query(graphql_query)
