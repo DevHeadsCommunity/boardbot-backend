@@ -17,7 +17,7 @@ const ChatComponent: React.FC = () => {
   }, [state.chatState, actions, currentMessage]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-background">
+    <div className="flex h-full flex-col items-center bg-background">
       <ChatHeader />
       <ChatWindow chatHistory={data.chatHistory} />
       <MessageInput

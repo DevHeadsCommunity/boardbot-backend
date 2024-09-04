@@ -13,28 +13,28 @@ const BotResponse: React.FC<BotResponseProps> = memo(function BotResponse({ mess
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
-    <div className="grid grid-cols-2 gap-4">
-      <div>
-        <div>{message.message.response}</div>
+    <div className="flex">
+      <div className="flex-grow pr-4">
+        <p className="mb-2">{message.message.response}</p>
         <ProductList products={message.message.products} />
         <div className="mt-2">
           <strong>Reasoning:</strong> {message.message.reasoning}
         </div>
-        <div className="mt-2">
-          <strong>Follow-up Question:</strong> {message.message.followUpQuestion}
+        <div className="mt-2 text-blue-600">
+          <strong>Follow-up:</strong> {message.message.followUpQuestion}
         </div>
       </div>
-      <div>
+      <div className="w-2/5 rounded-lg bg-gray-200 p-3 text-sm">
         <ResponseMetadata metadata={message.message.metadata} model={message.model} />
-        <Button onClick={() => setIsModalOpen(true)} className="mt-4">
+        <Button onClick={() => setIsModalOpen(true)} variant="outline" size="sm" className="mt-2 w-full">
           More Details
         </Button>
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Full Response Data</DialogTitle>
             </DialogHeader>
-            <pre className="max-h-[80vh] overflow-auto whitespace-pre-wrap">{JSON.stringify(message, null, 2)}</pre>
+            <pre className="max-h-[300px] overflow-auto rounded-md bg-gray-100 p-4">{JSON.stringify(message, null, 2)}</pre>
           </DialogContent>
         </Dialog>
       </div>

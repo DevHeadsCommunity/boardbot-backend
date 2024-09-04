@@ -3,51 +3,92 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { TestRunnerState, useTestRunnerContext } from "@/hooks/useTestRunnerContext";
-import { MessageCircleX, PauseIcon, PlayIcon } from "lucide-react";
+import { AccuracyTestResult, ConsistencyTestResult } from "@/types";
+import { CircleStop, PauseIcon, PlayIcon } from "lucide-react";
 import React, { useMemo } from "react";
 
 const TestExecutionCard: React.FC = () => {
   const { state, data, actions } = useTestRunnerContext();
 
   const { passedCount, failedCount, pendingCount, errorCount } = useMemo(() => {
-    return data.testResults.reduce(
-      (acc: { passedCount: number; failedCount: number; errorCount: number }, result: { isCorrect: any; error: any }) => {
-        if (result.isCorrect) acc.passedCount++;
-        else if (!result.isCorrect && !result.error) acc.failedCount++;
-        else if (result.error) acc.errorCount++;
-        return acc;
-      },
-      { passedCount: 0, failedCount: 0, pendingCount: data.testCases.length - data.testResults.length, errorCount: 0 }
-    );
+    if (!data.testCases || !data.testResults) return { passedCount: 0, failedCount: 0, pendingCount: 0, errorCount: 0 };
+    if (data.testCases[0]?.testType === "accuracy") {
+      return data.testResults.reduce(
+        (acc, result) => {
+          const accuracyResult = result as AccuracyTestResult;
+          if (accuracyResult.productAccuracy >= 0.5 && accuracyResult.featureAccuracy >= 0.5) acc.passedCount++;
+          else acc.failedCount++;
+          return acc;
+        },
+        { passedCount: 0, failedCount: 0, pendingCount: data.testCases.length - data.testResults.length, errorCount: 0 }
+      );
+    } else {
+      return data.testResults.reduce(
+        (acc, result) => {
+          const consistencyResult = result as ConsistencyTestResult;
+          if (consistencyResult.productConsistency >= 0.5 && consistencyResult.orderConsistency >= 0.5) acc.passedCount++;
+          else acc.failedCount++;
+          return acc;
+        },
+        { passedCount: 0, failedCount: 0, pendingCount: data.testCases.length - data.testResults.length, errorCount: 0 }
+      );
+    }
   }, [data.testResults, data.testCases]);
 
-  const averageProductAccuracy = useMemo(() => {
-    const sum = data.testResults.reduce((acc: any, result: { productAccuracy: any }) => acc + result.productAccuracy, 0);
-    return data.testResults.length > 0 ? sum / data.testResults.length : 0;
-  }, [data.testResults]);
+  const averageMetrics = useMemo(() => {
+    if (!data.testCases || !data.testResults) return {};
+    if (data.testCases[0]?.testType === "accuracy") {
+      const sum = data.testResults.reduce(
+        (acc, result) => {
+          const accuracyResult = result as AccuracyTestResult;
+          return {
+            productAccuracy: acc.productAccuracy + accuracyResult.productAccuracy,
+            featureAccuracy: acc.featureAccuracy + accuracyResult.featureAccuracy,
+          };
+        },
+        { productAccuracy: 0, featureAccuracy: 0 }
+      );
 
-  const averageFeatureAccuracy = useMemo(() => {
-    const sum = data.testResults.reduce((acc: any, result: { featureAccuracy: any }) => acc + result.featureAccuracy, 0);
-    return data.testResults.length > 0 ? sum / data.testResults.length : 0;
-  }, [data.testResults]);
+      return {
+        averageProductAccuracy: sum.productAccuracy / data.testResults.length,
+        averageFeatureAccuracy: sum.featureAccuracy / data.testResults.length,
+      };
+    } else {
+      const sum = data.testResults.reduce(
+        (acc, result) => {
+          const consistencyResult = result as ConsistencyTestResult;
+          return {
+            productConsistency: acc.productConsistency + consistencyResult.productConsistency,
+            orderConsistency: acc.orderConsistency + consistencyResult.orderConsistency,
+          };
+        },
+        { productConsistency: 0, orderConsistency: 0 }
+      );
+
+      return {
+        averageProductConsistency: sum.productConsistency / data.testResults.length,
+        averageOrderConsistency: sum.orderConsistency / data.testResults.length,
+      };
+    }
+  }, [data.testResults, data.testCases]);
 
   const renderControlButton = () => {
     switch (state.testRunnerState) {
       case TestRunnerState.Running:
         return (
-          <Button variant="ghost" size="icon" onClick={actions.click.pauseTest}>
+          <Button variant="ghost" size="icon" onClick={actions.pauseTest}>
             <PauseIcon className="h-5 w-5" />
           </Button>
         );
       case TestRunnerState.Paused:
         return (
-          <Button variant="ghost" size="icon" onClick={actions.click.resumeTest}>
+          <Button variant="ghost" size="icon" onClick={actions.resumeTest}>
             <PlayIcon className="h-5 w-5" />
           </Button>
         );
       default:
         return (
-          <Button variant="ghost" size="icon" onClick={actions.click.startTest}>
+          <Button variant="ghost" size="icon" onClick={actions.startTest}>
             <PlayIcon className="h-5 w-5" />
           </Button>
         );
@@ -58,15 +99,15 @@ const TestExecutionCard: React.FC = () => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg">
-          Test Execution: {data.currentTestIndex}/{data.testCases.length}
+          Test Execution: {data.currentTestIndex}/{data.testCases?.length ?? 0.0000001}
         </CardTitle>
         <div className="flex items-center gap-2">
           {renderControlButton()}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={actions.click.stopTest}>
-                  <MessageCircleX className="h-5 w-5" />
+                <Button variant="ghost" size="icon" onClick={actions.stopTest}>
+                  <CircleStop className="h-5 w-5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -80,12 +121,22 @@ const TestExecutionCard: React.FC = () => {
         <Progress value={data.progress} className="w-full" />
         <div className="grid grid-cols-2 gap-4">
           <StatusItem color="gray" label="Pending" count={pendingCount} />
-          <StatusItem color="green" label="Passed" count={failedCount} />
-          <StatusItem color="yellow" label="Failed" count={passedCount} />
+          <StatusItem color="green" label="Passed" count={passedCount} />
+          <StatusItem color="yellow" label="Failed" count={failedCount} />
           <StatusItem color="red" label="Errors" count={errorCount} />
         </div>
-        <AccuracyItem label="Average Product Accuracy" value={averageProductAccuracy} />
-        <AccuracyItem label="Average Feature Accuracy" value={averageFeatureAccuracy} />
+
+        {data.testCases && data.testCases[0]?.testType === "accuracy" ? (
+          <>
+            <AccuracyItem label="Average Product Accuracy" value={averageMetrics.averageProductAccuracy ?? 0} />
+            <AccuracyItem label="Average Feature Accuracy" value={averageMetrics.averageFeatureAccuracy ?? 0} />
+          </>
+        ) : (
+          <>
+            <AccuracyItem label="Average Product Consistency" value={averageMetrics.averageProductConsistency ?? 0} />
+            <AccuracyItem label="Average Order Consistency" value={averageMetrics.averageOrderConsistency ?? 0} />
+          </>
+        )}
       </CardContent>
       <CardFooter>
         <div className="text-sm text-muted-foreground">Status: {state.testRunnerState}</div>
@@ -117,8 +168,7 @@ interface AccuracyItemProps {
 const AccuracyItem: React.FC<AccuracyItemProps> = ({ label, value }) => (
   <div className="flex items-center justify-between">
     <span className="font-medium">{label}:</span>
-    {/* <span className="font-medium">{(value * 100).toFixed(2)}%</span> */}
-    <span className="font-medium">TBD</span>
+    <span className="font-medium">{(value * 100).toFixed(2)}%</span>
   </div>
 );
 

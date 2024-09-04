@@ -8,8 +8,7 @@ import {
   Model,
   ModelSchema,
   Product,
-  RequestData,
-  requestDataToJson,
+  RequestDataSchema,
   ResponseMessage,
   responseMessageFromJson,
   ResponseMessageSchema,
@@ -110,9 +109,9 @@ export const consistencyTestRunnerMachine = setup({
   actions: {
     sendTestCaseMessages: ({ context, self }) => {
       const currentTestCase = context.testCases[context.currentTestIndex];
-      const messages = [currentTestCase.input, ...currentTestCase.variations!].map((message, index) => ({
+      const messages = [currentTestCase.prompt, ...currentTestCase.variations!].map((message, index) => ({
         type: "parentActor.sendMessage",
-        data: requestDataToJson({
+        data: RequestDataSchema.parse({
           type: "textMessage",
           sessionId: context.sessionId,
           messageId: `${currentTestCase.messageId}_${index}`,
@@ -121,20 +120,13 @@ export const consistencyTestRunnerMachine = setup({
           model: context.model,
           architectureChoice: context.architecture,
           historyManagementChoice: context.historyManagement,
-        } as RequestData),
+        }),
       }));
 
       messages.forEach((message) => {
         self.send({ type: "internal.sendMessage", message });
       });
     },
-    // sendMessage: sendTo(
-    //   ({ context }) => context.webSocketRef!,
-    //   ({ event }) => ({
-    //     type: (event as any).message.type,
-    //     data: (event as any).message.data,
-    //   })
-    // ),
     sendMessage: sendTo(
       ({ context }) => context.webSocketRef!,
       ({ event }) => {
@@ -146,7 +138,7 @@ export const consistencyTestRunnerMachine = setup({
       }
     ),
     setPendingResponses: assign({
-      pendingResponses: ({ context }) => context.testCases[context.currentTestIndex].variations!.length + 1,
+      pendingResponses: ({ context }) => context.testCases[context.currentTestIndex].variations!.length,
       currentResponses: [] as ResponseMessage[],
     }),
     processResponse: assign({
@@ -249,7 +241,13 @@ export const consistencyTestRunnerMachine = setup({
       },
       states: {
         sendingMessages: {
-          entry: ["sendTestCaseMessages", "setPendingResponses"],
+          entry: [
+            "sendTestCaseMessages",
+            "setPendingResponses",
+            ({ context }) => {
+              console.log(`Sending messages. Pending responses: ${context.pendingResponses}`);
+            },
+          ],
           on: {
             "internal.sendMessage": {
               actions: ["sendMessage"],
@@ -257,17 +255,35 @@ export const consistencyTestRunnerMachine = setup({
             "webSocket.messageReceived": [
               {
                 target: "evaluatingResults",
-                actions: ["processResponse"],
+                actions: [
+                  "processResponse",
+                  ({ context }) => {
+                    console.log(`Received response 1. Pending responses: ${context.pendingResponses}`);
+                  },
+                ],
                 guard: "allResponsesReceived",
               },
               {
-                actions: ["processResponse"],
+                actions: [
+                  "processResponse",
+                  ({ context }) => {
+                    console.log(`Received response 2. Pending responses: ${context.pendingResponses}`);
+                  },
+                ],
               },
             ],
           },
         },
         evaluatingResults: {
-          entry: ["updateTestResults", "increaseProgress", "increaseCurrentTestIndex"],
+          entry: [
+            "updateTestResults",
+            "increaseProgress",
+            "increaseCurrentTestIndex",
+            // log("Test results updated"),
+            ({ context }) => {
+              console.log(`evaluatingResults`);
+            },
+          ],
           always: [{ target: "#consistencyTestRunnerActor.disconnecting", guard: "testIsComplete" }, { target: "sendingMessages" }],
         },
         paused: {

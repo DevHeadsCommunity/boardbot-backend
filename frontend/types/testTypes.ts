@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ResponseMessageSchema } from "./chatTypes";
-import { ProductSchema } from "./productTypes";
+import { ExpectedProductSchema } from "./productTypes";
 
 export const TEST_TYPES = ["accuracy", "consistency"] as const;
 export const TestTypeSchema = z.enum(TEST_TYPES);
@@ -8,9 +8,9 @@ export type TestType = z.infer<typeof TestTypeSchema>;
 
 export const TestCaseSchema = z.object({
   messageId: z.string(),
-  input: z.string(),
+  prompt: z.string(),
   testType: TestTypeSchema,
-  expectedProducts: z.array(ProductSchema).optional(),
+  products: z.array(ExpectedProductSchema).optional(),
   variations: z.array(z.string()).optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
   tags: z.array(z.string()).optional(),

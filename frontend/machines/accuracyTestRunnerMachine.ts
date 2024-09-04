@@ -8,10 +8,8 @@ import {
   Model,
   ModelSchema,
   Product,
-  RequestData,
-  requestDataToJson,
+  RequestDataSchema,
   ResponseMessage,
-  responseMessageFromJson,
   TestCase,
   TestCaseSchema,
 } from "@/types";
@@ -95,30 +93,33 @@ export const accuracyTestRunnerMachine = setup({
       ({ context }) => context.webSocketRef!,
       ({ context }) => ({
         type: "parentActor.sendMessage",
-        data: requestDataToJson({
+        data: RequestDataSchema.parse({
           type: "textMessage",
           sessionId: context.sessionId,
           messageId: context.testCases[context.currentTestIndex].messageId,
-          message: context.testCases[context.currentTestIndex].input,
+          message: context.testCases[context.currentTestIndex].prompt,
           timestamp: new Date().toISOString(),
           model: context.model,
           architectureChoice: context.architecture,
           historyManagementChoice: context.historyManagement,
-        } as RequestData),
+        }),
       })
     ),
     updateTestResults: assign({
       testResults: ({ context, event }) => {
         if (event.type !== "webSocket.messageReceived") throw new Error("Invalid event type");
-        const currentTestCase = context.testCases[context.currentTestIndex - 1];
-        if (!currentTestCase.expectedProducts) {
+        const currentTestCase = context.testCases[context.currentTestIndex];
+        console.log("===:> currentTestCase", currentTestCase);
+        if (!currentTestCase.products) {
           throw new Error("Test case has no expected products");
         }
-        const testResponse = responseMessageFromJson(event.data);
+
+        console.log("===:> event.data", event.data);
+        const testResponse = event.data;
         const testResult: AccuracyTestResult = {
           response: testResponse,
-          productAccuracy: calculateProductAccuracy(testResponse.message.products, currentTestCase.expectedProducts),
-          featureAccuracy: calculateFeatureAccuracy(testResponse.message.products, currentTestCase.expectedProducts),
+          productAccuracy: calculateProductAccuracy(testResponse.message.products, currentTestCase.products),
+          featureAccuracy: calculateFeatureAccuracy(testResponse.message.products, currentTestCase.products),
         };
         return [...context.testResults, testResult];
       },
@@ -185,16 +186,13 @@ export const accuracyTestRunnerMachine = setup({
             "webSocket.messageReceived": [
               {
                 target: "evaluatingResult",
-                actions: ["updateTestResults", "increaseProgress"],
+                actions: ["updateTestResults", "increaseCurrentTestIndex", "increaseProgress"],
               },
             ],
           },
         },
         evaluatingResult: {
-          always: [
-            { target: "#accuracyTestRunnerActor.disconnecting", guard: "testIsComplete" },
-            { target: "sendingMessage", actions: "increaseCurrentTestIndex" },
-          ],
+          always: [{ target: "#accuracyTestRunnerActor.disconnecting", guard: "testIsComplete" }, { target: "sendingMessage" }],
         },
         paused: {
           on: {

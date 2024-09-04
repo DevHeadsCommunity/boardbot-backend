@@ -5,7 +5,7 @@ interface UserMessageProps {
 }
 
 const UserMessage: React.FC<UserMessageProps> = memo(function UserMessage({ message }) {
-  return <div className="text-right">{message}</div>;
+  return <div className="break-words text-right">{message}</div>;
 });
 
 export default UserMessage;

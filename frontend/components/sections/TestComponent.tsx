@@ -3,21 +3,12 @@
 import CreateTestCard from "@/components/cards/CreateTestCard";
 import TestExecutionCard from "@/components/cards/TestExecutionCard";
 import { useTestContext } from "@/hooks/useTestContext";
-import { Test, TestCase } from "@/types";
 import { FlaskConical } from "lucide-react";
 import TestListCard from "../cards/TestListCard";
 import TestResultCard from "../cards/TestResultCard";
 
 export default function TestComponent() {
   const { state, data, actions } = useTestContext();
-
-  const handleAddTest = (data: { name: string; id: string; testCase: TestCase[]; createdAt: string }) => {
-    actions.click.createTest(data);
-  };
-
-  const handleSelectTest = (test: Test) => {
-    actions.select.test(test.testId);
-  };
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -30,8 +21,8 @@ export default function TestComponent() {
 
       <main className="flex-1 px-4 pb-8 sm:px-6">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <CreateTestCard addTest={handleAddTest} />
-          <TestListCard tests={data.tests} onTestSelect={handleSelectTest} />
+          <CreateTestCard />
+          <TestListCard />
           {data.selectedTest && <TestExecutionCard />}
         </div>
         {data.selectedTest && <TestResultCard />}

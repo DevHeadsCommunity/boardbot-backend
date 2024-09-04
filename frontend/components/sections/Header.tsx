@@ -16,7 +16,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = memo(function Header({ state, data, actions }) {
   return (
-    <div className="flex w-full flex-row justify-between border-b bg-slate-100 px-6 py-3">
+    <div className="flex w-full flex-row justify-between border-b bg-slate-100 px-20 py-3">
       <Logo />
       <Navigation />
       <div className="flex items-center gap-4">

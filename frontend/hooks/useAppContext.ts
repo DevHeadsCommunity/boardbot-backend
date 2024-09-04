@@ -70,7 +70,7 @@ export const useAppContext = () => {
   useEffect(() => {
     const saveInterval = setInterval(() => {
       appActorRef.send({ type: "sys.saveState" });
-    }, 120000); // Save every 2 minutes
+    }, 360000); // Save every 2 minutes
 
     return () => clearInterval(saveInterval);
   }, [appActorRef]);

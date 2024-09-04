@@ -20,6 +20,8 @@ export const ProductSchema = z.object({
   fullProductDescription: z.string(),
 });
 
+export const ExpectedProductSchema = ProductSchema.partial().required({ name: true });
+
 export type Product = z.infer<typeof ProductSchema>;
 
 export const productFromJson = (productJson: unknown): Product => {

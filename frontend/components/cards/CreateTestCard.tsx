@@ -1,111 +1,55 @@
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { TestCase } from "@/types";
-import { Product } from "@/types/Product";
+import { useTestContext } from "@/hooks/useTestContext";
+import { TestCaseSchema } from "@/types";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { UploadIcon } from "lucide-react";
 import React, { useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { v4 as uuidv4 } from "uuid";
+import { z } from "zod";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
-interface CreateTestCardProps {
-  addTest: (data: { name: string; id: string; testCases: TestCase[]; createdAt: string }) => void;
-}
+const formSchema = z.object({
+  testName: z.string().min(1, "Test name is required"),
+  testType: z.enum(["accuracy", "consistency"]),
+});
 
-interface FormData {
-  testName: string;
-  testType: "accuracy" | "consistency";
-}
+type FormData = z.infer<typeof formSchema>;
 
-interface ConsistencyTestCase {
-  prompt: string;
-  variations: string[];
-}
-
-interface AccuracyTestCase {
-  prompt: string;
-  products: Product[];
-}
-
-const CreateTestCard: React.FC<CreateTestCardProps> = ({ addTest }) => {
+const CreateTestCard: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { actions } = useTestContext();
+
   const {
     register,
     handleSubmit,
     control,
     reset,
-    watch,
     formState: { errors },
   } = useForm<FormData>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       testType: "accuracy",
     },
   });
 
-  const testType = watch("testType");
-
-  console.log("testType", testType);
-
-  const validateTestCases = (testCases: any[]): string | null => {
-    if (!Array.isArray(testCases) || testCases.length === 0) {
-      return "Invalid test cases format";
-    }
-
-    if (testType === "consistency") {
-      return validateConsistencyTestCases(testCases);
-    } else {
-      return validateAccuracyTestCases(testCases);
-    }
-  };
-
-  const validateConsistencyTestCases = (testCases: ConsistencyTestCase[]): string | null => {
-    for (let i = 0; i < testCases.length; i++) {
-      const testCase = testCases[i];
-      if (!testCase.prompt || !Array.isArray(testCase.variations) || testCase.variations.length < 5) {
-        return `Invalid consistency test case at index ${i}`;
+  const validateTestCases = (testCases: unknown[]): z.ZodError | null => {
+    console.log(`===:> validateTestCases: testCases`, JSON.stringify(testCases, null, 2));
+    const schema = z.array(TestCaseSchema);
+    try {
+      schema.parse(testCases);
+      return null;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        console.log("Validation errors:", error.errors);
+        return error;
       }
+      throw error;
     }
-    return null;
-  };
-
-  const validateAccuracyTestCases = (testCases: AccuracyTestCase[]): string | null => {
-    for (let i = 0; i < testCases.length; i++) {
-      const testCase = testCases[i];
-      if (!testCase.prompt || !Array.isArray(testCase.products) || testCase.products.length === 0) {
-        return `Invalid accuracy test case at index ${i}`;
-      }
-    }
-    return null;
-  };
-
-  const parseTestCases = (testCases: any[]): TestCase[] => {
-    if (testType === "consistency") {
-      return parseConsistencyTestCases(testCases);
-    } else {
-      return parseAccuracyTestCases(testCases);
-    }
-  };
-
-  const parseConsistencyTestCases = (testCases: ConsistencyTestCase[]): TestCase[] => {
-    return testCases.map((testCase) => ({
-      messageId: uuidv4(),
-      input: testCase.prompt,
-      expectedProducts: [],
-      testType: "consistency",
-      consistencyPrompts: testCase.variations,
-    }));
-  };
-
-  const parseAccuracyTestCases = (testCases: AccuracyTestCase[]): TestCase[] => {
-    return testCases.map((testCase) => ({
-      messageId: uuidv4(),
-      input: testCase.prompt,
-      expectedProducts: testCase.products,
-      testType: "accuracy",
-    }));
   };
 
   const onSubmit = async (data: FormData) => {
@@ -117,19 +61,30 @@ const CreateTestCard: React.FC<CreateTestCardProps> = ({ addTest }) => {
     try {
       const fileContent = await file.text();
       const jsonData = JSON.parse(fileContent);
+      // For every test case, add messageId, and testType
+      jsonData.forEach((testCase: any) => {
+        if (!testCase.messageId) {
+          testCase.messageId = uuidv4();
+        }
+        testCase.testType = data.testType;
+      });
 
       const validationError = validateTestCases(jsonData);
       if (validationError) {
-        toast.error(`Invalid JSON data: ${validationError}`);
+        const errorMessages = validationError.errors
+          .map((err) => {
+            return `${err.path.join(".")} - ${err.message}`;
+          })
+          .join("\n");
+        toast.error(`Invalid JSON data:\n${errorMessages}`, { autoClose: false });
         return;
       }
 
-      const testCases = parseTestCases(jsonData);
-
-      addTest({
+      actions.submit.createTest({
+        testType: data.testType,
         name: data.testName,
         id: uuidv4(),
-        testCases: testCases,
+        testCase: jsonData,
         createdAt: new Date().toISOString(),
       });
 
@@ -163,7 +118,7 @@ const CreateTestCard: React.FC<CreateTestCardProps> = ({ addTest }) => {
             <label htmlFor="testName" className="mb-1 block text-sm font-medium text-muted-foreground">
               Test Name
             </label>
-            <Input id="testName" {...register("testName", { required: "Test name is required" })} placeholder="Enter test name" />
+            <Input id="testName" {...register("testName")} placeholder="Enter test name" />
             {errors.testName && <p className="mt-1 text-sm text-red-500">{errors.testName.message}</p>}
           </div>
           <div>

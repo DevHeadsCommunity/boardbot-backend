@@ -114,7 +114,7 @@ export const responseMessageFromJson = (json: unknown): ResponseMessage => {
       camelCaseData.timestamp = new Date(camelCaseData.timestamp);
     }
 
-    console.log("Parsed camelCaseData:", JSON.stringify(camelCaseData, null, 2));
+    // console.log("Parsed camelCaseData:", JSON.stringify(camelCaseData, null, 2));
 
     return ResponseMessageSchema.parse(camelCaseData);
   } catch (error) {

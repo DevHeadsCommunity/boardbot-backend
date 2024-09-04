@@ -31,7 +31,7 @@ const AppComponent: React.FC = () => {
   console.log("Rendering AppComponent", state.appState);
 
   return (
-    <Tabs defaultValue="chat" className="w-full" onValueChange={handleTabChange}>
+    <Tabs defaultValue="chat" className="w-full " onValueChange={handleTabChange}>
       <Header state={state.appState} data={data} actions={actions} />
       <TabsContent value="chat">{state.appState === AppState.Chatting && <ChatComponent />}</TabsContent>
       <TabsContent value="test">{state.appState === AppState.Testing && <TestComponent />}</TabsContent>

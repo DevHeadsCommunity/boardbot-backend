@@ -19,7 +19,7 @@ const MessageInput: React.FC<MessageInputProps> = memo(function MessageInput({ c
   };
 
   return (
-    <div className="flex w-4/5 max-w-3xl">
+    <div className="flex w-full max-w-7xl">
       <input
         type="text"
         value={currentMessage}

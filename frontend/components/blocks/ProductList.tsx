@@ -8,12 +8,12 @@ interface ProductListProps {
 
 const ProductList: React.FC<ProductListProps> = memo(function ProductList({ products }) {
   return (
-    <ul className="mt-2 list-disc pl-5">
+    <ul className="mb-2 list-disc pl-5">
       {products.map((product) => (
-        <li key={product.id}>
+        <li key={product.id} className="mb-1">
           <TooltipProvider>
             <Tooltip>
-              <TooltipTrigger>{product.name}</TooltipTrigger>
+              <TooltipTrigger className="cursor-pointer text-blue-600 hover:underline">{product.name}</TooltipTrigger>
               <TooltipContent>
                 <ProductDetails product={product} />
               </TooltipContent>
