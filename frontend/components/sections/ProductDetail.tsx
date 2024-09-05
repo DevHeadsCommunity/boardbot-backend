@@ -122,6 +122,12 @@ const ProductDetail = ({ state, product, actions }: ProductDetailProps) => {
         );
         break;
       case DisplayProductState.UpdatingProduct:
+        content = (
+          <div className="flex h-full items-center justify-center">
+            <Loader2 className="mr-2 h-16 w-16 animate-spin" />
+          </div>
+        );
+        break;
       case DisplayProductState.DeletingProduct:
         content = (
           <div className="flex h-full items-center justify-center">

@@ -4,6 +4,7 @@ import { Product } from "@/types";
 import { useSelector } from "@xstate/react";
 import { useCallback, useMemo } from "react";
 import { useAppContext } from "./useAppContext";
+import { useToast } from "./useToast";
 
 export enum ProductState {
   Idle = "Idle",
@@ -81,6 +82,7 @@ export const useProductContext = () => {
   const { actorRef } = useAppContext();
   const productActorRef = actorRef.product;
   const productActorState = useSelector(productActorRef, (state) => state);
+  useToast(productActorRef);
 
   console.log(`productActorState: ${JSON.stringify(productActorState.value)}`);
   const productState = useMemo(() => {
