@@ -1,6 +1,10 @@
+import json
 import logging
 from typing import Any, Dict, List, Optional, Tuple
-from .weaviate_client import WeaviateClient
+
+from weaviate.utils.graphql_query_builder import GraphQLQueryBuilder
+from weaviate.utils.where_clause_builder import OffsetClauseBuilder, WhereClauseBuilder
+from .weaviate_client import LimitClauseBuilder, WeaviateClient
 from .weaviate_service import WeaviateService
 
 
@@ -50,8 +54,40 @@ class ProductService(WeaviateService):
     async def get(self, uuid: str) -> Dict[str, Any]:
         return await self.client.get_object(uuid, self.object_type)
 
-    async def get_all(self) -> Dict[str, Any]:
-        return await self.client.query_objects(self.object_type, self.properties)
+    async def get_all(
+        self, limit: int = 10, offset: int = 0, where_filter: Optional[Dict[str, Any]] = None
+    ) -> List[Dict[str, Any]]:
+        query_builder = GraphQLQueryBuilder()
+        query_builder.set_operation("Get").set_class_name(self.object_type).set_properties(self.properties)
+        query_builder.add_clauses(LimitClauseBuilder(limit))
+        query_builder.add_clauses(OffsetClauseBuilder(offset))
+
+        if where_filter:
+            query_builder.add_clauses(WhereClauseBuilder(where_filter))
+
+        graphql_query = query_builder.build()
+
+        # Log the generated GraphQL query
+        logger.info(f"Generated GraphQL query: {graphql_query}")
+
+        response = await self.client.run_query(graphql_query)
+        return response.get("data", {}).get("Get", {}).get(self.object_type, [])
+
+    async def count(self, where_filter: Optional[Dict[str, Any]] = None) -> int:
+        query_builder = GraphQLQueryBuilder()
+        query_builder.set_operation("Aggregate").set_class_name(self.object_type).set_properties(["meta { count }"])
+
+        if where_filter:
+            if isinstance(where_filter, str):
+                where_filter = json.loads(where_filter)
+            query_builder.add_clauses(WhereClauseBuilder(where_filter))
+
+        graphql_query = query_builder.build()
+        logger.info(f"Count GraphQL query: {graphql_query}")
+        response = await self.client.run_query(graphql_query)
+        return (
+            response.get("data", {}).get("Aggregate", {}).get(self.object_type, [{}])[0].get("meta", {}).get("count", 0)
+        )
 
     async def update(self, uuid: str, updated_data: Dict[str, Any]) -> bool:
         return await self.client.update_object(uuid, updated_data, self.object_type)

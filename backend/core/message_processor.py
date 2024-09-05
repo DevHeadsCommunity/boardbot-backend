@@ -1,9 +1,12 @@
 import json
+import logging
 from generators.llm_router import LLMRouter
 from generators.dynamic_agent import DynamicAgent
 from generators.hybrid_router import HybridRouter
 from generators.semantic_router import SemanticRouter
 from models.message import Message, ResponseMessage
+
+logger = logging.getLogger(__name__)
 
 
 class MessageProcessor:

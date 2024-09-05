@@ -1,25 +1,31 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { AddProductState, ProductActions } from "@/hooks/useProductContext";
-import { Product } from "@/types";
+import { FeatureExtractorType } from "@/machines/productMachine";
+import { AddProductSchema, Product } from "@/types";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import { z } from "zod";
 
 interface AddProductProps {
   state: AddProductState;
   actions: ProductActions;
 }
 
-const initialProductState: Product = {
+const initialProductState: z.infer<typeof AddProductSchema> = {
   name: "",
+  ids: "",
   manufacturer: "",
   formFactor: "",
   processor: "",
-  coreCount: 0,
-  processorTdp: 0,
-  memory: 0,
+  coreCount: "",
+  processorTdp: "",
+  memory: "",
   io: "",
   operatingSystem: "",
   environmentals: "",
@@ -27,27 +33,27 @@ const initialProductState: Product = {
   shortSummary: "",
   fullSummary: "",
   fullProductDescription: "",
-  ids: "",
+};
+
+const formatLabel = (key: string): string => {
+  return key
+    .split(/(?=[A-Z])/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 };
 
 const AddProduct = ({ state, actions }: AddProductProps) => {
-  const [newProduct, setNewProduct] = useState<Product>(initialProductState);
+  const [newProduct, setNewProduct] = useState<z.infer<typeof AddProductSchema>>(initialProductState);
   const [rawData, setRawData] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  const [rawDataIds, setRawDataIds] = useState("");
+  const [extractorType, setExtractorType] = useState<FeatureExtractorType>(FeatureExtractorType.Agentic);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [file, setFile] = useState<File | null>(null);
+  const [activeTab, setActiveTab] = useState("newProduct");
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setNewProduct((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleAddProduct = (e: React.FormEvent) => {
-    e.preventDefault();
-    actions.submit.addProduct(newProduct);
-  };
-
-  const handleAddRawProduct = (e: React.FormEvent) => {
-    e.preventDefault();
-    actions.submit.addProductRawData(newProduct.ids, rawData);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,100 +62,110 @@ const AddProduct = ({ state, actions }: AddProductProps) => {
     }
   };
 
-  const handleAddProductsFromFile = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (file) {
-      actions.submit.addProductsRawData(file);
+  const handleAddProduct = () => {
+    switch (activeTab) {
+      case "newProduct":
+        actions.submit.addProduct(newProduct as Product);
+        break;
+      case "rawData":
+        actions.submit.addProductRawData(rawDataIds, rawData, extractorType);
+        break;
+      case "file":
+        if (file) {
+          actions.submit.addProductsRawData(file, extractorType);
+        }
+        break;
     }
   };
 
+  const renderNewProductForm = () => (
+    <ScrollArea className="h-[60vh] pr-4">
+      <div className="grid grid-cols-2 gap-4">
+        {Object.entries(newProduct).map(([key, value]) => {
+          const isTextArea = key === "fullProductDescription" || key === "fullSummary" || key === "shortSummary";
+          return (
+            <div key={key} className={isTextArea ? "col-span-2" : ""}>
+              <Label htmlFor={key}>{formatLabel(key)}</Label>
+              {isTextArea ? (
+                <Textarea id={key} name={key} value={value} onChange={handleInputChange} required />
+              ) : (
+                <Input id={key} name={key} value={value} onChange={handleInputChange} required />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </ScrollArea>
+  );
+
+  const renderRawDataForm = () => (
+    <div className="space-y-4">
+      <div>
+        <Label htmlFor="rawDataIds">IDs</Label>
+        <Input id="rawDataIds" value={rawDataIds} onChange={(e) => setRawDataIds(e.target.value)} required />
+      </div>
+      <div>
+        <Label htmlFor="rawData">Raw Data</Label>
+        <Textarea id="rawData" value={rawData} onChange={(e) => setRawData(e.target.value)} required />
+      </div>
+      <div>
+        <Label htmlFor="extractorType">Feature Extractor Type</Label>
+        <select id="extractorType" value={extractorType} onChange={(e) => setExtractorType(e.target.value as FeatureExtractorType)} className="w-full rounded border p-2">
+          <option value={FeatureExtractorType.Agentic}>Agentic</option>
+          <option value={FeatureExtractorType.Simple}>Simple</option>
+        </select>
+      </div>
+    </div>
+  );
+
+  const renderFileUploadForm = () => (
+    <div className="space-y-4">
+      <Label htmlFor="file">CSV File</Label>
+      <Input id="file" type="file" onChange={handleFileChange} required />
+      <div>
+        <Label htmlFor="fileExtractorType">Feature Extractor Type</Label>
+        <select id="fileExtractorType" value={extractorType} onChange={(e) => setExtractorType(e.target.value as FeatureExtractorType)} className="w-full rounded border p-2">
+          <option value={FeatureExtractorType.Agentic}>Agentic</option>
+          <option value={FeatureExtractorType.Simple}>Simple</option>
+        </select>
+      </div>
+    </div>
+  );
+
   const render = () => {
-    switch (state) {
-      case AddProductState.Idle:
-        return null;
-      case AddProductState.DisplayingForm:
-        return (
-          <Card className="mx-auto w-full max-w-2xl">
-            <CardHeader>
-              <CardTitle>Add New Product</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleAddProduct} className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Name</Label>
-                  <Input id="name" name="name" value={newProduct.name} onChange={handleInputChange} required />
-                </div>
-                <div>
-                  <Label htmlFor="manufacturer">Manufacturer</Label>
-                  <Input id="manufacturer" name="manufacturer" value={newProduct.manufacturer} onChange={handleInputChange} required />
-                </div>
-                <div>
-                  <Label htmlFor="formFactor">Form Factor</Label>
-                  <Input id="formFactor" name="formFactor" value={newProduct.formFactor} onChange={handleInputChange} required />
-                </div>
-                <div>
-                  <Label htmlFor="processor">Processor</Label>
-                  <Input id="processor" name="processor" value={newProduct.processor} onChange={handleInputChange} required />
-                </div>
-                <div>
-                  <Label htmlFor="coreCount">Core Count</Label>
-                  <Input id="coreCount" name="coreCount" type="number" value={newProduct.coreCount} onChange={handleInputChange} required />
-                </div>
-                <div>
-                  <Label htmlFor="memory">Memory</Label>
-                  <Input id="memory" name="memory" type="number" value={newProduct.memory} onChange={handleInputChange} required />
-                </div>
-                <div>
-                  <Label htmlFor="operatingSystem">Operating System</Label>
-                  <Input id="operatingSystem" name="operatingSystem" value={newProduct.operatingSystem} onChange={handleInputChange} required />
-                </div>
-                <div className="flex justify-end space-x-4">
-                  <Button type="submit">Add Product</Button>
-                  <Button variant="outline" onClick={actions.cancel.addProduct}>
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-
-              <div className="mt-8">
-                <h3 className="mb-4 text-lg font-semibold">Add Product from Raw Data</h3>
-                <form onSubmit={handleAddRawProduct} className="space-y-4">
-                  <div>
-                    <Label htmlFor="rawData">Raw Data</Label>
-                    <Input id="rawData" name="rawData" value={rawData} onChange={(e) => setRawData(e.target.value)} required />
-                  </div>
-                  <div className="flex justify-end">
-                    <Button type="submit">Add Raw Product</Button>
-                  </div>
-                </form>
-              </div>
-
-              <div className="mt-8">
-                <h3 className="mb-4 text-lg font-semibold">Add Products from File</h3>
-                <form onSubmit={handleAddProductsFromFile} className="space-y-4">
-                  <div>
-                    <Label htmlFor="file">CSV File</Label>
-                    <Input id="file" name="file" type="file" onChange={handleFileChange} required />
-                  </div>
-                  <div className="flex justify-end">
-                    <Button type="submit">Add Products from File</Button>
-                  </div>
-                </form>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      case AddProductState.AddingProduct:
-      case AddProductState.AddingProductFormRawData:
-      case AddProductState.AddingProductsFormRawData:
-        return (
-          <div className="flex h-screen items-center justify-center">
-            <Loader2 className="mr-2 h-16 w-16 animate-spin" />
-          </div>
-        );
-      default:
-        return null;
+    if (state === AddProductState.AddingProduct || state === AddProductState.AddingProductFormRawData || state === AddProductState.AddingProductsFormRawData) {
+      return (
+        <div className="flex h-full items-center justify-center">
+          <Loader2 className="mr-2 h-16 w-16 animate-spin" />
+        </div>
+      );
     }
+
+    return (
+      <Dialog open={state === AddProductState.DisplayingForm} onOpenChange={() => actions.cancel.addProduct()}>
+        <DialogContent className="sm:max-w-[800px]">
+          <DialogHeader>
+            <DialogTitle>Add Product</DialogTitle>
+          </DialogHeader>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="newProduct">New Product</TabsTrigger>
+              <TabsTrigger value="rawData">Raw Data</TabsTrigger>
+              <TabsTrigger value="file">File Upload</TabsTrigger>
+            </TabsList>
+            <TabsContent value="newProduct">{renderNewProductForm()}</TabsContent>
+            <TabsContent value="rawData">{renderRawDataForm()}</TabsContent>
+            <TabsContent value="file">{renderFileUploadForm()}</TabsContent>
+          </Tabs>
+          <DialogFooter>
+            <Button variant="outline" onClick={actions.cancel.addProduct}>
+              Close
+            </Button>
+            <Button onClick={handleAddProduct}>Add Product</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
   };
 
   return render();

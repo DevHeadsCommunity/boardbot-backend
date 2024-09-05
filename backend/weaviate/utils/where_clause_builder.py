@@ -14,20 +14,18 @@ class WhereClauseBuilder(ClauseBuilder):
     def build(self) -> str:
         if not self.where_filter:
             return ""
-        clauses = [self._handle_condition(key, value) for key, value in self.where_filter.items()]
-        return f"where: {{ {' '.join(clauses)} }}"
+        operands = [self._handle_condition(key, value) for key, value in self.where_filter.items()]
+        return f"where: {{ operator: And, operands: [{ ', '.join(operands) }] }}"
 
     def _handle_condition(self, key: str, value: Any) -> str:
-        if key == "path":
-            return self._format_path_condition(value)
-        elif key in ["operator", "valueString", "valueInt", "valueFloat", "valueBoolean"]:
-            return self._format_direct_condition(key, value)
-        elif isinstance(value, tuple):
-            return self._format_tuple_condition(key, value)
-        elif isinstance(value, dict):
-            return self._format_dict_condition(key, value)
+        if isinstance(value, str):
+            return f'{{ path: ["{key}"], operator: Equal, valueString: "{value}" }}'
+        elif isinstance(value, (int, float)):
+            return f'{{ path: ["{key}"], operator: Equal, valueNumber: {value} }}'
+        elif isinstance(value, bool):
+            return f'{{ path: ["{key}"], operator: Equal, valueBoolean: {str(value).lower()} }}'
         else:
-            raise ValueError(f"Unsupported where filter format for key '{key}': {value}")
+            raise ValueError(f"Unsupported value type for key '{key}': {type(value)}")
 
     def _format_direct_condition(self, key: str, value: Any) -> str:
         if key == "operator":
@@ -72,3 +70,11 @@ class WhereClauseBuilder(ClauseBuilder):
             return f"{key}: {json.dumps(value)}"
         else:
             raise ValueError(f"Unsupported key in dict part: {key}")
+
+
+class OffsetClauseBuilder(ClauseBuilder):
+    def __init__(self, offset: int):
+        self.offset = offset
+
+    def build(self) -> str:
+        return f"offset: {self.offset}" if self.offset is not None else ""

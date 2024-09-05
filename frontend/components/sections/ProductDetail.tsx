@@ -1,7 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 import { DisplayProductState, ProductActions } from "@/hooks/useProductContext";
 import { Product } from "@/types";
 import { Loader2 } from "lucide-react";
@@ -9,145 +11,145 @@ import { useState } from "react";
 
 interface ProductDetailProps {
   state: DisplayProductState;
-  product: Product;
+  product: Product | null;
   actions: ProductActions;
 }
 
+const formatLabel = (key: string): string => {
+  return key
+    .split(/(?=[A-Z])/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
 const ProductDetail = ({ state, product, actions }: ProductDetailProps) => {
-  const [editedProduct, setEditedProduct] = useState<Product>(product);
+  console.log(`ProductDetail state: ${state}`);
+  const [editedProduct, setEditedProduct] = useState<Product | null>(product);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setEditedProduct((prev) => ({ ...prev, [name]: value }));
+    setEditedProduct((prev) => (prev ? { ...prev, [name]: value } : null));
   };
 
-  const handleUpdateSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    actions.submit.updateProduct(editedProduct);
+  const handleUpdateSubmit = () => {
+    if (editedProduct) {
+      actions.submit.updateProduct(editedProduct);
+    }
   };
 
-  const handleDeleteSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    actions.submit.deleteProduct(product.name);
+  const handleDeleteSubmit = () => {
+    if (product) {
+      actions.submit.deleteProduct(product.id);
+    }
+  };
+
+  const renderProductFields = (isEditing: boolean) => {
+    if (!product) return null;
+
+    return (
+      <ScrollArea className="h-[60vh] pr-4">
+        <div className="grid grid-cols-2 gap-4">
+          {Object.entries(product).map(([key, value]) => {
+            const isTextArea = key === "fullProductDescription" || key === "fullSummary" || key === "shortSummary";
+            return (
+              <div key={key} className={isTextArea ? "col-span-2" : ""}>
+                <Label htmlFor={key}>{formatLabel(key)}</Label>
+                {isEditing ? (
+                  isTextArea ? (
+                    <Textarea id={key} name={key} value={editedProduct?.[key as keyof Product] || ""} onChange={handleInputChange} />
+                  ) : (
+                    <Input id={key} name={key} value={editedProduct?.[key as keyof Product] || ""} onChange={handleInputChange} />
+                  )
+                ) : (
+                  <p className="mt-1 text-sm text-gray-600">{value}</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </ScrollArea>
+    );
   };
 
   const render = () => {
+    if (!product) return null;
+
+    let content;
+    let title;
+    let footer;
+
+    console.log(`++ProductDetail State: ${state}`);
+
     switch (state) {
-      case DisplayProductState.Idle:
-        return null;
       case DisplayProductState.DisplayingProduct:
-        return (
-          <Card className="mx-auto w-full max-w-2xl">
-            <CardHeader>
-              <CardTitle>{product.name}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Manufacturer</Label>
-                  <p>{product.manufacturer}</p>
-                </div>
-                <div>
-                  <Label>Form Factor</Label>
-                  <p>{product.formFactor}</p>
-                </div>
-                <div>
-                  <Label>Processor</Label>
-                  <p>{product.processor}</p>
-                </div>
-                <div>
-                  <Label>Core Count</Label>
-                  <p>{product.coreCount}</p>
-                </div>
-                <div>
-                  <Label>Memory</Label>
-                  <p>{product.memory}</p>
-                </div>
-                <div>
-                  <Label>Operating System</Label>
-                  <p>{product.operatingSystem}</p>
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end space-x-4">
-                <Button onClick={actions.click.selectUpdateProduct}>Update Product</Button>
-                <Button variant="destructive" onClick={actions.click.selectDeleteProduct}>
-                  Delete Product
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        console.log(`ProductDetail product: ${JSON.stringify(product)}`);
+        title = product.name;
+        content = renderProductFields(false);
+        footer = (
+          <>
+            <Button onClick={actions.click.selectUpdateProduct}>Update Product</Button>
+            <Button variant="destructive" onClick={actions.click.selectDeleteProduct}>
+              Delete Product
+            </Button>
+          </>
         );
+        break;
       case DisplayProductState.DisplayingUpdateProductForm:
-        return (
-          <Card className="mx-auto w-full max-w-2xl">
-            <CardHeader>
-              <CardTitle>Update Product: {product.name}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleUpdateSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="manufacturer">Manufacturer</Label>
-                  <Input id="manufacturer" name="manufacturer" value={editedProduct.manufacturer} onChange={handleInputChange} />
-                </div>
-                <div>
-                  <Label htmlFor="formFactor">Form Factor</Label>
-                  <Input id="formFactor" name="formFactor" value={editedProduct.formFactor} onChange={handleInputChange} />
-                </div>
-                <div>
-                  <Label htmlFor="processor">Processor</Label>
-                  <Input id="processor" name="processor" value={editedProduct.processor} onChange={handleInputChange} />
-                </div>
-                <div>
-                  <Label htmlFor="coreCount">Core Count</Label>
-                  <Input id="coreCount" name="coreCount" type="number" value={editedProduct.coreCount} onChange={handleInputChange} />
-                </div>
-                <div>
-                  <Label htmlFor="memory">Memory</Label>
-                  <Input id="memory" name="memory" type="number" value={editedProduct.memory} onChange={handleInputChange} />
-                </div>
-                <div>
-                  <Label htmlFor="operatingSystem">Operating System</Label>
-                  <Input id="operatingSystem" name="operatingSystem" value={editedProduct.operatingSystem} onChange={handleInputChange} />
-                </div>
-                <div className="flex justify-end space-x-4">
-                  <Button type="submit">Update</Button>
-                  <Button variant="outline" onClick={actions.cancel.productUpdate}>
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+        console.log(`DisplayingUpdateProductForm: ${JSON.stringify(product)}`);
+        title = `Update Product: ${product.name}`;
+        content = renderProductFields(true);
+        footer = (
+          <>
+            <Button onClick={handleUpdateSubmit}>Update</Button>
+            <Button variant="outline" onClick={actions.cancel.productUpdate}>
+              Cancel
+            </Button>
+          </>
         );
+        break;
       case DisplayProductState.DisplayingDeleteProductForm:
-        return (
-          <Card className="mx-auto w-full max-w-2xl">
-            <CardHeader>
-              <CardTitle>Delete Product: {product.name}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="mb-4">Are you sure you want to delete this product? This action cannot be undone.</p>
-              <form onSubmit={handleDeleteSubmit} className="flex justify-end space-x-4">
-                <Button type="submit" variant="destructive">
-                  Delete
-                </Button>
-                <Button variant="outline" onClick={actions.cancel.productUpdate}>
-                  Cancel
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+        title = `Delete Product: ${product.name}`;
+        content = <p className="mb-4">Are you sure you want to delete this product? This action cannot be undone.</p>;
+        footer = (
+          <>
+            <Button variant="destructive" onClick={handleDeleteSubmit}>
+              Delete
+            </Button>
+            <Button variant="outline" onClick={actions.cancel.productUpdate}>
+              Cancel
+            </Button>
+          </>
         );
+        break;
       case DisplayProductState.UpdatingProduct:
-      case DisplayProductState.DeletingProduct:
-        return (
-          <div className="flex h-screen items-center justify-center">
+        content = (
+          <div className="flex h-full items-center justify-center">
             <Loader2 className="mr-2 h-16 w-16 animate-spin" />
           </div>
         );
+        break;
+      case DisplayProductState.DeletingProduct:
+        content = (
+          <div className="flex h-full items-center justify-center">
+            <Loader2 className="mr-2 h-16 w-16 animate-spin" />
+          </div>
+        );
+        break;
       default:
         return null;
     }
+
+    return (
+      <Dialog open={true} onOpenChange={() => actions.close.productDetailModal()}>
+        <DialogContent className="sm:max-w-[800px]">
+          <DialogHeader>
+            <DialogTitle>{title}</DialogTitle>
+          </DialogHeader>
+          {content}
+          <DialogFooter>{footer}</DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
   };
 
   return render();

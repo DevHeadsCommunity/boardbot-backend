@@ -1,4 +1,4 @@
-import json
+import logging
 import socketio
 from dateutil.parser import isoparse
 from models.message import RequestMessage
@@ -6,12 +6,20 @@ from core.session_manager import SessionManager
 from core.message_processor import MessageProcessor
 import datetime
 
+logger = logging.getLogger(__name__)
+
 
 class SocketIOHandler:
     def __init__(self, session_manager: SessionManager, message_processor: MessageProcessor):
         self.session_manager = session_manager
         self.message_processor = message_processor
-        self.sio = socketio.AsyncServer(cors_allowed_origins="*", async_mode="asgi")
+
+        # Configure CORS for socket.io
+        self.sio = socketio.AsyncServer(
+            async_mode="asgi",
+            cors_allowed_origins=["http://localhost:3000", "http://192.168.93.59:3000"],
+            allow_credentials=True,
+        )
         self.socket_app = socketio.ASGIApp(self.sio)
         self.setup_event_handlers()
 
@@ -48,13 +56,13 @@ class SocketIOHandler:
         print(f"Received message from {sid}: {data}")
 
         message = RequestMessage(
-            id=data.get("messageId"),
+            id=data.get("message_id"),
             message=data.get("message"),
             timestamp=self.get_timestamp(data.get("timestamp", None)),
-            session_id=data.get("sessionId"),
+            session_id=data.get("session_id"),
             model=data.get("model"),
-            architecture_choice=data.get("architectureChoice"),
-            history_management_choice=data.get("historyManagementChoice"),
+            architecture_choice=data.get("architecture_choice"),
+            history_management_choice=data.get("history_management_choice"),
         )
         print(f"\n\n===:> Message Received: {message}\n\n")
         response = await self.message_processor.process_message(message)

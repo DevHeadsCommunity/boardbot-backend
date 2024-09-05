@@ -1,22 +1,38 @@
-import { ChatMessage, RequestData, ResponseData } from "@/types";
+import {
+  Architecture,
+  ArchitectureSchema,
+  ChatHistory,
+  ChatHistoryItemSchema,
+  HistoryManagement,
+  HistoryManagementSchema,
+  Model,
+  ModelSchema,
+  RequestDataSchema,
+  RequestMessage,
+  ResponseMessage,
+} from "@/types";
 import { v4 as uuidv4 } from "uuid";
 import { ActorRefFrom, assign, ContextFrom, sendTo, setup } from "xstate";
-import { Architecture, HistoryManagement, Model } from "./appMachine";
+import { z } from "zod";
 import { webSocketMachine } from "./webSocketMachine";
+
+const ChatContextSchema = z.object({
+  sessionId: z.string(),
+  webSocketRef: z.any(), // Can't directly validate ActorRef with Zod
+  chatHistory: z.array(ChatHistoryItemSchema),
+  model: ModelSchema,
+  architecture: ArchitectureSchema,
+  historyManagement: HistoryManagementSchema,
+});
+
+type ChatContext = z.infer<typeof ChatContextSchema>;
 
 export const chatMachine = setup({
   types: {
-    context: {} as {
-      sessionId: string;
-      webSocketRef: ActorRefFrom<typeof webSocketMachine> | undefined;
-      chatHistory: ChatMessage[];
-      model: Model;
-      architecture: Architecture;
-      historyManagement: HistoryManagement;
-    },
+    context: {} as ChatContext,
     input: {} as {
       sessionId?: string;
-      chatHistory?: ChatMessage[];
+      chatHistory?: ChatHistory;
       model: Model;
       architecture: Architecture;
       historyManagement: HistoryManagement;
@@ -26,148 +42,116 @@ export const chatMachine = setup({
       | { type: "app.stopChat" }
       | { type: "app.updateState"; data: { model: Model; architecture: Architecture; historyManagement: HistoryManagement } }
       | { type: "webSocket.connected" }
-      | { type: "webSocket.messageReceived"; data: ResponseData }
+      | { type: "webSocket.messageReceived"; data: ResponseMessage }
       | { type: "webSocket.disconnected" }
-      | { type: "user.sendMessage"; data: { messageId: string; message: string } },
+      | { type: "user.sendMessage"; messageId: string; message: string },
   },
 }).createMachine({
-  context: ({ input }) => ({
-    sessionId: input?.sessionId || "",
-    webSocketRef: undefined,
-    chatHistory: input?.chatHistory || [],
-    model: input.model,
-    architecture: input.architecture,
-    historyManagement: input.historyManagement,
-  }),
+  context: ({ input, spawn }) =>
+    ChatContextSchema.parse({
+      sessionId: input?.sessionId || uuidv4(),
+      webSocketRef: spawn(webSocketMachine),
+      chatHistory: input?.chatHistory || [],
+      model: input.model,
+      architecture: input.architecture,
+      historyManagement: input.historyManagement,
+    }),
   id: "chatActor",
   initial: "idle",
-  // initial: ({input}) => input?.currentState ? input.currentState : "idle", // This is not working, but we need to find a way to restore the state
   on: {
     "app.updateState": {
-      actions: assign({
-        model: ({ event }) => event.data.model,
-        architecture: ({ event }) => event.data.architecture,
-        historyManagement: ({ event }) => event.data.historyManagement,
-      }),
+      actions: assign(({ context, event }) => ({
+        model: event.data.model,
+        architecture: event.data.architecture,
+        historyManagement: event.data.historyManagement,
+      })),
     },
   },
   states: {
     idle: {
       on: {
-        "app.startChat": {
-          target: "DisplayingChat",
-        },
+        "app.startChat": { target: "connecting" },
       },
     },
-    DisplayingChat: {
-      initial: "Connecting",
-      entry: assign({
-        sessionId: ({ context }) => context.sessionId || uuidv4(),
-        webSocketRef: ({ spawn, context }) => context.webSocketRef || (spawn(webSocketMachine) as any),
-      }),
+    connecting: {
+      entry: sendTo(
+        ({ context }) => context.webSocketRef,
+        ({ context }) => ({
+          type: "parentActor.connect",
+          data: { sessionId: context.sessionId },
+        })
+      ),
+      on: {
+        "webSocket.connected": { target: "chatting" },
+      },
+    },
+    chatting: {
+      initial: "awaitingUserInput",
       on: {
         "app.stopChat": {
-          target: "idle",
-          actions: [
-            sendTo(
-              ({ context }) => context.webSocketRef!,
-              ({ context }) => ({
-                type: "parentActor.disconnect",
-              })
-            ) as any,
-          ],
+          target: "disconnecting",
+        },
+        "webSocket.disconnected": {
+          target: "connecting",
         },
       },
       states: {
-        Connecting: {
-          entry: sendTo(
-            ({ context }) => context.webSocketRef!,
-            ({ context }) => ({
-              type: "parentActor.connect",
-              data: {
-                sessionId: context.sessionId,
-              },
-            })
-          ),
+        awaitingUserInput: {
           on: {
-            "webSocket.connected": {
-              target: "Connected",
-            },
-          },
-        },
-        Connected: {
-          initial: "Typing",
-          on: {
-            "webSocket.disconnected": {
-              target: "Connecting",
-            },
-          },
-          states: {
-            Typing: {
-              on: {
-                "user.sendMessage": {
-                  target: "ReceivingResponse",
-                  actions: [
-                    sendTo(
-                      ({ context }) => context.webSocketRef!,
-                      ({ context, event }) => ({
-                        type: "parentActor.sendMessage",
-                        data: {
-                          type: "textMessage",
-                          sessionId: context.sessionId,
-                          messageId: (event as any).data.messageId,
-                          message: (event as any).data.message,
-                          isComplete: true,
-                          timestamp: new Date().toISOString(),
-                          model: context.model,
-                          architectureChoice: context.architecture,
-                          historyManagementChoice: context.historyManagement,
-                        } as RequestData,
-                      })
-                    ) as any,
-                    assign({
-                      chatHistory: ({ context, event }) => [
-                        ...context.chatHistory,
-                        {
-                          id: (event as any).data.messageId,
-                          message: (event as any).data.message,
-                          isComplete: false,
-                          timestamp: new Date(),
-                          isUserMessage: true,
-                        },
-                      ],
-                    }) as any,
-                  ],
-                },
-              },
-            },
-            ReceivingResponse: {
-              on: {
-                "webSocket.messageReceived": {
-                  target: "Typing",
-                  actions: [
-                    assign({
-                      chatHistory: ({ context, event }) => [
-                        ...context.chatHistory,
-                        {
-                          id: (event as any).data.messageId,
-                          message: (event as any).data.message,
-                          isComplete: true,
-                          timestamp: new Date(),
-                          isUserMessage: false,
-                          inputTokenCount: (event as any).data.inputTokenCount,
-                          outputTokenCount: (event as any).data.outputTokenCount,
-                          elapsedTime: (event as any).data.elapsedTime,
-                          model: (event as any).data.model,
-                        },
-                      ],
+            "user.sendMessage": {
+              target: "processingMessage",
+              actions: [
+                sendTo(
+                  ({ context }) => context.webSocketRef,
+                  ({ context, event }) => ({
+                    type: "parentActor.sendMessage",
+                    data: RequestDataSchema.parse({
+                      type: "textMessage",
+                      sessionId: context.sessionId,
+                      messageId: event.messageId,
+                      message: event.message,
+                      timestamp: new Date().toISOString(),
+                      model: context.model,
+                      architectureChoice: context.architecture,
+                      historyManagementChoice: context.historyManagement,
                     }),
+                  })
+                ),
+                assign({
+                  chatHistory: ({ context, event }) => [
+                    ...context.chatHistory,
+                    {
+                      messageId: event.messageId,
+                      timestamp: new Date(),
+                      isUserMessage: true,
+                      isComplete: true,
+                      model: context.model,
+                      architectureChoice: context.architecture,
+                      historyManagementChoice: context.historyManagement,
+                      message: event.message,
+                    } as RequestMessage,
                   ],
-                },
-              },
+                }),
+              ],
             },
           },
         },
+        processingMessage: {
+          on: {
+            "webSocket.messageReceived": {
+              target: "awaitingUserInput",
+              actions: assign({
+                chatHistory: ({ context, event }) => [...context.chatHistory, event.data],
+              }),
+            },
+          },
+        },
+      },
+    },
+    disconnecting: {
+      entry: sendTo(({ context }) => context.webSocketRef, { type: "parentActor.disconnect" }),
+      on: {
+        "webSocket.disconnected": { target: "idle" },
       },
     },
   },
@@ -185,8 +169,10 @@ export const serializeChatState = (chatRef: ActorRefFrom<typeof chatMachine>) =>
   };
 };
 
-export const deserializeChatState = (savedState: any): ContextFrom<typeof chatMachine> => {
+export const deserializeChatState = (savedState: unknown): ContextFrom<typeof chatMachine> => {
+  const parsedState = ChatContextSchema.parse(savedState);
   return {
-    ...savedState,
+    ...parsedState,
+    webSocketRef: undefined, // Will be re-spawned when the machine starts
   };
 };

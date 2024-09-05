@@ -29,8 +29,9 @@ class GraphQLQueryBuilder:
         self.properties = properties
         return self
 
-    def add_clause(self, clause_builder: ClauseBuilder) -> "GraphQLQueryBuilder":
-        self._clauses.append(clause_builder.build())
+    def add_clauses(self, *clause_builders: ClauseBuilder) -> "GraphQLQueryBuilder":
+        for clause_builder in clause_builders:
+            self._clauses.append(clause_builder.build())
         return self
 
     def build(self) -> str:

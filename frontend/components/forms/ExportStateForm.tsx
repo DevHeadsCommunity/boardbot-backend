@@ -2,18 +2,16 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import React, { useState } from "react";
+import React, { memo, useState } from "react";
+import { toast } from "react-toastify";
 
-interface StateFormProps {
+interface ExportStateFormProps {
   isOpen: boolean;
+  onSubmit: (data: { fileName: string }) => void;
   onCancel: () => void;
 }
 
-interface ExportStateFormProps extends StateFormProps {
-  onSubmit: (data: { fileName: string }) => void;
-}
-
-const ExportStateForm: React.FC<ExportStateFormProps> = ({ isOpen, onSubmit, onCancel }) => {
+const ExportStateForm: React.FC<ExportStateFormProps> = memo(function ExportStateForm({ isOpen, onSubmit, onCancel }) {
   const [fileName, setFileName] = useState("boardbot_state.json");
   const [directoryPath, setDirectoryPath] = useState<string>("");
 
@@ -26,7 +24,6 @@ const ExportStateForm: React.FC<ExportStateFormProps> = ({ isOpen, onSubmit, onC
         startIn: "downloads",
       });
 
-      // Get the full path of the selected directory
       selectedDirectoryPath = await directoryHandle.name;
       setDirectoryPath(selectedDirectoryPath);
     } catch (err) {
@@ -34,9 +31,10 @@ const ExportStateForm: React.FC<ExportStateFormProps> = ({ isOpen, onSubmit, onC
       selectedDirectoryPath = "Downloads";
     }
 
-    const fullPath = `${directoryPath}/${fileName}`;
+    const fullPath = `${selectedDirectoryPath}/${fileName}`;
     console.log("====> Exporting state to", fullPath);
     onSubmit({ fileName: fullPath });
+    toast.success(`State exported to ${fullPath}`);
   };
 
   return (
@@ -64,6 +62,6 @@ const ExportStateForm: React.FC<ExportStateFormProps> = ({ isOpen, onSubmit, onC
       </DialogContent>
     </Dialog>
   );
-};
+});
 
 export default ExportStateForm;

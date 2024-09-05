@@ -1,74 +1,103 @@
 import SortableTable, { TableColumn } from "@/components/blocks/SortableTable";
+import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useTestContext } from "@/hooks/useTestContext";
 import { Test } from "@/types";
+import React, { useMemo, useState } from "react";
 
-type TestListCardProps = {
-  tests: Test[];
-  onTestSelect: (test: Test) => void;
-};
+const TestListCard: React.FC = () => {
+  const { data, actions } = useTestContext();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState<"all" | "accuracy" | "consistency">("all");
 
-type TestStatusProps = {
-  status: string;
-};
-
-const TestStatus = ({ status }: TestStatusProps) => {
-  let color = "";
-  let text = "";
-
-  switch (status) {
-    case "PENDING":
-      color = "yellow";
-      text = "Pending";
-      break;
-    case "RUNNING":
-      color = "blue";
-      text = "Running";
-      break;
-    case "COMPLETED":
-      color = "green";
-      text = "Passed";
-      break;
-    case "FAILED":
-      color = "red";
-      text = "Failed";
-      break;
-    case "PAUSED":
-      color = "yellow";
-      text = "Paused";
-      break;
-    default:
-      break;
-  }
-
-  return (
-    <div className={`flex items-center gap-2`}>
-      <div className={cn(`h-4 w-4 bg-${color}-500 rounded-full`)} />
-      <span className="font-medium">{text}</span>
-    </div>
-  );
-};
-
-const TestListCard = ({ tests, onTestSelect }: TestListCardProps) => {
   const columns: TableColumn[] = [
     { header: "Name", accessor: "name" },
+    { header: "Type", accessor: "testType" },
     { header: "Created At", accessor: "createdAt" },
-    { header: "Id", accessor: "testId" },
+    { header: "Status", accessor: "status" },
   ];
 
-  const transformedTests = tests.map((test) => ({
-    ...test,
-    createdAt: new Date(test.createdAt).toLocaleString(),
-  }));
+  const getTestStatus = (test: Test): "pending" | "running" | "completed" | "error" => {
+    const snapshot = test.testRunnerRef.getSnapshot();
+    if (snapshot.matches("idle")) return "pending";
+    if (snapshot.matches("running")) return "running";
+    if (snapshot.matches("disconnecting")) return "completed";
+    return "error";
+  };
+
+  const transformedTests = useMemo(() => {
+    return data.tests.map((test) => ({
+      ...test,
+      testType: test.testRunnerRef.getSnapshot().context.testCases[0]?.testType || "unknown",
+      createdAt: new Date(test.createdAt).toLocaleString(),
+      status: getTestStatus(test),
+    }));
+  }, [data.tests]);
+
+  const filteredTests = useMemo(() => {
+    return transformedTests.filter((test) => {
+      const matchesSearch = test.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesType = filterType === "all" || test.testType === filterType;
+      return matchesSearch && matchesType;
+    });
+  }, [transformedTests, searchTerm, filterType]);
+
+  const handleSelectTest = (test: Test) => {
+    actions.select.test(test.testId);
+  };
 
   return (
     <Card className="flex flex-col gap-4 bg-card p-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-card-foreground">Tests</h2>
       </div>
-      <SortableTable columns={columns} data={transformedTests} onRowClick={onTestSelect} />
+      <div className="flex gap-4">
+        <Input placeholder="Search tests..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="max-w-sm" />
+        <Select value={filterType} onValueChange={(value: "all" | "accuracy" | "consistency") => setFilterType(value)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="accuracy">Accuracy</SelectItem>
+            <SelectItem value="consistency">Consistency</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <SortableTable
+        columns={columns}
+        data={filteredTests}
+        onRowClick={handleSelectTest}
+        // renderCell={(column: { accessor: string | number | symbol }, rowData: { [x: string]: any; status: "pending" | "running" | "completed" | "error" }) => {
+        //   if (column.accessor === "status") {
+        //     return <StatusBadge status={rowData.status} />;
+        //   }
+        //   return rowData[column.accessor as keyof typeof rowData];
+        // }}
+      />
     </Card>
   );
+};
+
+const StatusBadge: React.FC<{ status: "pending" | "running" | "completed" | "error" }> = ({ status }) => {
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-500";
+      case "running":
+        return "bg-blue-500";
+      case "completed":
+        return "bg-green-500";
+      case "error":
+        return "bg-red-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
+  return <Badge className={`${getStatusColor(status)} text-white`}>{status.charAt(0).toUpperCase() + status.slice(1)}</Badge>;
 };
 
 export default TestListCard;

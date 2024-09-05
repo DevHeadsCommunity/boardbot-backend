@@ -43,7 +43,19 @@ class PromptManager:
             raise ValueError(f"Unknown prompt type: {prompt_type}")
 
         prompt = self.prompts[prompt_type]
-        messages = prompt.format(**kwargs)
+        logger.info(f"Generating prompt for {prompt_type} with kwargs: {kwargs}")
+        logger.info(f"Prompt input variables: {prompt.input_variables}")
+
+        try:
+            messages = prompt.format(**kwargs)
+        except KeyError as e:
+            logger.error(f"KeyError in prompt formatting: {e}")
+            logger.error(f"Prompt type: {prompt_type}")
+            logger.error(f"Kwargs: {kwargs}")
+            logger.error(f"Expected input variables: {prompt.input_variables}")
+            raise ValueError(
+                f"Error formatting prompt: {e}. Expected variables: {prompt.input_variables}, Got: {list(kwargs.keys())}"
+            )
 
         if len(messages) != 2:
             raise ValueError(f"Expected 2 messages (system and user), but got {len(messages)}")
@@ -111,6 +123,7 @@ class PromptManager:
         )
 
     def get_dynamic_agent_prompt(self, query: str) -> Tuple[str, str]:
+        logger.info(f"===:> Generating dynamic agent prompt for query: {query}")
         return self.get_prompt("dynamic_agent", query=query)
 
     def get_simple_data_extraction_prompt(self, raw_data: str) -> Tuple[str, str]:

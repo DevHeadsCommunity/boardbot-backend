@@ -1,17 +1,13 @@
+import { Architecture, HistoryManagement, Model } from "@/types";
 import { ActorRefFrom, assign, emit, fromPromise, sendTo, setup } from "xstate";
 import { chatMachine, deserializeChatState, serializeChatState } from "./chatMachine";
 import { deserializeProductState, productMachine, serializeProductState } from "./productMachine";
 import { deserializeTestState, serializeTestState, testMachine } from "./testMachine";
 
-export const MODEL_VALUES = ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"] as const;
-export type Model = (typeof MODEL_VALUES)[number];
-export const ARCHITECTURE_VALUES = ["semantic-router", "llm-router", "hybrid-router", "dynamic-agent"] as const;
-export type Architecture = (typeof ARCHITECTURE_VALUES)[number];
-export const HISTORY_MANAGEMENT_VALUES = ["keep-none", "keep-last-5", "keep-all"] as const;
-export type HistoryManagement = (typeof HISTORY_MANAGEMENT_VALUES)[number];
+const APP_STATE_VERSION = "1.1";
 
 const serializeAppState = (context: any) => ({
-  version: "1.0",
+  version: APP_STATE_VERSION,
   appState: {
     model: context.model,
     architecture: context.architecture,
@@ -23,8 +19,8 @@ const serializeAppState = (context: any) => ({
 });
 
 const deserializeAppState = (savedState: any, spawn: any) => {
-  if (savedState.version !== "1.0") {
-    throw new Error("Unsupported state version");
+  if (savedState.version !== APP_STATE_VERSION) {
+    throw new Error(`Unsupported state version. Expected ${APP_STATE_VERSION}, got ${savedState.version}`);
   }
   return {
     ...savedState.appState,
@@ -34,15 +30,16 @@ const deserializeAppState = (savedState: any, spawn: any) => {
   };
 };
 
-export const saveToLocalStorage = (key: string, value: any) => {
+const saveToLocalStorage = (key: string, value: any) => {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch (error) {
     console.error("Error saving to localStorage:", error);
+    throw error;
   }
 };
 
-export const loadFromLocalStorage = (key: string) => {
+const loadFromLocalStorage = (key: string) => {
   try {
     const item = localStorage.getItem(key);
     return item ? JSON.parse(item) : null;
@@ -52,7 +49,7 @@ export const loadFromLocalStorage = (key: string) => {
   }
 };
 
-export const exportStateToFile = (state: any, filename: string) => {
+const exportStateToFile = (state: any, filename: string) => {
   const blob = new Blob([JSON.stringify(state)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -62,7 +59,7 @@ export const exportStateToFile = (state: any, filename: string) => {
   URL.revokeObjectURL(url);
 };
 
-export const importStateFromFile = (file: File): Promise<any> => {
+const importStateFromFile = async (file: File): Promise<any> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -70,10 +67,10 @@ export const importStateFromFile = (file: File): Promise<any> => {
         const state = JSON.parse(event.target?.result as string);
         resolve(state);
       } catch (error) {
-        reject(error);
+        reject(new Error("Invalid state file format"));
       }
     };
-    reader.onerror = (error) => reject(error);
+    reader.onerror = () => reject(new Error("Error reading file"));
     reader.readAsText(file);
   });
 };
@@ -96,10 +93,10 @@ export const appMachine = setup({
       | { type: "user.importState" }
       | { type: "user.exportState" }
       | { type: "user.updateSetting" }
-      | { type: "user.submitImportStateForm"; data: { file: File } }
-      | { type: "user.submitExportStateForm"; data: { fileName: string } }
+      | { type: "user.submitImportStateForm"; file: File }
+      | { type: "user.submitExportStateForm"; fileName: string }
       | { type: "user.submitResetSettings" }
-      | { type: "user.submitUpdateSettingForm"; data: { model: Model; architecture: Architecture; historyManagement: HistoryManagement } }
+      | { type: "user.submitUpdateSettingForm"; model: Model; architecture: Architecture; historyManagement: HistoryManagement }
       | { type: "user.cancelImportState" }
       | { type: "user.cancelExportState" }
       | { type: "user.cancelUpdateSetting" },
@@ -107,15 +104,14 @@ export const appMachine = setup({
   actors: {
     importState: fromPromise(async ({ input }: { input: { file: File } }) => {
       try {
-        const importedState = await importStateFromFile(input.file);
-        return importedState;
+        return await importStateFromFile(input.file);
       } catch (error) {
         throw new Error(`Failed to import state: ${error}`);
       }
     }),
     exportState: fromPromise(async ({ input }: { input: { fileName: string; state: any } }) => {
       try {
-        await exportStateToFile(input.state, input.fileName);
+        exportStateToFile(input.state, input.fileName);
         return true;
       } catch (error) {
         throw new Error(`Failed to export state: ${error}`);
@@ -125,127 +121,136 @@ export const appMachine = setup({
 }).createMachine({
   context: ({ spawn }) => {
     const savedState = loadFromLocalStorage("appState");
-    return savedState
-      ? deserializeAppState(savedState, spawn)
-      : {
-          chatRef: spawn(chatMachine, {
-            input: {
-              model: "gpt-4o",
-              architecture: "llm-router",
-              historyManagement: "keep-last-5",
-            },
-          }),
-          testRef: spawn(testMachine, {
-            input: {
-              model: "gpt-4o",
-              architecture: "llm-router",
-              historyManagement: "keep-last-5",
-            },
-          }),
-          prodRef: spawn(productMachine, {
-            input: {
-              model: "gpt-4o",
-              architecture: "llm-router",
-              historyManagement: "keep-last-5",
-            },
-          }),
+    if (savedState) {
+      try {
+        return deserializeAppState(savedState, spawn);
+      } catch (error) {
+        console.error("Failed to deserialize saved state:", error);
+        // Fall back to default state
+      }
+    }
+    return {
+      chatRef: spawn(chatMachine, {
+        input: {
           model: "gpt-4o",
           architecture: "llm-router",
           historyManagement: "keep-last-5",
-        };
+        },
+      }),
+      testRef: spawn(testMachine, {
+        input: {
+          model: "gpt-4o",
+          architecture: "llm-router",
+          historyManagement: "keep-last-5",
+        },
+      }),
+      prodRef: spawn(productMachine, {
+        input: {
+          model: "gpt-4o",
+          architecture: "llm-router",
+          historyManagement: "keep-last-5",
+        },
+      }),
+      model: "gpt-4o",
+      architecture: "llm-router",
+      historyManagement: "keep-last-5",
+    };
   },
   id: "appActor",
-  initial: "Open",
+  initial: "open",
   states: {
-    Open: {
-      initial: "Chatting",
+    open: {
+      initial: "chatting",
       on: {
         "sys.saveState": {
           actions: ({ context }) => {
-            const serializedState = serializeAppState(context);
+            const serializedState = serializeAppState({ context });
             saveToLocalStorage("appState", serializedState);
           },
         },
-        "user.selectTest": {
-          target: "#appActor.Open.Testing",
-        },
-        "user.selectManageProducts": {
-          target: "#appActor.Open.ManagingProducts",
-        },
-        "user.selectChat": {
-          target: "#appActor.Open.Chatting",
-        },
         "user.importState": {
-          target: "ImportingState",
+          target: "importingState",
         },
         "user.exportState": {
-          target: "ExportingState",
+          target: "exportingState",
         },
         "user.updateSetting": {
-          target: "UpdatingSettings",
+          target: "updatingSettings",
+        },
+        "user.selectTest": {
+          target: "#appActor.open.testing",
+        },
+        "user.selectChat": {
+          target: "#appActor.open.chatting",
+        },
+        "user.selectManageProducts": {
+          target: "#appActor.open.managingProducts",
         },
       },
       states: {
-        Testing: {
-          entry: sendTo(({ context }) => context.testRef!, {
-            type: "app.startTest",
-          } as any),
-          exit: sendTo(({ context }) => context.testRef!, {
-            type: "app.stopTest",
-          } as any),
-        },
-        ManagingProducts: {
-          entry: sendTo(({ context }) => context.prodRef!, {
-            type: "app.startManagingProducts",
-          } as any),
-          exit: sendTo(({ context }) => context.prodRef!, {
-            type: "app.stopManagingProducts",
-          } as any),
-        },
-        Chatting: {
+        chatting: {
           entry: sendTo(({ context }) => context.chatRef!, {
             type: "app.startChat",
-          } as any),
+          }),
           exit: sendTo(({ context }) => context.chatRef!, {
             type: "app.stopChat",
-          } as any),
+          }),
         },
-        History: {
+        testing: {
+          entry: sendTo(({ context }) => context.testRef!, {
+            type: "app.startTest",
+          }),
+          exit: sendTo(({ context }) => context.testRef!, {
+            type: "app.stopTest",
+          }),
+        },
+        managingProducts: {
+          entry: sendTo(({ context }) => context.prodRef!, {
+            type: "app.startManagingProducts",
+          }),
+          exit: sendTo(({ context }) => context.prodRef!, {
+            type: "app.stopManagingProducts",
+          }),
+        },
+        history: {
           type: "history",
           history: "deep",
         },
       },
     },
-    ImportingState: {
-      initial: "DisplayingImportStateForm",
+    importingState: {
+      initial: "displayingImportStateForm",
       on: {
         "user.cancelImportState": {
-          target: "#appActor.Open.History",
+          target: "#appActor.open.history",
         },
       },
       states: {
-        DisplayingImportStateForm: {
+        displayingImportStateForm: {
           on: {
             "user.submitImportStateForm": {
-              target: "ImportingState",
+              target: "importingState",
             },
           },
         },
-        ImportingState: {
+        importingState: {
           invoke: {
             id: "importState",
             input: ({ event }) => {
               if (event.type !== "user.submitImportStateForm") {
                 throw new Error("Invalid event");
               }
-              return { file: event.data.file };
+              return { file: event.file };
             },
             onDone: {
-              target: "#appActor.Open.History",
+              target: "#appActor.open.history",
               actions: [
                 assign(({ event, spawn }) => {
-                  const importedState = event.output;
-                  return deserializeAppState(importedState, spawn);
+                  try {
+                    return deserializeAppState(event.output, spawn);
+                  } catch (error) {
+                    throw new Error(`Invalid state file: ${error instanceof Error ? error.message : "Unknown error"}`);
+                  }
                 }),
                 emit({
                   type: "notification",
@@ -257,12 +262,12 @@ export const appMachine = setup({
               ],
             },
             onError: {
-              target: "DisplayingImportStateForm",
+              target: "displayingImportStateForm",
               actions: emit({
                 type: "notification",
                 data: {
                   type: "error",
-                  message: "Failed to import state",
+                  message: `Failed to import state`,
                 },
               }),
             },
@@ -271,22 +276,22 @@ export const appMachine = setup({
         },
       },
     },
-    ExportingState: {
-      initial: "DisplayingExportStateForm",
+    exportingState: {
+      initial: "displayingExportStateForm",
       on: {
         "user.cancelExportState": {
-          target: "#appActor.Open.History",
+          target: "#appActor.open.history",
         },
       },
       states: {
-        DisplayingExportStateForm: {
+        displayingExportStateForm: {
           on: {
             "user.submitExportStateForm": {
-              target: "ExportingState",
+              target: "exportingState",
             },
           },
         },
-        ExportingState: {
+        exportingState: {
           invoke: {
             id: "exportState",
             input: ({ context, event }) => {
@@ -294,29 +299,27 @@ export const appMachine = setup({
                 throw new Error("Invalid event");
               }
               return {
-                fileName: event.data.fileName,
+                fileName: event.fileName,
                 state: serializeAppState(context),
               };
             },
             onDone: {
-              target: "#appActor.Open.History",
-              actions: [
-                emit({
-                  type: "notification",
-                  data: {
-                    type: "success",
-                    message: "State exported successfully",
-                  },
-                }),
-              ],
+              target: "#appActor.open.history",
+              actions: emit({
+                type: "notification",
+                data: {
+                  type: "success",
+                  message: "State exported successfully",
+                },
+              }),
             },
             onError: {
-              target: "DisplayingExportStateForm",
+              target: "displayingExportStateForm",
               actions: emit({
                 type: "notification",
                 data: {
                   type: "error",
-                  message: "Failed to export state",
+                  message: `Failed to export state`,
                 },
               }),
             },
@@ -325,72 +328,64 @@ export const appMachine = setup({
         },
       },
     },
-    UpdatingSettings: {
-      initial: "DisplayingUpdateSettingForm",
+    updatingSettings: {
+      initial: "displayingUpdateSettingForm",
       on: {
         "user.cancelUpdateSetting": {
-          target: "#appActor.Open.History",
+          target: "#appActor.open.history",
         },
       },
       states: {
-        DisplayingUpdateSettingForm: {
+        displayingUpdateSettingForm: {
           on: {
             "user.submitUpdateSettingForm": {
-              target: "#appActor.Open.History",
+              target: "#appActor.open.history",
               actions: [
                 assign({
-                  model: ({ event }) => event.data.model,
-                  architecture: ({ event }) => event.data.architecture,
-                  historyManagement: ({ event }) => event.data.historyManagement,
+                  model: ({ event }) => event.model,
+                  architecture: ({ event }) => event.architecture,
+                  historyManagement: ({ event }) => event.historyManagement,
                 }),
-                sendTo(
-                  ({ context }) => context.chatRef!,
-                  ({ context }) => ({
+                ({ context }) => {
+                  const updateData = {
+                    model: context.model,
+                    architecture: context.architecture,
+                    historyManagement: context.historyManagement,
+                  };
+                  context.chatRef.send({
                     type: "app.updateState",
-                    data: {
-                      model: context.model,
-                      architecture: context.architecture,
-                      historyManagement: context.historyManagement,
-                    },
-                  })
-                ),
-                sendTo(
-                  ({ context }) => context.testRef!,
-                  ({ context }) => ({
+                    data: updateData,
+                  });
+                  context.testRef.send({
                     type: "app.updateState",
-                    data: {
-                      model: context.model,
-                      architecture: context.architecture,
-                      historyManagement: context.historyManagement,
-                    },
-                  })
-                ),
+                    data: updateData,
+                  });
+                },
               ],
             },
             "user.submitResetSettings": {
-              target: "#appActor.Open.History",
+              target: "#appActor.open.history",
               actions: [
                 assign({
                   model: "gpt-4o",
                   architecture: "llm-router",
                   historyManagement: "keep-last-5",
                 }),
-                sendTo(({ context }) => context.chatRef!, {
-                  type: "app.updateState",
-                  data: {
-                    model: "gpt-4o",
-                    architecture: "llm-router",
-                    historyManagement: "keep-last-5",
-                  },
-                }),
-                sendTo(({ context }) => context.testRef!, {
-                  type: "app.updateState",
-                  data: {
-                    model: "gpt-4o",
-                    architecture: "llm-router",
-                    historyManagement: "keep-last-5",
-                  },
-                }),
+                ({ context }) => {
+                  const resetData = {
+                    model: "gpt-4o" as Model,
+                    architecture: "llm-router" as Architecture,
+                    historyManagement: "keep-last-5" as HistoryManagement,
+                  };
+                  context.chatRef.send({
+                    type: "app.updateState",
+                    data: resetData,
+                  });
+                  context.testRef.send({
+                    type: "app.updateState",
+                    data: resetData,
+                  });
+                },
               ],
             },
           },

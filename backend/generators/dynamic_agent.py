@@ -2,6 +2,7 @@ import json
 import logging
 import time
 import operator
+import asyncio
 from typing import List, Dict, Any, Tuple, Annotated
 from langgraph.graph import StateGraph, END
 from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage, ToolMessage
@@ -98,6 +99,8 @@ class DynamicAgent:
             pipeline_input = pipeline_action["input"]
         except json.JSONDecodeError:
             return {"messages": [ToolMessage(content="Invalid pipeline format. Please use valid JSON.")]}
+        except KeyError as e:
+            return {"messages": [ToolMessage(content=f"Missing required key in pipeline action: {str(e)}")]}
 
         if pipeline_name not in self.pipelines:
             return {"messages": [ToolMessage(content=f"Unknown pipeline: {pipeline_name}")]}
@@ -116,10 +119,11 @@ class DynamicAgent:
         expanded_result, _, _ = await self.query_processor.process_query_comprehensive(query, [])
         expanded_queries = expanded_result["expanded_queries"]
 
-        all_results = []
-        for exp_query in expanded_queries:
-            results = await self.weaviate_service.search_products(exp_query, limit)
-            all_results.extend(results)
+        async def search(exp_query):
+            return await self.weaviate_service.search_products(exp_query, limit)
+
+        all_results = await asyncio.gather(*[search(q) for q in expanded_queries])
+        all_results = [item for sublist in all_results for item in sublist]  # Flatten the list
 
         reranked_results, _, _ = await self.query_processor.rerank_products(query, [], all_results, limit)
 
@@ -132,7 +136,7 @@ class DynamicAgent:
         initial_state = AgentState(
             messages=[HumanMessage(content=message.message)],
             chat_history=chat_history,
-            current_message=message,
+            current_message=message.message,
             model_name=message.model,
             input_tokens={},
             output_tokens={},
@@ -149,10 +153,9 @@ class DynamicAgent:
                 "time_taken": final_state["time_taken"],
             }
 
-            formatted_response = self.response_formatter.format_response(
+            return self.response_formatter.format_response(
                 "dynamic_agent", response, metadata, final_state.get("search_results", [])
             )
-            return json.dumps(formatted_response, indent=2), metadata
 
         except Exception as e:
             logger.error(f"Error during workflow execution: {str(e)}", exc_info=True)

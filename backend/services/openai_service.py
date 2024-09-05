@@ -29,7 +29,8 @@ class OpenAIService:
         functions: Optional[List[Dict[str, Any]]] = None,
     ) -> Tuple[str, int, int]:
         try:
-            model = model or self.config.DEFAULT_MODEL
+            # model = model or self.config.DEFAULT_MODEL
+            model = model or self.config["DEFAULT_MODEL"]
             logger.info(f"===> Using model: {model}")
             encoder = self._get_encoder(model)
             logger.info(f"===> Messages: {messages}")

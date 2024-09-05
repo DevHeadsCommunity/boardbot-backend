@@ -8,40 +8,50 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { AppContextActions, AppContextData } from "@/context/appContext";
-import { ARCHITECTURE_VALUES, HISTORY_MANAGEMENT_VALUES, MODEL_VALUES } from "@/machines/appMachine";
+import { AppContextActions, AppContextData } from "@/hooks/useAppContext";
+import { ARCHITECTURE_VALUES, HISTORY_MANAGEMENT_VALUES, MODEL_VALUES } from "@/types";
 import { SettingsIcon } from "lucide-react";
+import React, { memo, useCallback } from "react";
 
 interface SettingsDropdownProps {
   data: AppContextData;
   actions: AppContextActions;
 }
 
-const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ data, actions }) => {
-  const handleSettingsChange = (type: keyof AppContextData, value: string) => {
-    actions.submit.updateSetting({ ...data, [type]: value });
-  };
+const SettingsDropdown: React.FC<SettingsDropdownProps> = memo(function SettingsDropdown({ data, actions }) {
+  const handleSettingsChange = useCallback(
+    (type: keyof AppContextData, value: string) => {
+      actions.submit.updateSetting(data.model, data.architecture, data.historyManagement);
+    },
+    [data, actions]
+  );
 
-  const handleOpenChange = (open: boolean) => {
-    if (open) {
-      actions.click.updateSetting();
-    } else {
-      actions.cancel.updateSetting();
-    }
-  };
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      if (open) {
+        actions.select.updateSetting();
+      } else {
+        actions.cancel.updateSetting();
+      }
+    },
+    [actions]
+  );
 
-  const renderRadioGroup = (label: string, currentValue: string, values: readonly string[], settingKey: keyof AppContextData) => (
-    <>
-      <DropdownMenuRadioGroup value={currentValue} onValueChange={(value) => handleSettingsChange(settingKey, value)}>
-        <DropdownMenuLabel className="font-normal">{label}</DropdownMenuLabel>
-        {values.map((value) => (
-          <DropdownMenuRadioItem key={value} value={value}>
-            {value}
-          </DropdownMenuRadioItem>
-        ))}
-      </DropdownMenuRadioGroup>
-      <DropdownMenuSeparator />
-    </>
+  const renderRadioGroup = useCallback(
+    (label: string, currentValue: string, values: readonly string[], settingKey: keyof AppContextData) => (
+      <>
+        <DropdownMenuRadioGroup value={currentValue} onValueChange={(value) => handleSettingsChange(settingKey, value)}>
+          <DropdownMenuLabel className="font-normal">{label}</DropdownMenuLabel>
+          {values.map((value) => (
+            <DropdownMenuRadioItem key={value} value={value}>
+              {value}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+        <DropdownMenuSeparator />
+      </>
+    ),
+    [handleSettingsChange]
   );
 
   return (
@@ -66,6 +76,6 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ data, actions }) =>
       </DropdownMenuContent>
     </DropdownMenu>
   );
-};
+});
 
 export default SettingsDropdown;

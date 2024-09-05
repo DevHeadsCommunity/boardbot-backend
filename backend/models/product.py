@@ -1,17 +1,23 @@
-from dataclasses import dataclass
+from enum import Enum
+from typing import List
+from pydantic import BaseModel
 
 
-@dataclass
-class Product:
-    id: str  # This is the UUID of the product in Weaviate
+class FeatureExtractorType(str, Enum):
+    agentic = "agentic"
+    simple = "simple"
+
+
+class Product(BaseModel):
+    id: str
     name: str
     ids: str
     manufacturer: str
     form_factor: str
     processor: str
-    core_count: int
-    processor_tdp: int
-    memory: int
+    core_count: str
+    processor_tdp: str
+    memory: str
     io: str
     operating_system: str
     environmentals: str
@@ -20,25 +26,39 @@ class Product:
     full_summary: str
     full_product_description: str
 
-    def dict(self):
-        return {
-            "id": self.id,
-            "name": self.name,
-            "ids": self.ids,
-            "manufacturer": self.manufacturer,
-            "form_factor": self.form_factor,
-            "processor": self.processor,
-            "core_count": self.core_count,
-            "processor_tdp": self.processor_tdp,
-            "memory": self.memory,
-            "io": self.io,
-            "operating_system": self.operating_system,
-            "environmentals": self.environmentals,
-            "certifications": self.certifications,
-            "short_summary": self.short_summary,
-            "full_summary": self.full_summary,
-            "full_product_description": self.full_product_description,
-        }
+
+class NewProduct(BaseModel):
+    name: str
+    ids: str
+    manufacturer: str
+    form_factor: str
+    processor: str
+    core_count: str
+    processor_tdp: str
+    memory: str
+    io: str
+    operating_system: str
+    environmentals: str
+    certifications: str
+    short_summary: str
+    full_summary: str
+    full_product_description: str
+
+
+class RawProductInput(BaseModel):
+    raw_data: str
+    ids: str
+    extractor_type: FeatureExtractorType
+
+
+class BatchProductItem(BaseModel):
+    ids: str
+    raw_data: str
+
+
+class BatchProductInput(BaseModel):
+    products: List[BatchProductItem]
+    extractor_type: FeatureExtractorType
 
 
 attribute_descriptions = {

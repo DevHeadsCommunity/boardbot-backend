@@ -1,5 +1,5 @@
 from weaviate.utils.graphql_query_builder import GraphQLQueryBuilder
-from weaviate.utils.where_clause_builder import WhereClauseBuilder
+from weaviate.utils.where_clause_builder import OffsetClauseBuilder, WhereClauseBuilder
 from .http_client import HttpHandler
 from typing import Any, Dict, List, Optional
 
@@ -154,17 +154,43 @@ class WeaviateClient:
         # print(f"===> Generated GraphQL Query: {graphql_query}")  # Print the generated query
         return await self.run_query(graphql_query)
 
+    # async def search(
+    #     self,
+    #     class_name: str,
+    #     query: str,
+    #     properties: List[str],
+    #     limit: int,
+    #     where_filter: Optional[Dict[str, Any]] = None,
+    # ) -> List[Dict[str, Any]]:
+    #     near_text = {"concepts": [query]}
+    #     response = await self.query_near_text(
+    #         class_name, properties + ["_additional {certainty}"], near_text, limit, where_filter
+    #     )
+    #     results = response.get("data", {}).get("Get", {}).get(class_name, [])
+    #     return [(result, result.get("_additional", {}).get("certainty", 0)) for result in results]
+
     async def search(
         self,
         class_name: str,
         query: str,
         properties: List[str],
         limit: int,
+        offset: int = 0,
         where_filter: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
         near_text = {"concepts": [query]}
-        response = await self.query_near_text(
-            class_name, properties + ["_additional {certainty}"], near_text, limit, where_filter
+        query_builder = GraphQLQueryBuilder()
+        query_builder.set_operation("Get").set_class_name(class_name).set_properties(
+            properties + ["_additional {certainty}"]
         )
+        query_builder.add_clauses(
+            NearTextClauseBuilder(near_text), LimitClauseBuilder(limit), OffsetClauseBuilder(offset)
+        )
+
+        if where_filter:
+            query_builder.add_clause(WhereClauseBuilder(where_filter))
+
+        graphql_query = query_builder.build()
+        response = await self.run_query(graphql_query)
         results = response.get("data", {}).get("Get", {}).get(class_name, [])
         return [(result, result.get("_additional", {}).get("certainty", 0)) for result in results]

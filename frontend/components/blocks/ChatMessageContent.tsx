@@ -1,10 +1,11 @@
+import React, { memo } from "react";
 import ReactJson from "react-json-view";
 
 interface ChatMessageContentProps {
   message: string;
 }
 
-const ChatMessageContent: React.FC<ChatMessageContentProps> = ({ message }) => {
+const ChatMessageContent: React.FC<ChatMessageContentProps> = memo(function ChatMessageContent({ message }) {
   let content;
   try {
     const parsedMessage = JSON.parse(message);
@@ -16,6 +17,6 @@ const ChatMessageContent: React.FC<ChatMessageContentProps> = ({ message }) => {
   }
 
   return content;
-};
+});
 
 export default ChatMessageContent;
