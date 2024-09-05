@@ -34,7 +34,13 @@ const prodStateMap: Record<string, ProductState> = {
   idle: ProductState.Idle,
   "displayingProducts.fetchingProducts": ProductState.FetchingProducts,
   "displayingProducts.displayingProductsTable": ProductState.DisplayingProductsTable,
+
   "displayingProducts.displayingProductsDetailModal.displayingProduct": ProductState.DisplayingProductsDetailModal,
+  "displayingProducts.displayingProductsDetailModal.displayingUpdateProductForm": ProductState.DisplayingProductsDetailModal,
+  "displayingProducts.displayingProductsDetailModal.displayingDeleteProductForm": ProductState.DisplayingProductsDetailModal,
+  "displayingProducts.displayingProductsDetailModal.displayingUpdateProductForm.updatingProduct": ProductState.DisplayingProductsDetailModal,
+  "displayingProducts.displayingProductsDetailModal.displayingDeleteProductForm.deletingProduct": ProductState.DisplayingProductsDetailModal,
+
   "displayingProducts.displayingAddProductsForm.displayingForm": ProductState.DisplayingAddProductsForm,
 };
 

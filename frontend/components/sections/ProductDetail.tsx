@@ -78,6 +78,8 @@ const ProductDetail = ({ state, product, actions }: ProductDetailProps) => {
     let title;
     let footer;
 
+    console.log(`++ProductDetail State: ${state}`);
+
     switch (state) {
       case DisplayProductState.DisplayingProduct:
         console.log(`ProductDetail product: ${JSON.stringify(product)}`);
@@ -93,6 +95,7 @@ const ProductDetail = ({ state, product, actions }: ProductDetailProps) => {
         );
         break;
       case DisplayProductState.DisplayingUpdateProductForm:
+        console.log(`DisplayingUpdateProductForm: ${JSON.stringify(product)}`);
         title = `Update Product: ${product.name}`;
         content = renderProductFields(true);
         footer = (

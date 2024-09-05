@@ -4,9 +4,10 @@ from contextlib import asynccontextmanager
 from api import SocketIOHandler, api_router
 from dependencies import container
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-
 app = FastAPI()
 
 # Add CORS middleware
@@ -30,6 +31,14 @@ async def lifespan(app: FastAPI):
     socket_handler = SocketIOHandler(session_manager, message_processor)
     app.mount("/socket.io", socket_handler.socket_app)
     yield
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    error_details = []
+    for error in exc.errors():
+        error_details.append({"loc": error["loc"], "msg": error["msg"], "type": error["type"]})
+    return JSONResponse(status_code=422, content={"detail": "Validation Error", "errors": error_details})
 
 
 app.router.lifespan_context = lifespan

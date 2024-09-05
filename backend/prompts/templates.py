@@ -410,23 +410,21 @@ class SimpleDataExtractionPrompt(BaseChatPrompt):
         system_template = """
         You are an intelligent assistant specialized in extracting detailed information from raw product data. Your goal is to identify and extract specific attributes related to a product. For each attribute, if the information is not available, state 'Not available'. The attributes to be extracted are:
 
-        - name: The name of the product.
-        - size: The physical dimensions or form factor of the product.
-        - form: The design or configuration of the product (e.g., ATX, mini-ITX).
-        - processor: The type or model of the processor used in the product.
-        - core: The number of processor cores.
-        - frequency: The processor's operating frequency.
-        - memory: The type and size of the product's memory.
-        - voltage: The input voltage requirements for the product.
-        - io: The input/output interfaces available on the product.
-        - thermal: Information about the thermal management features of the product.
-        - feature: Notable features or functionalities of the product.
-        - type: The type of the product (e.g., Single Board Computers, Computer on Modules, Development Kits (Devkits), etc).
-        - specification: Detailed technical specifications.
-        - manufacturer: The company that makes the product.
-        - location: The location (address) of the product or manufacturer.
-        - description: A brief description of the product's purpose and capabilities.
-        - summary: A concise summary of the product.
+        Extract the following attributes:
+        - name: Product name (clear, capital case, no special characters, singular)
+        - manufacturer: Company name (clear, capital case, no special characters, singular)
+        - form_factor: Physical dimensions or form factor
+        - processor: Processor type or model
+        - core_count: Number of processor cores
+        - processor_tdp: Processor's thermal design power
+        - memory: Memory type and size
+        - io: Input/output interfaces
+        - operating_system: Operating system or board support package
+        - environmentals: Environmental specifications (e.g., operating temperature)
+        - certifications: Product certifications
+        - short_summary: Brief product summary
+        - full_summary: Comprehensive product summary
+        - full_product_description: Complete product description
 
         Ensure the extracted information is accurate and well-formatted. Provide the extracted details in JSON format.
         """

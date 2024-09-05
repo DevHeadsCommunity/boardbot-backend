@@ -135,6 +135,7 @@ const ProductComponent = () => {
     </div>
   );
 
+  console.log(`ProductComponent State: ${state.productState}`);
   const render = () => {
     switch (state.productState) {
       case ProductState.Idle:
