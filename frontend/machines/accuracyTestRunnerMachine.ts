@@ -18,13 +18,19 @@ import { z } from "zod";
 import { webSocketMachine } from "./webSocketMachine";
 
 // Helper functions
-function calculateProductAccuracy(actualProducts: Product[], expectedProducts: Product[]): number {
+function calculateProductAccuracy(actualProducts: Product[], expectedProducts: Product[] | undefined): number {
+  if (!expectedProducts) {
+    return 1;
+  }
   const expectedProductNames = new Set(expectedProducts.map((p) => p.name.toLowerCase()));
   const matchedProducts = actualProducts.filter((p) => expectedProductNames.has(p.name.toLowerCase()));
   return matchedProducts.length / expectedProducts.length;
 }
 
-function calculateFeatureAccuracy(actualProducts: Product[], expectedProducts: Product[]): number {
+function calculateFeatureAccuracy(actualProducts: Product[], expectedProducts: Product[] | undefined): number {
+  if (!expectedProducts) {
+    return 1;
+  }
   let totalFeatures = 0;
   let matchedFeatures = 0;
 

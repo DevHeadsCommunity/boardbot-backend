@@ -7,8 +7,8 @@ import { z } from "zod";
 const PAGE_SIZE = 20; // Number of products per page
 
 export enum FeatureExtractorType {
-  Agentic = "agentic",
   Simple = "simple",
+  Agentic = "agentic",
 }
 
 const ProductMachineContextSchema = z.object({
