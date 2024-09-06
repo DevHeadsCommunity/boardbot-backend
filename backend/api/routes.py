@@ -1,5 +1,6 @@
 import csv
 from io import StringIO
+import json
 import logging
 from enum import Enum
 from typing import Optional
@@ -35,7 +36,9 @@ async def get_products(
 ):
     logger.info(f"Getting products with params: {params}")
     offset = (params.page - 1) * params.page_size
-    filter_dict = params.filter
+
+    # Parse the filter string into a dictionary if it's not None
+    filter_dict = json.loads(params.filter) if params.filter else None
 
     products, total_count = await weaviate_service.get_products(params.page_size, offset, filter_dict)
     logger.info(f"Found {len(products)} products")
