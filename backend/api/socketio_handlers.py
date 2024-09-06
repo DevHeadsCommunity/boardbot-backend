@@ -17,7 +17,7 @@ class SocketIOHandler:
         # Configure CORS for socket.io
         self.sio = socketio.AsyncServer(
             async_mode="asgi",
-            cors_allowed_origins=["http://localhost:3000", "http://192.168.93.59:3000"],
+            cors_allowed_origins=["http://localhost:3000", "http://192.168.93.59:3000", "https://api.boardbot.ai"],
             allow_credentials=True,
         )
         self.socket_app = socketio.ASGIApp(self.sio)

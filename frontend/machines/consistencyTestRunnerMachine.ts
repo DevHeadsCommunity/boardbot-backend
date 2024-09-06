@@ -123,6 +123,8 @@ export const consistencyTestRunnerMachine = setup({
         }),
       }));
 
+      console.log(`\n\nSending ${messages.length} messages`);
+
       messages.forEach((message) => {
         self.send({ type: "internal.sendMessage", message });
       });
@@ -131,6 +133,7 @@ export const consistencyTestRunnerMachine = setup({
       ({ context }) => context.webSocketRef!,
       ({ event }) => {
         if (event.type !== "internal.sendMessage") throw new Error("Invalid event type");
+        console.log(`++++> Sending message: ${JSON.stringify(event.message.data)}`);
         return {
           type: event.message.type,
           data: event.message.data,
@@ -234,18 +237,18 @@ export const consistencyTestRunnerMachine = setup({
       },
     },
     running: {
-      initial: "sendingMessages",
+      initial: "sendingMessage",
       on: {
         "user.stopTest": { target: "disconnecting" },
         "user.pauseTest": { target: ".paused" },
       },
       states: {
-        sendingMessages: {
+        sendingMessage: {
           entry: [
             "sendTestCaseMessages",
             "setPendingResponses",
             ({ context }) => {
-              console.log(`Sending messages. Pending responses: ${context.pendingResponses}`);
+              console.log(`++++> Sending messages. Pending responses: ${context.pendingResponses}`);
             },
           ],
           on: {
@@ -258,7 +261,7 @@ export const consistencyTestRunnerMachine = setup({
                 actions: [
                   "processResponse",
                   ({ context }) => {
-                    console.log(`Received response 1. Pending responses: ${context.pendingResponses}`);
+                    console.log(`++++> Received response 1. Pending responses: ${context.pendingResponses}`);
                   },
                 ],
                 guard: "allResponsesReceived",
@@ -267,7 +270,7 @@ export const consistencyTestRunnerMachine = setup({
                 actions: [
                   "processResponse",
                   ({ context }) => {
-                    console.log(`Received response 2. Pending responses: ${context.pendingResponses}`);
+                    console.log(`++++> Received response 2. Pending responses: ${context.pendingResponses}`);
                   },
                 ],
               },
@@ -279,16 +282,15 @@ export const consistencyTestRunnerMachine = setup({
             "updateTestResults",
             "increaseProgress",
             "increaseCurrentTestIndex",
-            // log("Test results updated"),
             ({ context }) => {
-              console.log(`evaluatingResults`);
+              console.log(`++++> evaluatingResults. Progress: ${context.progress}`);
             },
           ],
-          always: [{ target: "#consistencyTestRunnerActor.disconnecting", guard: "testIsComplete" }, { target: "sendingMessages" }],
+          always: [{ target: "#consistencyTestRunnerActor.disconnecting", guard: "testIsComplete" }, { target: "sendingMessage" }],
         },
         paused: {
           on: {
-            "user.continueTest": { target: "sendingMessages" },
+            "user.continueTest": { target: "sendingMessage" },
           },
         },
       },

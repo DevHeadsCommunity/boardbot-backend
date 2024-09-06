@@ -95,6 +95,8 @@ const TestExecutionCard: React.FC = () => {
     }
   };
 
+  console.log("===:> TestExecutionCard: TestRunnerState", state);
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">

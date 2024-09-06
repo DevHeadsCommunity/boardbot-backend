@@ -49,7 +49,7 @@ export const productMachine = setup({
       console.log("+++ productUpdater productId", input.productId);
       console.log("+++ productUpdater input", productToJson(input.productData));
       const response = await apiCall("PUT", `/products/${input.productId}`, productToJson(input.productData));
-      if (response.message) return response;
+      if (response.message) return input.productData;
       throw new Error("Failed to update product");
     }),
     productDeleter: fromPromise(async ({ input }: { input: { productId: string } }) => {

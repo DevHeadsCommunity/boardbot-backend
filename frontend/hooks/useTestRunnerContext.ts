@@ -1,3 +1,4 @@
+import { convertStateToString } from "@/lib/stateToStr";
 import { accuracyTestRunnerMachine } from "@/machines/accuracyTestRunnerMachine";
 import { consistencyTestRunnerMachine } from "@/machines/consistencyTestRunnerMachine";
 import { useSelector } from "@xstate/react";
@@ -18,7 +19,7 @@ export enum TestRunnerState {
 const stateMap: Record<string, TestRunnerState> = {
   idle: TestRunnerState.Idle,
   connecting: TestRunnerState.Connecting,
-  running: TestRunnerState.Running,
+  "running.sendingMessage": TestRunnerState.Running,
   "running.paused": TestRunnerState.Paused,
   "running.evaluatingResults": TestRunnerState.Evaluating,
   disconnecting: TestRunnerState.Disconnecting,
@@ -37,8 +38,13 @@ export const useTestRunnerContext = () => {
   useToast(testRunnerActorRef);
 
   const testRunnerState = useMemo(() => {
+    console.log(`-----> testRunnerActorState: ${JSON.stringify(testRunnerActorState.value)}`);
     if (!testRunnerActorState) return TestRunnerState.Idle;
-    const stateValue = testRunnerActorState.value as string;
+    let stateValue = testRunnerActorState.value as string;
+    if (typeof stateValue !== "string") {
+      stateValue = convertStateToString(stateValue);
+    }
+    console.log(`-----> stateValue: ${stateValue}`);
     return stateMap[stateValue] || TestRunnerState.Idle;
   }, [testRunnerActorState]);
 

@@ -1,5 +1,9 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://192.168.93.59:5678";
 import { transformKeys } from "@/lib/caseConversion";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+if (!API_BASE_URL) {
+  throw new Error("Missing env variable NEXT_PUBLIC_API_BASE_URL");
+}
 
 export const apiCall = async (method: string, endpoint: string, data?: any) => {
   const url = `${API_BASE_URL}${endpoint}`;

@@ -13,6 +13,7 @@ services:
       AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
       PERSISTENCE_DATA_PATH: "/var/lib/weaviate"
       ENABLE_MODULES: "text-embedding-3-small"
+      # ENABLE_MODULES: "text2vec-openai"
       DEFAULT_VECTORIZER_MODULE: "none"
       CLUSTER_HOSTNAME: "node1"
 
