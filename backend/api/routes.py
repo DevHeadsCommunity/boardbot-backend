@@ -1,11 +1,11 @@
 import csv
 from io import StringIO
+import json
 import logging
 from enum import Enum
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from pydantic import BaseModel
-
 from models.product import NewProduct, Product, RawProductInput, BatchProductInput
 from services.weaviate_service import WeaviateService
 from services.simple_feature_extractor import SimpleFeatureExtractor
@@ -15,7 +15,7 @@ from dependencies import get_weaviate_service, get_agentic_feature_extractor, ge
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+api_router = APIRouter(prefix="/api")
 
 
 class FeatureExtractorType(str, Enum):
@@ -29,21 +29,23 @@ class FilterParams(BaseModel):
     filter: Optional[str] = None
 
 
-@router.get("/products")
+@api_router.get("/products")
 async def get_products(
     params: FilterParams = Depends(),
     weaviate_service: WeaviateService = Depends(get_weaviate_service),
 ):
     logger.info(f"Getting products with params: {params}")
     offset = (params.page - 1) * params.page_size
-    filter_dict = params.filter
+
+    # Parse the filter string into a dictionary if it's not None
+    filter_dict = json.loads(params.filter) if params.filter else None
 
     products, total_count = await weaviate_service.get_products(params.page_size, offset, filter_dict)
     logger.info(f"Found {len(products)} products")
     return {"total": total_count, "page": params.page, "page_size": params.page_size, "products": products}
 
 
-@router.get("/products/{product_id}")
+@api_router.get("/products/{product_id}")
 async def get_product(product_id: str, weaviate_service: WeaviateService = Depends(get_weaviate_service)):
     product = await weaviate_service.get_product(product_id)
     if not product:
@@ -51,7 +53,7 @@ async def get_product(product_id: str, weaviate_service: WeaviateService = Depen
     return product
 
 
-@router.post("/products")
+@api_router.post("/products")
 async def add_product(product: NewProduct, weaviate_service: WeaviateService = Depends(get_weaviate_service)):
     try:
         logger.info(f"Adding product: {product.dict()}")
@@ -62,7 +64,7 @@ async def add_product(product: NewProduct, weaviate_service: WeaviateService = D
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/products/{product_id}")
+@api_router.put("/products/{product_id}")
 async def update_product(
     product_id: str, product: Product, weaviate_service: WeaviateService = Depends(get_weaviate_service)
 ):
@@ -76,7 +78,7 @@ async def update_product(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/products/{product_id}")
+@api_router.delete("/products/{product_id}")
 async def delete_product(product_id: str, weaviate_service: WeaviateService = Depends(get_weaviate_service)):
     try:
         success = await weaviate_service.delete_product(product_id)
@@ -88,7 +90,7 @@ async def delete_product(product_id: str, weaviate_service: WeaviateService = De
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/products/raw")
+@api_router.post("/products/raw")
 async def add_raw_product(
     input_data: RawProductInput,
     weaviate_service: WeaviateService = Depends(get_weaviate_service),
@@ -116,7 +118,7 @@ async def add_raw_product(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/products/batch")
+@api_router.post("/products/batch")
 async def add_products_batch(
     file: UploadFile = File(...),
     extractor_type: FeatureExtractorType = Query(FeatureExtractorType.agentic),
@@ -151,7 +153,7 @@ async def add_products_batch(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/products/batch/parsed")
+@api_router.post("/products/batch/parsed")
 async def add_products_batch_parsed(
     input_data: BatchProductInput,
     weaviate_service: WeaviateService = Depends(get_weaviate_service),

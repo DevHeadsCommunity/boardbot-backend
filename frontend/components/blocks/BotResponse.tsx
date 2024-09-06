@@ -2,6 +2,7 @@ import { ResponseMessage } from "@/types";
 import React, { memo, useState } from "react";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import ChatMessageContent from "./ChatMessageContent";
 import ProductList from "./ProductList";
 import ResponseMetadata from "./ResponseMetadata";
 
@@ -30,11 +31,11 @@ const BotResponse: React.FC<BotResponseProps> = memo(function BotResponse({ mess
           More Details
         </Button>
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="max-h-[80vh] max-w-7xl overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Full Response Data</DialogTitle>
+              <DialogTitle>Test Result: {message.messageId}</DialogTitle>
             </DialogHeader>
-            <pre className="max-h-[300px] overflow-auto rounded-md bg-gray-100 p-4">{JSON.stringify(message, null, 2)}</pre>
+            <ChatMessageContent message={JSON.stringify(message, null, 2)} />
           </DialogContent>
         </Dialog>
       </div>

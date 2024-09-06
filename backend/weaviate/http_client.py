@@ -27,15 +27,15 @@ class HttpHandler:
 
     async def get_json_response(self, method: str, endpoint: str, data: Optional[Dict[str, Any]] = None) -> Any:
         try:
-            # print(f"Making request to {endpoint}")
-            # print(f"Data: {data}")
-            # print(f"Method: {method}")
+            print(f"Making request to {endpoint}")
+            print(f"Data: {data}")
+            print(f"Method: {method}")
             response = await self.http_client.make_request(method, endpoint, data)
             if response.text:
                 json_response = response.json()
             else:
                 json_response = {}
-            # print(f"Response: {json_response}")
+            print(f"Response: {json_response}")
             return json_response
         except httpx.HTTPError as e:
             raise e

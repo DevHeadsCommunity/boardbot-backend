@@ -3,7 +3,11 @@ import { Socket, io } from "socket.io-client";
 import { EventObject, assign, emit, fromCallback, fromPromise, sendParent, setup } from "xstate";
 import { z } from "zod";
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://192.168.93.59:5678";
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL;
+if (!SOCKET_URL) {
+  throw new Error("Missing env variable NEXT_PUBLIC_SOCKET_URL");
+}
+
 const MAX_RECONNECTION_ATTEMPTS = 5;
 const RECONNECTION_DELAY = 2000;
 
