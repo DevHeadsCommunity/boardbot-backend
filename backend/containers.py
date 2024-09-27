@@ -7,7 +7,7 @@ from services.tavily_service import TavilyService
 from services.query_processor import QueryProcessor
 from services.weaviate_service import WeaviateService
 from services.agentic_feature_extractor import AgenticFeatureExtractor
-from services.simple_feature_extractor import SimpleFeatureExtractor
+from feature_extraction.simple_feature_extractor import SimpleFeatureExtractor
 from generators.llm_router import LLMRouter
 from generators.dynamic_agent import DynamicAgent
 from generators.hybrid_router import HybridRouter

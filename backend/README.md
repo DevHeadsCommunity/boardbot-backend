@@ -106,10 +106,11 @@ BoardBot is an AI-powered system designed to assist users with queries about com
 The backend is built using FastAPI and follows a modular architecture with the following main components:
 
 1. **API Layer**: Handles incoming HTTP requests and WebSocket connections.
-2. **Generators**: Manage query classification, routing, and response generation.
-3. **Services**: Provide core functionalities like database interactions and external API calls.
-4. **Prompt Management**: Centralized management of AI prompts.
-5. **Vector Store**: Weaviate-based storage for efficient semantic search and retrieval.
+2. **Feature Extraction**: Manages the extraction of product features from raw data.
+3. **Generators**: Manage query classification, routing, and response generation.
+4. **Services**: Provide core functionalities like database interactions and external API calls.
+5. **Prompt Management**: Centralized management of AI prompts.
+6. **Weaviate Interface**: Manages interactions with the Weaviate vector database.
 
 ![Alt text](img/architecture.png)
 
@@ -120,7 +121,12 @@ The backend is built using FastAPI and follows a modular architecture with the f
 - **FastAPI App**: The main entry point for the application.
 - **Socket.IO**: Handles real-time communication with the frontend.
 
-### 2. Generators
+### 2. Feature Extraction
+
+- **AgenticFeatureExtractor**: Extracts product features using an iterative, AI-driven approach.
+- Utilizes various services and prompts to extract and refine product information.
+
+### 3. Generators
 
 - **LLMRouter**: Uses language models for query classification.
 - **SemanticRouter**: Employs semantic search for query classification.
@@ -131,7 +137,7 @@ The backend is built using FastAPI and follows a modular architecture with the f
 
 ![Alt text](img/gen.png)
 
-### 3. Services
+### 4. Services
 
 - **OpenAIService**: Manages interactions with OpenAI's language models.
 - **WeaviateService**: Handles vector database operations.
@@ -139,9 +145,24 @@ The backend is built using FastAPI and follows a modular architecture with the f
 - **QueryProcessor**: Processes and expands user queries.
 - **FeatureExtractor**: Extracts product features from raw data.
 
-### 4. Prompt Management
+### 5. Prompt Management
 
 - **PromptManager**: Centralizes the management of AI prompts used throughout the system.
+
+### 6. Weaviate Interface
+
+- **WeaviateInterface**: Provides a unified interface for interacting with Weaviate.
+- Includes services for managing different data types (e.g., RawProductData, ProductDataChunk).
+
+## Feature Extraction Process
+
+The AgenticFeatureExtractor follows an iterative process to extract and refine product features:
+
+1. Initial feature extraction from raw data.
+2. Identification of missing or low-confidence features.
+3. Additional context gathering using internet search (Tavily).
+4. Refinement of features using the gathered context.
+5. Repetition of steps 2-4 until satisfactory results are achieved or maximum attempts are reached.
 
 ## Prompt Classification
 
@@ -333,13 +354,15 @@ The backend supports four main architectures for response generation:
 
 ## Weaviate Vector Store
 
-The backend uses Weaviate as a vector database to store and retrieve product information efficiently. The vector store contains:
+The backend uses Weaviate as a vector database to store and retrieve various types of data efficiently:
 
-1. **Product Data**: Vectorized representations of product information, allowing for semantic search and retrieval.
+1. **RawProductData**: Initial raw data for products.
+2. **ProductDataChunk**: Chunked data from raw product data and search results.
+3. **ProductSearchResult**: Results from internet searches about products.
+4. **Product**: Structured product information.
+5. **Route**: Example prompts and their corresponding routes for query classification.
 
-2. **Route Data**: Example prompts and their corresponding routes, used by the SemanticRouter for query classification.
-
-The schema for the Weaviate classes is defined in `schema.json`, specifying the structure for both Product and Route classes.
+The schema for these Weaviate classes is defined in `schema.py`, specifying the structure and properties for each class.
 
 ## Setup and Configuration
 

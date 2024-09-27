@@ -81,7 +81,11 @@
           "description": "The description of the product."
         }
       ],
-      "vectorizer": "text2vec-openai"
+      "vectorizer": "text2vec-openai",
+      "vectorizerConfig": {
+        "model": "text-embedding-3-small",
+        "type": "text"
+      }
     },
     {
       "class": "Route",
@@ -98,7 +102,11 @@
           "dataType": ["text[]"]
         }
       ],
-      "vectorizer": "text2vec-openai"
+      "vectorizer": "text2vec-openai",
+      "vectorizerConfig": {
+        "model": "text-embedding-3-small",
+        "type": "text"
+      }
     }
   ]
 }

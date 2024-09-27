@@ -17,7 +17,7 @@ class SocketIOHandler:
         # Configure CORS for socket.io
         self.sio = socketio.AsyncServer(
             async_mode="asgi",
-            cors_allowed_origins=["http://localhost:3000", "http://192.168.93.59:3000", "https://api.boardbot.ai"],
+            cors_allowed_origins=["http://localhost:3000", "http://192.168.65.59:3000", "https://api.boardbot.ai"],
             allow_credentials=True,
         )
         self.socket_app = socketio.ASGIApp(self.sio)
@@ -26,11 +26,11 @@ class SocketIOHandler:
     def setup_event_handlers(self):
         @self.sio.on("connect")
         async def connect(sid, env):
-            print(f"New Client Connected: {sid}")
+            logger.info(f"New Client Connected: {sid}")
 
         @self.sio.on("disconnect")
         async def disconnect(sid):
-            print(f"Client Disconnected: {sid}")
+            logger.info(f"Client Disconnected: {sid}")
 
         @self.sio.on("connectionInit")
         async def handle_connection_init(sid):
@@ -47,13 +47,13 @@ class SocketIOHandler:
     async def initialize_session(self, sid, data):
         session_id = data.get("sessionId")
         self.session_manager.initialize_session(session_id)
-        print(f"Session {session_id} initialized for {sid}")
+        logger.info(f"Session {session_id} initialized for {sid}")
         chat_history = self.session_manager.get_chat_history(session_id, "keep-all")
         formatted_chat_history = self.session_manager.format_chat_history(chat_history)
         await self.sio.emit("sessionInit", {"sessionId": session_id, "chatHistory": formatted_chat_history}, room=sid)
 
     async def process_message(self, sid, data):
-        print(f"Received message from {sid}: {data}")
+        logger.info(f"\n\n ===:> Received message from {sid}: {data}\n\n")
 
         message = RequestMessage(
             id=data.get("message_id"),
@@ -64,7 +64,6 @@ class SocketIOHandler:
             architecture_choice=data.get("architecture_choice"),
             history_management_choice=data.get("history_management_choice"),
         )
-        print(f"\n\n===:> Message Received: {message}\n\n")
         response = await self.message_processor.process_message(message)
 
         await self.sio.emit("textResponse", response.dict(), room=sid)

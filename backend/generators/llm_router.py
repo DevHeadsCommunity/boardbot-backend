@@ -14,7 +14,7 @@ class LLMRouter(BaseRouter):
         chat_history: List[Dict[str, str]],
     ) -> Tuple[Dict[str, Any], int, int, float]:
         start_time = time.time()
-        system_message, user_message = self.prompt_manager.get_route_classification_prompt(message.message)
+        system_message, user_message = self.prompt_manager.get_route_classification_prompt(query=message.message)
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
             user_message=user_message,

@@ -11,7 +11,7 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # CORS configuration
-origins = ["http://localhost:3000", "http://192.168.93.59:3000", "https://api.boardbot.ai"]
+origins = ["http://localhost:3000", "http://192.168.65.59:3000", "https://api.boardbot.ai"]
 
 
 class CustomCORSMiddleware:

@@ -1,0 +1,6 @@
+config,total_cost,avg_cost,total_time,avg_time,total_input_tokens,total_output_tokens,avg_not_available_features,avg_features_extracted,config_str
+"{'max_missing_feature_attempts': 0, 'max_low_confidence_attempts': 0}",0.5837150000000001,0.029185750000000003,493.92917037010193,24.696458518505096,58971,28886,10.85,54.05,miss:0_low:0
+"{'max_missing_feature_attempts': 1, 'max_low_confidence_attempts': 0}",1.1185250000000002,0.05592625000000001,1969.911209821701,98.49556049108506,153613,35046,7.5,54.8,miss:1_low:0
+"{'max_missing_feature_attempts': 1, 'max_low_confidence_attempts': 1}",52.648530000000015,2.6324265000000007,2287.3296658992767,114.36648329496384,162032,5183837,7.8,54.6,miss:1_low:1
+"{'max_missing_feature_attempts': 2, 'max_low_confidence_attempts': 2}",1.3824450000000001,0.06912225000000001,2880.853982448578,144.0426991224289,209835,33327,6.4,44.8,miss:2_low:2
+"{'max_missing_feature_attempts': 3, 'max_low_confidence_attempts': 3}",1.8272300000000004,0.09136150000000001,2844.0099585056305,142.20049792528152,286136,39655,5.7,45.5,miss:3_low:3

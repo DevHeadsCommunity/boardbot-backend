@@ -1,7 +1,7 @@
-from weaviate.product_service import ProductService
-from weaviate.route_service import RouteService
-from weaviate.schema_manager import SchemaManager
-from weaviate.weaviate_client import WeaviateClient
+from weaviate_old.product_service import ProductService
+from weaviate_old.route_service import RouteService
+from weaviate_old.schema_manager import SchemaManager
+from weaviate_old.weaviate_client import WeaviateClient
 from .http_client import HttpClient, HttpHandler
 
 

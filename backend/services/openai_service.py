@@ -29,24 +29,24 @@ class OpenAIService:
         functions: Optional[List[Dict[str, Any]]] = None,
     ) -> Tuple[str, int, int]:
         try:
-            # model = model or self.config.DEFAULT_MODEL
-            model = model or self.config["DEFAULT_MODEL"]
-            logger.info(f"===> Using model: {model}")
+            model = model or self.config.DEFAULT_MODEL
+            # model = model or self.config["DEFAULT_MODEL"]
+            # logger.info(f"===> Using model: {model}")
             encoder = self._get_encoder(model)
-            logger.info(f"===> Messages: {messages}")
+            # logger.info(f"\n\n\n===> Messages: {messages}\n\n\n")
 
             input_token_count = sum(len(encoder.encode(msg["content"])) for msg in messages)
-            logger.info(f"Input token count: {input_token_count}")
+            # logger.info(f"Input token count: {input_token_count}")
 
             kwargs = {
                 "model": model,
                 "messages": messages,
-                # "temperature": temperature or self.config.DEFAULT_TEMPERATURE,
-                # "max_tokens": max_tokens or self.config.DEFAULT_MAX_TOKENS,
-                # "top_p": top_p or self.config.DEFAULT_TOP_P,
-                "temperature": temperature or self.config["DEFAULT_TEMPERATURE"],
-                "max_tokens": max_tokens or self.config["DEFAULT_MAX_TOKENS"],
-                "top_p": top_p or self.config["DEFAULT_TOP_P"],
+                "temperature": temperature or self.config.DEFAULT_TEMPERATURE,
+                "max_tokens": max_tokens or self.config.DEFAULT_MAX_TOKENS,
+                "top_p": top_p or self.config.DEFAULT_TOP_P,
+                # "temperature": temperature or self.config["DEFAULT_TEMPERATURE"],
+                # "max_tokens": max_tokens or self.config["DEFAULT_MAX_TOKENS"],
+                # "top_p": top_p or self.config["DEFAULT_TOP_P"],
                 "stream": stream,
             }
             if functions:
