@@ -6,8 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { AddProductState, ProductActions } from "@/hooks/useProductContext";
-import { FeatureExtractorType } from "@/machines/productMachine";
-import { AddProductSchema, Product } from "@/types";
+import { AddProductSchema, Product } from "@/types/productTypes";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
@@ -18,21 +17,26 @@ interface AddProductProps {
 }
 
 const initialProductState: z.infer<typeof AddProductSchema> = {
+  productId: "",
   name: "",
-  ids: "",
   manufacturer: "",
   formFactor: "",
-  processor: "",
-  coreCount: "",
+  evaluationOrCommercialization: "",
+  processorArchitecture: "",
+  processorCoreCount: "",
+  processorManufacturer: "",
   processorTdp: "",
   memory: "",
-  io: "",
-  operatingSystem: "",
-  environmentals: "",
-  certifications: "",
-  shortSummary: "",
-  fullSummary: "",
-  fullProductDescription: "",
+  onboardStorage: "",
+  inputVoltage: "",
+  ioCount: [],
+  wireless: [],
+  operatingSystemBsp: [],
+  operatingTemperatureMax: "",
+  operatingTemperatureMin: "",
+  certifications: [],
+  price: "",
+  stockAvailability: "",
 };
 
 const formatLabel = (key: string): string => {
@@ -45,8 +49,12 @@ const formatLabel = (key: string): string => {
 const AddProduct = ({ state, actions }: AddProductProps) => {
   const [newProduct, setNewProduct] = useState<z.infer<typeof AddProductSchema>>(initialProductState);
   const [rawData, setRawData] = useState("");
-  const [rawDataIds, setRawDataIds] = useState("");
-  const [extractorType, setExtractorType] = useState<FeatureExtractorType>(FeatureExtractorType.Agentic);
+  const [rawDataProductId, setRawDataProductId] = useState("");
+  const [maxMissingFeatureAttempts, setMaxMissingFeatureAttempts] = useState(3);
+  const [maxLowConfidenceAttempts, setMaxLowConfidenceAttempts] = useState(3);
+  const [maxNoProgressAttempts, setMaxNoProgressAttempts] = useState(3);
+  const [confidenceThreshold, setConfidenceThreshold] = useState(0.7);
+  const [batchSize, setBatchSize] = useState(5);
 
   const [file, setFile] = useState<File | null>(null);
   const [activeTab, setActiveTab] = useState("newProduct");
@@ -68,11 +76,11 @@ const AddProduct = ({ state, actions }: AddProductProps) => {
         actions.submit.addProduct(newProduct as Product);
         break;
       case "rawData":
-        actions.submit.addProductRawData(rawDataIds, rawData, extractorType);
+        actions.submit.addProductRawData(rawDataProductId, rawData, maxMissingFeatureAttempts, maxLowConfidenceAttempts, maxNoProgressAttempts, confidenceThreshold);
         break;
       case "file":
         if (file) {
-          actions.submit.addProductsRawData(file, extractorType);
+          actions.submit.addProductsRawData(file, maxMissingFeatureAttempts, maxLowConfidenceAttempts, maxNoProgressAttempts, confidenceThreshold, batchSize);
         }
         break;
     }
@@ -83,13 +91,16 @@ const AddProduct = ({ state, actions }: AddProductProps) => {
       <div className="grid grid-cols-2 gap-4">
         {Object.entries(newProduct).map(([key, value]) => {
           const isTextArea = key === "fullProductDescription" || key === "fullSummary" || key === "shortSummary";
+          const isArray = Array.isArray(value);
           return (
             <div key={key} className={isTextArea ? "col-span-2" : ""}>
               <Label htmlFor={key}>{formatLabel(key)}</Label>
               {isTextArea ? (
-                <Textarea id={key} name={key} value={value} onChange={handleInputChange} required />
+                <Textarea id={key} name={key} value={value as string} onChange={handleInputChange} />
+              ) : isArray ? (
+                <Input id={key} name={key} value={(value as string[]).join(", ")} onChange={(e) => setNewProduct((prev) => ({ ...prev, [key]: e.target.value.split(", ") }))} />
               ) : (
-                <Input id={key} name={key} value={value} onChange={handleInputChange} required />
+                <Input id={key} name={key} value={value as string} onChange={handleInputChange} />
               )}
             </div>
           );
@@ -101,19 +112,28 @@ const AddProduct = ({ state, actions }: AddProductProps) => {
   const renderRawDataForm = () => (
     <div className="space-y-4">
       <div>
-        <Label htmlFor="rawDataIds">IDs</Label>
-        <Input id="rawDataIds" value={rawDataIds} onChange={(e) => setRawDataIds(e.target.value)} required />
+        <Label htmlFor="rawDataProductId">Product ID</Label>
+        <Input id="rawDataProductId" value={rawDataProductId} onChange={(e) => setRawDataProductId(e.target.value)} required />
       </div>
       <div>
         <Label htmlFor="rawData">Raw Data</Label>
         <Textarea id="rawData" value={rawData} onChange={(e) => setRawData(e.target.value)} required />
       </div>
       <div>
-        <Label htmlFor="extractorType">Feature Extractor Type</Label>
-        <select id="extractorType" value={extractorType} onChange={(e) => setExtractorType(e.target.value as FeatureExtractorType)} className="w-full rounded border p-2">
-          <option value={FeatureExtractorType.Agentic}>Agentic</option>
-          <option value={FeatureExtractorType.Simple}>Simple</option>
-        </select>
+        <Label htmlFor="maxMissingFeatureAttempts">Max Missing Feature Attempts</Label>
+        <Input id="maxMissingFeatureAttempts" type="number" value={maxMissingFeatureAttempts} onChange={(e) => setMaxMissingFeatureAttempts(Number(e.target.value))} required />
+      </div>
+      <div>
+        <Label htmlFor="maxLowConfidenceAttempts">Max Low Confidence Attempts</Label>
+        <Input id="maxLowConfidenceAttempts" type="number" value={maxLowConfidenceAttempts} onChange={(e) => setMaxLowConfidenceAttempts(Number(e.target.value))} required />
+      </div>
+      <div>
+        <Label htmlFor="maxNoProgressAttempts">Max No Progress Attempts</Label>
+        <Input id="maxNoProgressAttempts" type="number" value={maxNoProgressAttempts} onChange={(e) => setMaxNoProgressAttempts(Number(e.target.value))} required />
+      </div>
+      <div>
+        <Label htmlFor="confidenceThreshold">Confidence Threshold</Label>
+        <Input id="confidenceThreshold" type="number" step="0.1" value={confidenceThreshold} onChange={(e) => setConfidenceThreshold(Number(e.target.value))} required />
       </div>
     </div>
   );
@@ -123,11 +143,24 @@ const AddProduct = ({ state, actions }: AddProductProps) => {
       <Label htmlFor="file">CSV File</Label>
       <Input id="file" type="file" onChange={handleFileChange} required />
       <div>
-        <Label htmlFor="fileExtractorType">Feature Extractor Type</Label>
-        <select id="fileExtractorType" value={extractorType} onChange={(e) => setExtractorType(e.target.value as FeatureExtractorType)} className="w-full rounded border p-2">
-          <option value={FeatureExtractorType.Agentic}>Agentic</option>
-          <option value={FeatureExtractorType.Simple}>Simple</option>
-        </select>
+        <Label htmlFor="batchSize">Batch Size</Label>
+        <Input id="batchSize" type="number" value={batchSize} onChange={(e) => setBatchSize(Number(e.target.value))} required />
+      </div>
+      <div>
+        <Label htmlFor="maxMissingFeatureAttempts">Max Missing Feature Attempts</Label>
+        <Input id="maxMissingFeatureAttempts" type="number" value={maxMissingFeatureAttempts} onChange={(e) => setMaxMissingFeatureAttempts(Number(e.target.value))} required />
+      </div>
+      <div>
+        <Label htmlFor="maxLowConfidenceAttempts">Max Low Confidence Attempts</Label>
+        <Input id="maxLowConfidenceAttempts" type="number" value={maxLowConfidenceAttempts} onChange={(e) => setMaxLowConfidenceAttempts(Number(e.target.value))} required />
+      </div>
+      <div>
+        <Label htmlFor="maxNoProgressAttempts">Max No Progress Attempts</Label>
+        <Input id="maxNoProgressAttempts" type="number" value={maxNoProgressAttempts} onChange={(e) => setMaxNoProgressAttempts(Number(e.target.value))} required />
+      </div>
+      <div>
+        <Label htmlFor="confidenceThreshold">Confidence Threshold</Label>
+        <Input id="confidenceThreshold" type="number" step="0.1" value={confidenceThreshold} onChange={(e) => setConfidenceThreshold(Number(e.target.value))} required />
       </div>
     </div>
   );

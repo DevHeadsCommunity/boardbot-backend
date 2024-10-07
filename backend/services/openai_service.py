@@ -8,10 +8,33 @@ logger = logging.getLogger(__name__)
 
 
 class OpenAIService:
+
     def __init__(self, api_key: str, config: Config):
-        self.client = AsyncOpenAI(api_key=api_key)
+        self.api_key = api_key
         self.config = config
+        self.client = None
         self.encoders = {}
+
+    async def initialize(self):
+        await self.connect()
+
+    async def __aenter__(self):
+        await self.connect()
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        await self.close()
+
+    async def connect(self):
+        if self.client is None:
+            self.client = AsyncOpenAI(api_key=self.api_key)
+        logger.debug("OpenAI client connected.")
+
+    async def close(self):
+        if self.client is not None:
+            await self.client.close()
+            self.client = None
+        logger.debug("OpenAI client closed.")
 
     def _get_encoder(self, model: str):
         if model not in self.encoders:
@@ -28,15 +51,10 @@ class OpenAIService:
         stream: bool = False,
         functions: Optional[List[Dict[str, Any]]] = None,
     ) -> Tuple[str, int, int]:
+        if self.client is None:
+            await self.connect()
         try:
             model = model or self.config.DEFAULT_MODEL
-            # model = model or self.config["DEFAULT_MODEL"]
-            # logger.info(f"===> Using model: {model}")
-            encoder = self._get_encoder(model)
-            # logger.info(f"\n\n\n===> Messages: {messages}\n\n\n")
-
-            input_token_count = sum(len(encoder.encode(msg["content"])) for msg in messages)
-            # logger.info(f"Input token count: {input_token_count}")
 
             kwargs = {
                 "model": model,
@@ -44,9 +62,6 @@ class OpenAIService:
                 "temperature": temperature or self.config.DEFAULT_TEMPERATURE,
                 "max_tokens": max_tokens or self.config.DEFAULT_MAX_TOKENS,
                 "top_p": top_p or self.config.DEFAULT_TOP_P,
-                # "temperature": temperature or self.config["DEFAULT_TEMPERATURE"],
-                # "max_tokens": max_tokens or self.config["DEFAULT_MAX_TOKENS"],
-                # "top_p": top_p or self.config["DEFAULT_TOP_P"],
                 "stream": stream,
             }
             if functions:
@@ -55,8 +70,8 @@ class OpenAIService:
             response = await self.client.chat.completions.create(**kwargs)
 
             content = response.choices[0].message.content or ""
-            output_token_count = len(encoder.encode(content))
-            # logger.info(f"Output token count: {output_token_count}")
+            input_token_count = response.usage.prompt_tokens
+            output_token_count = response.usage.completion_tokens
 
             return content, input_token_count, output_token_count
 

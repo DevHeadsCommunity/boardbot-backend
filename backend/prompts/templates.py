@@ -459,14 +459,15 @@ class DataExtractionPrompt(BaseChatPrompt):
         2. Each extracted feature should contain a single, distinct piece of information, with confidence score.
         3. Ensure consistency across all features - avoid contradictions.
         4. For names, like product name, or manufacturer name, ensure it is in clear, capital case, singular, without special characters. (Only the official name, dont include Code Name, or any other variant)
-        5. If information for an attribute is not available or not applicable, use 'Not available' with a confidence score of 0.
-        6. For each attribute, provide:
+        5. The following attributes should always be single values, not lists: name, manufacturer, form_factor, processor_architecture, processor_manufacturer, input_voltage, operating_temperature_max, operating_temperature_min.
+        6. If information for an attribute is not available or not applicable, use 'Not available' with a confidence score of 0.
+        7. For each attribute, provide:
            - "value": the extracted information.
            - "confidence": a score between 0 and 1 indicating confidence in the extraction.
-        7. For list-type attributes:
+        8. For list-type attributes:
            - If data is available, provide items as a JSON array.
            - If data is not available, use 'Not available' (as a string).
-        8. Use the exact attribute names as provided in the JSON structure below.
+        9. Use the exact attribute names as provided in the JSON structure below.
 
         Extract the following attributes:
         {attribute_descriptions}
@@ -487,6 +488,7 @@ class MissingFeatureExtractionPrompt(BaseChatPrompt):
         - "value": the extracted information.
         - "confidence": a score between 0 and 1.
         If information for an attribute is not found, use 'Not available' with a confidence score of 0.
+        Ensure that attributes like name, manufacturer, form_factor, processor_architecture, processor_manufacturer, input_voltage, operating_temperature_max, and operating_temperature_min are always single string values, not lists.
 
         Attributes to extract:
         {features_to_extract}

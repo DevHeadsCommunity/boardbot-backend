@@ -29,12 +29,13 @@ class AgenticFeatureExtractor:
 
     def initialize_config(self, config: ConfigSchema) -> ConfigSchema:
         defaults = {
-            "model_name": "gpt-4",
-            "max_missing_feature_attempts": 2,
-            "max_low_confidence_attempts": 2,
+            "model_name": "gpt-4o",
+            "max_missing_feature_attempts": 3,
+            "max_low_confidence_attempts": 3,
             "confidence_threshold": 0.7,
+            "max_no_progress_attempts": 2,
         }
-        return ConfigSchema(**{**defaults, **config})
+        return ConfigSchema(**{**defaults, **(config or {})})
 
     def update_config(self, new_config: ConfigSchema):
         self.config = self.initialize_config(new_config)
@@ -110,7 +111,7 @@ class AgenticFeatureExtractor:
             return {"usage_data": usage}
         except Exception as e:
             logger.error(f"Error during storing and chunking data: {e}")
-            raise
+            return {"error": f"Failed to store and chunk data: {str(e)}"}
 
     async def extract_features_node(self, state: Dict[str, Any], config: RunnableConfig) -> Dict[str, Any]:
         logger.info("Starting feature extraction.")
@@ -120,27 +121,25 @@ class AgenticFeatureExtractor:
         weaviate_service = config["services"]["weaviate_service"]
         prompt_manager = config["prompt_manager"]
         model_name = config["configurable"]["model_name"]
+        confidence_threshold = config["configurable"]["confidence_threshold"]
         product_id = state["product_id"]
 
-        # Retrieve relevant chunks
         query = (
             "name, manufacturer, form factor, specifications processor memory storage operating system certifications"
         )
-        chunks = await weaviate_service.get_relevant_chunks(product_id, query, limit=7)
-        logger.info(f"Retrieved {len(chunks)} relevant chunks")
-        logger.info(f"Chunks: {chunks}")
-        context = "\n".join(chunk["chunk_text"] for chunk in chunks)
-
-        system_message, user_message = prompt_manager.get_data_extraction_prompt(context)
-
-        extracted_features = {}
-        usage = {}
         try:
+            chunks = await weaviate_service.get_relevant_chunks(product_id, query, limit=7)
+            logger.info(f"Retrieved {len(chunks)} relevant chunks")
+            context = "\n".join(chunk["chunk_text"] for chunk in chunks)
+
+            system_message, user_message = prompt_manager.get_data_extraction_prompt(context)
+
             response, input_tokens, output_tokens = await openai_service.generate_response(
                 user_message, system_message, max_tokens=2048, temperature=0.1, model=model_name
             )
             extracted_features = parse_json_response(response)
             logger.info(f"Extracted features: {extracted_features}")
+
             usage = {
                 "extract_features": [
                     {
@@ -150,19 +149,37 @@ class AgenticFeatureExtractor:
                     }
                 ]
             }
+
+            missing_features = get_missing_features(extracted_features)
+            low_confidence_features = get_low_confidence_features(extracted_features, confidence_threshold)
+
+            # Check for missing critical features
+            critical_features = ["name", "manufacturer", "form_factor"]
+            missing_critical_features = [feature for feature in critical_features if feature in missing_features]
+            if missing_critical_features:
+                error_message = f"Critical features missing: {', '.join(missing_critical_features)}"
+                logger.error(error_message)
+                return {
+                    "error": error_message,
+                    "extracted_features": extracted_features,
+                    "usage_data": usage,
+                    "missing_features": missing_features,
+                    "low_confidence_features": low_confidence_features,
+                    "missing_feature_counts": len(missing_features),
+                    "low_confidence_feature_counts": len(low_confidence_features),
+                }
+
+            return {
+                "extracted_features": extracted_features,
+                "usage_data": usage,
+                "missing_features": missing_features,
+                "low_confidence_features": low_confidence_features,
+                "missing_feature_counts": len(missing_features),
+                "low_confidence_feature_counts": len(low_confidence_features),
+            }
         except Exception as e:
             logger.error(f"Error during feature extraction: {e}")
-            usage = {
-                "extract_features": [
-                    {
-                        "input_tokens": 0,
-                        "output_tokens": 0,
-                        "time_taken": time.time() - start_time,
-                    }
-                ]
-            }
-
-        return {"extracted_features": extracted_features, "usage_data": usage}
+            return {"error": f"Failed to extract features: {str(e)}"}
 
     async def search_missing_features_node(self, state: Dict[str, Any], config: RunnableConfig) -> Dict[str, Any]:
         logger.info("Starting search for missing features.")
@@ -172,10 +189,9 @@ class AgenticFeatureExtractor:
         weaviate_service = config["services"]["weaviate_service"]
 
         extracted_features = state.get("extracted_features", {})
+        missing_features = state.get("missing_features", [])
         product_id = state["product_id"]
         exclude_domains = state.get("exclude_domains", [])
-
-        missing_features = get_missing_features(extracted_features)
 
         if not missing_features:
             logger.info("No missing features to search for.")
@@ -198,15 +214,13 @@ class AgenticFeatureExtractor:
 
         try:
             search_results = await tavily_service.search(query, exclude_domains=exclude_domains)
-            logger.info(f"Search results received: {search_results}")
+            logger.info(f"Search results received: {len(search_results)}")
 
-            # Store search results in Weaviate
             for result in search_results:
                 await weaviate_service.store_search_results(
                     product_id, result["search_query"], result["search_result"], result["data_source"]
                 )
 
-            # Update exclude_domains
             new_exclude_domains = exclude_domains + [result["data_source"] for result in search_results]
 
             usage = {
@@ -220,25 +234,12 @@ class AgenticFeatureExtractor:
             }
 
             return {
-                "missing_features": missing_features,
                 "usage_data": usage,
-                "missing_feature_attempts": state.get("missing_feature_attempts", 0) + 1,
                 "exclude_domains": new_exclude_domains,
             }
         except Exception as e:
             logger.error(f"Error during search for missing features: {e}")
-            return {
-                "usage_data": {
-                    "search_missing_features": [
-                        {
-                            "input_tokens": len(query),
-                            "output_tokens": 0,
-                            "time_taken": time.time() - start_time,
-                        }
-                    ]
-                },
-                "missing_feature_attempts": state.get("missing_feature_attempts", 0) + 1,
-            }
+            return {"error": f"Failed to search for missing features: {str(e)}"}
 
     async def generate_missing_features_node(self, state: Dict[str, Any], config: RunnableConfig) -> Dict[str, Any]:
         logger.info("Starting generation of missing features.")
@@ -248,6 +249,7 @@ class AgenticFeatureExtractor:
         weaviate_service = config["services"]["weaviate_service"]
         prompt_manager = config["prompt_manager"]
         model_name = config["configurable"]["model_name"]
+        confidence_threshold = config["configurable"]["confidence_threshold"]
 
         missing_features = state.get("missing_features", [])
         extracted_features = state.get("extracted_features", {})
@@ -268,27 +270,27 @@ class AgenticFeatureExtractor:
                 "missing_feature_attempts": state.get("missing_feature_attempts", 0),
             }
 
-        # Retrieve relevant chunks based on missing features
-        chunks = await weaviate_service.get_relevant_chunks(product_id, " ".join(missing_features), limit=7)
-        logger.info(f"Retrieved {len(chunks)} relevant chunks")
-        logger.info(f"Chunks: {chunks}")
-        context = "\n".join(chunk["chunk_text"] for chunk in chunks)
-
-        missing_features_structure = build_missing_features_structure(missing_features)
-
-        system_message, user_message = prompt_manager.get_missing_feature_extraction_prompt(
-            context=context,
-            extracted_features=extracted_features,
-            features_to_extract=missing_features_structure,
-        )
-
-        new_features = {}
         try:
+            chunks = await weaviate_service.get_relevant_chunks(
+                product_id, " ".join(missing_features), limit=7, source_type="search_result"
+            )
+            logger.info(f"Retrieved {len(chunks)} relevant chunks")
+            context = "\n".join(chunk["chunk_text"] for chunk in chunks)
+
+            missing_features_structure = build_missing_features_structure(missing_features)
+
+            system_message, user_message = prompt_manager.get_missing_feature_extraction_prompt(
+                context=context,
+                extracted_features=extracted_features,
+                features_to_extract=missing_features_structure,
+            )
+
             response, input_tokens, output_tokens = await openai_service.generate_response(
                 user_message, system_message, max_tokens=2048, temperature=0.1, model=model_name
             )
             new_features = parse_json_response(response)
             logger.info(f"New features generated: {new_features}")
+
             usage = {
                 "generate_missing_features": [
                     {
@@ -298,25 +300,23 @@ class AgenticFeatureExtractor:
                     }
                 ]
             }
+
+            merged_features = merge_dicts(extracted_features, new_features)
+            updated_missing_features = get_missing_features(merged_features)
+            updated_low_confidence_features = get_low_confidence_features(merged_features, confidence_threshold)
+
+            return {
+                "extracted_features": merged_features,
+                "missing_features": updated_missing_features,
+                "low_confidence_features": updated_low_confidence_features,
+                "usage_data": usage,
+                "missing_feature_attempts": state.get("missing_feature_attempts", 0) + 1,
+                "missing_feature_counts": len(updated_missing_features),
+                "low_confidence_feature_counts": len(updated_low_confidence_features),
+            }
         except Exception as e:
             logger.error(f"Error during missing feature generation: {e}")
-            usage = {
-                "generate_missing_features": [
-                    {
-                        "input_tokens": 0,
-                        "output_tokens": 0,
-                        "time_taken": time.time() - start_time,
-                    }
-                ]
-            }
-
-        merged_features = merge_dicts(extracted_features, new_features)
-
-        return {
-            "extracted_features": merged_features,
-            "usage_data": usage,
-            "missing_feature_attempts": state.get("missing_feature_attempts", 0),
-        }
+            return {"error": f"Failed to generate missing features: {str(e)}"}
 
     async def search_low_confidence_features_node(
         self, state: Dict[str, Any], config: RunnableConfig
@@ -326,14 +326,11 @@ class AgenticFeatureExtractor:
 
         tavily_service = config["services"]["tavily_service"]
         weaviate_service = config["services"]["weaviate_service"]
-        confidence_threshold = config["configurable"]["confidence_threshold"]
 
         extracted_features = state.get("extracted_features", {})
+        low_confidence_features = state.get("low_confidence_features", [])
         product_id = state["product_id"]
         exclude_domains = state.get("exclude_domains", [])
-
-        low_confidence_features = get_low_confidence_features(extracted_features, confidence_threshold)
-        logger.info(f"Low-confidence features: {low_confidence_features}")
 
         if not low_confidence_features:
             logger.info("No low-confidence features to search for.")
@@ -355,47 +352,32 @@ class AgenticFeatureExtractor:
 
         try:
             search_results = await tavily_service.search(query, exclude_domains=exclude_domains)
-            logger.info(f"Search results received: {search_results}")
+            logger.info(f"Search results received: {len(search_results)}")
 
-            # Store search results in Weaviate
             for result in search_results:
                 await weaviate_service.store_search_results(
                     product_id, result["search_query"], result["search_result"], result["data_source"]
                 )
 
-            # Update exclude_domains
             new_exclude_domains = exclude_domains + [result["data_source"] for result in search_results]
 
             usage = {
                 "search_low_confidence_features": [
                     {
-                        "input_tokens": len(query),
-                        "output_tokens": sum(len(str(result)) for result in search_results),
+                        "input_tokens": 0,
+                        "output_tokens": 0,
                         "time_taken": time.time() - start_time,
                     }
                 ]
             }
 
             return {
-                "low_confidence_features": low_confidence_features,
                 "usage_data": usage,
-                "low_confidence_attempts": state.get("low_confidence_attempts", 0) + 1,
                 "exclude_domains": new_exclude_domains,
             }
         except Exception as e:
             logger.error(f"Error during search for low-confidence features: {e}")
-            return {
-                "usage_data": {
-                    "search_low_confidence_features": [
-                        {
-                            "input_tokens": len(query),
-                            "output_tokens": 0,
-                            "time_taken": time.time() - start_time,
-                        }
-                    ]
-                },
-                "low_confidence_attempts": state.get("low_confidence_attempts", 0) + 1,
-            }
+            return {"error": f"Failed to search for low-confidence features: {str(e)}"}
 
     async def refine_low_confidence_features_node(
         self, state: Dict[str, Any], config: RunnableConfig
@@ -407,6 +389,7 @@ class AgenticFeatureExtractor:
         weaviate_service = config["services"]["weaviate_service"]
         prompt_manager = config["prompt_manager"]
         model_name = config["configurable"]["model_name"]
+        confidence_threshold = config["configurable"]["confidence_threshold"]
 
         low_confidence_features = state.get("low_confidence_features", [])
         extracted_features = state.get("extracted_features", {})
@@ -427,25 +410,24 @@ class AgenticFeatureExtractor:
                 "low_confidence_attempts": state.get("low_confidence_attempts", 0),
             }
 
-        # Retrieve relevant chunks based on low-confidence features
-        chunks = await weaviate_service.get_relevant_chunks(product_id, " ".join(low_confidence_features), limit=7)
-        context = "\n".join(chunk["chunk_text"] for chunk in chunks)
-
-        low_confidence_features_structure = build_missing_features_structure(low_confidence_features)
-
-        system_message, user_message = prompt_manager.get_low_confidence_feature_refinement_prompt(
-            context=context,
-            extracted_features=extracted_features,
-            features_to_refine=low_confidence_features_structure,
-        )
-
-        refined_features = {}
         try:
+            chunks = await weaviate_service.get_relevant_chunks(product_id, " ".join(low_confidence_features), limit=7)
+            context = "\n".join(chunk["chunk_text"] for chunk in chunks)
+
+            low_confidence_features_structure = build_missing_features_structure(low_confidence_features)
+
+            system_message, user_message = prompt_manager.get_low_confidence_feature_refinement_prompt(
+                context=context,
+                extracted_features=extracted_features,
+                features_to_refine=low_confidence_features_structure,
+            )
+
             response, input_tokens, output_tokens = await openai_service.generate_response(
                 user_message, system_message, max_tokens=2048, temperature=0.1, model=model_name
             )
             refined_features = parse_json_response(response)
             logger.info(f"Refined features: {refined_features}")
+
             usage = {
                 "refine_low_confidence_features": [
                     {
@@ -455,55 +437,70 @@ class AgenticFeatureExtractor:
                     }
                 ]
             }
+
+            merged_features = merge_dicts(extracted_features, refined_features)
+            updated_missing_features = get_missing_features(merged_features)
+            updated_low_confidence_features = get_low_confidence_features(merged_features, confidence_threshold)
+
+            return {
+                "extracted_features": merged_features,
+                "missing_features": updated_missing_features,
+                "low_confidence_features": updated_low_confidence_features,
+                "usage_data": usage,
+                "low_confidence_attempts": state.get("low_confidence_attempts", 0) + 1,
+                "missing_feature_counts": len(updated_missing_features),
+                "low_confidence_feature_counts": len(updated_low_confidence_features),
+            }
         except Exception as e:
             logger.error(f"Error during feature refinement: {e}")
-            usage = {
-                "refine_low_confidence_features": [
-                    {
-                        "input_tokens": 0,
-                        "output_tokens": 0,
-                        "time_taken": time.time() - start_time,
-                    }
-                ]
-            }
-
-        merged_features = merge_dicts(extracted_features, refined_features)
-
-        return {
-            "extracted_features": merged_features,
-            "usage_data": usage,
-            "low_confidence_attempts": state.get("low_confidence_attempts", 0),
-        }
+            return {"error": f"Failed to refine low-confidence features: {str(e)}"}
 
     def should_continue(self, state: Dict[str, Any], config: RunnableConfig) -> str:
-        configurable = config.get("configurable", {})
-        confidence_threshold = configurable.get("confidence_threshold", 0.7)
+        if "error" in state:
+            logger.error(f"Workflow ending due to error: {state['error']}")
+            return "end"
 
-        extracted_features = state.get("extracted_features", {})
+        configurable = config.get("configurable", {})
+        missing_features = state.get("missing_features", [])
+        low_confidence_features = state.get("low_confidence_features", [])
+
         missing_feature_attempts = state.get("missing_feature_attempts", 0)
         max_missing_feature_attempts = configurable.get("max_missing_feature_attempts", 2)
-        if missing_feature_attempts < max_missing_feature_attempts:
-            missing_features = get_missing_features(extracted_features)
-            logger.info(f"Missing features: {missing_features}")
-            logger.info(f"Missing feature attempts: {missing_feature_attempts}")
-
-            if missing_features:
-                logger.info("Continuing to search for missing features.")
-                return "search_missing_features"
 
         low_confidence_attempts = state.get("low_confidence_attempts", 0)
         max_low_confidence_attempts = configurable.get("max_low_confidence_attempts", 2)
-        if low_confidence_attempts < max_low_confidence_attempts:
-            low_confidence_features = get_low_confidence_features(extracted_features, confidence_threshold)
-            logger.info(f"Low-confidence features: {low_confidence_features}")
-            logger.info(f"Low-confidence attempts: {low_confidence_attempts}")
 
-            if low_confidence_features:
-                logger.info("Continuing to refine low-confidence features.")
-                return "search_low_confidence_features"
+        max_no_progress_attempts = configurable.get("max_no_progress_attempts", 2)
 
-        logger.info("No further actions required. Ending workflow.")
-        return "end"
+        logger.info(f"Missing features: {missing_features}")
+        logger.info(f"Missing feature attempts: {missing_feature_attempts}")
+        logger.info(f"Low-confidence features: {low_confidence_features}")
+        logger.info(f"Low-confidence attempts: {low_confidence_attempts}")
+
+        # Check for no progress
+        missing_feature_counts = state.get("missing_feature_counts", [])
+        logger.info(f"Missing feature count history: {missing_feature_counts}")
+
+        if len(missing_feature_counts) >= max_no_progress_attempts + 1:
+            # Compare the current count with the count from two steps ago
+            current_count = missing_feature_counts[-1]
+            previous_count = missing_feature_counts[-(max_no_progress_attempts + 1)]
+
+            if current_count >= previous_count:
+                logger.info(
+                    f"No progress in reducing missing features after {max_no_progress_attempts} attempts. Ending workflow."
+                )
+                return "end"
+
+        if missing_features and missing_feature_attempts < max_missing_feature_attempts:
+            logger.info("Continuing to search for missing features.")
+            return "search_missing_features"
+        elif low_confidence_features and low_confidence_attempts < max_low_confidence_attempts:
+            logger.info("Continuing to refine low-confidence features.")
+            return "search_low_confidence_features"
+        else:
+            logger.info("No further actions required. Ending workflow.")
+            return "end"
 
     async def extract_data(self, text: str, product_id: str) -> Dict[str, Any]:
         initial_state = {
@@ -511,7 +508,6 @@ class AgenticFeatureExtractor:
             "raw_data": text,
             "missing_feature_attempts": 0,
             "low_confidence_attempts": 0,
-            "exclude_domains": [],
         }
         logger.info("Starting feature extraction workflow.")
 
@@ -521,14 +517,37 @@ class AgenticFeatureExtractor:
             "prompt_manager": self.prompt_manager,
         }
 
-        final_result = await self.workflow.ainvoke(initial_state, config=config)
-        filtered_features = filter_features_by_confidence(
-            final_result.get("extracted_features", {}), self.config["confidence_threshold"]
-        )
+        try:
+            final_result = await self.workflow.ainvoke(initial_state, config=config)
 
-        result = {
-            "extracted_data": filtered_features,
-            "usage": final_result.get("usage_data", {}),
-        }
-        logger.info("Feature extraction workflow completed.")
-        return result
+            if "error" in final_result:
+                logger.error(f"Workflow completed with error: {final_result['error']}")
+                return {
+                    "error": final_result["error"],
+                    "extracted_data": {},
+                    "usage": final_result.get("usage_data", {}),
+                    "missing_feature_count_history": final_result.get("missing_feature_counts", []),
+                    "low_confidence_feature_count_history": final_result.get("low_confidence_feature_counts", []),
+                }
+
+            filtered_features = filter_features_by_confidence(
+                final_result.get("extracted_features", {}), self.config["confidence_threshold"]
+            )
+
+            result = {
+                "extracted_data": filtered_features,
+                "usage": final_result.get("usage_data", {}),
+                "missing_feature_count_history": final_result.get("missing_feature_counts", []),
+                "low_confidence_feature_count_history": final_result.get("low_confidence_feature_counts", []),
+            }
+            logger.info("Feature extraction workflow completed successfully.")
+            return result
+        except Exception as e:
+            logger.error(f"Unexpected error in feature extraction workflow: {e}")
+            return {
+                "error": f"Unexpected error in feature extraction workflow: {str(e)}",
+                "extracted_data": {},
+                "usage": {},
+                "missing_feature_count_history": [],
+                "low_confidence_feature_count_history": [],
+            }

@@ -1,6 +1,6 @@
 import { convertStateToString } from "@/lib/stateToStr";
-import { FeatureExtractorType } from "@/machines/productMachine";
-import { Product } from "@/types";
+import { productMachine } from "@/machines/productMachine";
+import { Product } from "@/types/productTypes";
 import { useSelector } from "@xstate/react";
 import { useCallback, useMemo } from "react";
 import { useAppContext } from "./useAppContext";
@@ -35,22 +35,16 @@ const prodStateMap: Record<string, ProductState> = {
   idle: ProductState.Idle,
   "displayingProducts.fetchingProducts": ProductState.FetchingProducts,
   "displayingProducts.displayingProductsTable": ProductState.DisplayingProductsTable,
-
-  "displayingProducts.displayingProductsDetailModal.displayingProduct": ProductState.DisplayingProductsDetailModal,
-  "displayingProducts.displayingProductsDetailModal.displayingUpdateProductForm": ProductState.DisplayingProductsDetailModal,
-  "displayingProducts.displayingProductsDetailModal.displayingDeleteProductForm": ProductState.DisplayingProductsDetailModal,
-  "displayingProducts.displayingProductsDetailModal.displayingUpdateProductForm.updatingProduct": ProductState.DisplayingProductsDetailModal,
-  "displayingProducts.displayingProductsDetailModal.displayingDeleteProductForm.deletingProduct": ProductState.DisplayingProductsDetailModal,
-
-  "displayingProducts.displayingAddProductsForm.displayingForm": ProductState.DisplayingAddProductsForm,
+  "displayingProducts.displayingProductsDetailModal": ProductState.DisplayingProductsDetailModal,
+  "displayingProducts.displayingAddProductsForm": ProductState.DisplayingAddProductsForm,
 };
 
 const dispProdStateMap: Record<string, DisplayProductState> = {
   "displayingProducts.displayingProductsDetailModal.displayingProduct": DisplayProductState.DisplayingProduct,
   "displayingProducts.displayingProductsDetailModal.displayingUpdateProductForm": DisplayProductState.DisplayingUpdateProductForm,
   "displayingProducts.displayingProductsDetailModal.displayingDeleteProductForm": DisplayProductState.DisplayingDeleteProductForm,
-  "displayingProducts.displayingProductsDetailModal.displayingUpdateProductForm.updatingProduct": DisplayProductState.UpdatingProduct,
-  "displayingProducts.displayingProductsDetailModal.displayingDeleteProductForm.deletingProduct": DisplayProductState.DeletingProduct,
+  "displayingProducts.displayingProductsDetailModal.updatingProduct": DisplayProductState.UpdatingProduct,
+  "displayingProducts.displayingProductsDetailModal.deletingProduct": DisplayProductState.DeletingProduct,
 };
 
 const addProdStateMap: Record<string, AddProductState> = {
@@ -60,52 +54,30 @@ const addProdStateMap: Record<string, AddProductState> = {
   "displayingProducts.displayingAddProductsForm.addingProductsFormRawData": AddProductState.AddingProductsFormRawData,
 };
 
-type ProductAction =
-  | { type: "user.selectProduct"; product: Product }
-  | { type: "user.selectUpdateProduct" }
-  | { type: "user.selectDeleteProduct" }
-  | { type: "user.submitDeleteProduct"; productId: string }
-  | { type: "user.submitUpdateProduct"; productData: Product }
-  | { type: "user.cancelProductUpdate" }
-  | { type: "user.closeProductDetailModal" }
-  | { type: "user.addProducts" }
-  | { type: "user.submitAddProduct"; productData: Product }
-  | { type: "user.submitAddProductRawData"; productId: string; rawData: string; extractorType: FeatureExtractorType }
-  | { type: "user.submitAddProductsRawData"; file: File; extractorType: FeatureExtractorType }
-  | { type: "user.cancelAddProduct" }
-  | { type: "user.closeAddProducts" }
-  | { type: "user.nextPage" }
-  | { type: "user.previousPage" }
-  | { type: "user.applyFilter"; filter: Record<string, string> };
-
 export const useProductContext = () => {
   const { actorRef } = useAppContext();
   const productActorRef = actorRef.product;
   const productActorState = useSelector(productActorRef, (state) => state);
   useToast(productActorRef);
 
-  console.log(`productActorState: ${JSON.stringify(productActorState.value)}`);
   const productState = useMemo(() => {
     if (!productActorState) return ProductState.Idle;
     const currentState = convertStateToString(productActorState.value as any);
-    console.log(`currentState: ${currentState}`);
     return prodStateMap[currentState] || ProductState.Idle;
   }, [productActorState]);
 
   const displayProductState = useMemo(() => {
-    // if (productState !== ProductState.DisplayingProductsDetailModal) return DisplayProductState.Idle;
     const currentState = convertStateToString(productActorState.value as any);
     return dispProdStateMap[currentState] || DisplayProductState.Idle;
-  }, [productActorState, productState]);
+  }, [productActorState]);
 
   const addProductState = useMemo(() => {
-    // if (productState !== ProductState.DisplayingAddProductsForm) return AddProductState.Idle;
     const currentState = convertStateToString(productActorState.value as any);
     return addProdStateMap[currentState] || AddProductState.Idle;
-  }, [productActorState, productState]);
+  }, [productActorState]);
 
   const productDispatch = useCallback(
-    (action: ProductAction) => {
+    (action: Parameters<typeof productMachine.transition>[1]) => {
       productActorRef?.send(action);
     },
     [productActorRef]
@@ -134,12 +106,43 @@ export const useProductContext = () => {
         previousPage: () => productDispatch({ type: "user.previousPage" }),
       },
       submit: {
-        deleteProduct: (productId: string) => productDispatch({ type: "user.submitDeleteProduct", productId }),
+        deleteProduct: (id: string) => productDispatch({ type: "user.submitDeleteProduct", id }),
         updateProduct: (productData: Product) => productDispatch({ type: "user.submitUpdateProduct", productData }),
         addProduct: (productData: Product) => productDispatch({ type: "user.submitAddProduct", productData }),
-        addProductRawData: (productId: string, rawData: string, extractorType: FeatureExtractorType) =>
-          productDispatch({ type: "user.submitAddProductRawData", productId, rawData, extractorType }),
-        addProductsRawData: (file: File, extractorType: FeatureExtractorType) => productDispatch({ type: "user.submitAddProductsRawData", file, extractorType }),
+        addProductRawData: (
+          productId: string,
+          rawData: string,
+          maxMissingFeatureAttempts: number,
+          maxLowConfidenceAttempts: number,
+          maxNoProgressAttempts: number,
+          confidenceThreshold: number
+        ) =>
+          productDispatch({
+            type: "user.submitAddProductRawData",
+            productId,
+            rawData,
+            maxMissingFeatureAttempts,
+            maxLowConfidenceAttempts,
+            maxNoProgressAttempts,
+            confidenceThreshold,
+          }),
+        addProductsRawData: (
+          file: File,
+          maxMissingFeatureAttempts: number,
+          maxLowConfidenceAttempts: number,
+          maxNoProgressAttempts: number,
+          confidenceThreshold: number,
+          batchSize: number
+        ) =>
+          productDispatch({
+            type: "user.submitAddProductsRawData",
+            file,
+            maxMissingFeatureAttempts,
+            maxLowConfidenceAttempts,
+            maxNoProgressAttempts,
+            confidenceThreshold,
+            batchSize,
+          }),
         applyFilter: (filter: Record<string, string>) => productDispatch({ type: "user.applyFilter", filter }),
       },
       close: {
@@ -148,7 +151,7 @@ export const useProductContext = () => {
       },
       cancel: {
         productUpdate: () => productDispatch({ type: "user.cancelProductUpdate" }),
-        addProduct: () => productDispatch({ type: "user.closeAddProducts" }),
+        addProduct: () => productDispatch({ type: "user.cancelAddProduct" }),
       },
     },
   };

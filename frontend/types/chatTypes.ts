@@ -35,11 +35,11 @@ export type RequestMessage = z.infer<typeof RequestMessageSchema>;
 
 const ResponseContentSchema = z.object({
   type: z.string(),
-  response: z.string(),
-  products: z.array(ProductSchema),
-  reasoning: z.string(),
-  followUpQuestion: z.string(),
-  metadata: z.record(z.unknown()),
+  message: z.string(),
+  products: z.array(ProductSchema).optional(),
+  reasoning: z.string().optional(),
+  followUpQuestion: z.string().optional(),
+  metadata: z.record(z.unknown()).optional(),
 });
 
 export const ResponseMessageSchema = z.object({
@@ -103,7 +103,13 @@ export const responseMessageFromJson = (json: unknown): ResponseMessage => {
     // Apply deep camelCase conversion to the message object
     camelCaseData.message = deepCamelCase(camelCaseData.message);
 
-    // Convert the id field to messageId if it exists
+    // Map 'response' field to 'message' in the message object if 'message' is undefined
+    if (camelCaseData.message && typeof camelCaseData.message === "object" && camelCaseData.message.message === undefined && camelCaseData.message.response !== undefined) {
+      camelCaseData.message.message = camelCaseData.message.response;
+      delete camelCaseData.message.response;
+    }
+
+    // Convert the 'id' field to 'messageId' if it exists
     if ("id" in camelCaseData && !("messageId" in camelCaseData)) {
       camelCaseData.messageId = camelCaseData.id;
       delete camelCaseData.id;
@@ -114,7 +120,12 @@ export const responseMessageFromJson = (json: unknown): ResponseMessage => {
       camelCaseData.timestamp = new Date(camelCaseData.timestamp);
     }
 
-    // console.log("Parsed camelCaseData:", JSON.stringify(camelCaseData, null, 2));
+    // Set isUserMessage to false if it's not present
+    if (camelCaseData.isUserMessage === undefined) {
+      camelCaseData.isUserMessage = false;
+    }
+
+    console.log("Transformed to camelCase:", camelCaseData);
 
     return ResponseMessageSchema.parse(camelCaseData);
   } catch (error) {

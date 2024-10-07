@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 def get_missing_features(extracted_features: Dict[str, Any]) -> List[str]:
     """
     Identify missing features in the extracted_features dictionary.
-    A feature is considered missing if its confidence is 0.
+    A feature is considered missing if its confidence is 0 or its value is 'Not available'.
     """
     missing = []
 
@@ -16,8 +16,11 @@ def get_missing_features(extracted_features: Dict[str, Any]) -> List[str]:
         for key, value in features.items():
             current_path = f"{path}.{key}" if path else key
             if isinstance(value, dict):
-                if "confidence" in value and value["confidence"] == 0:
-                    missing.append(current_path)
+                if "confidence" in value and "value" in value:
+                    if value["confidence"] == 0 or (
+                        isinstance(value["value"], str) and value["value"].lower() == "not available"
+                    ):
+                        missing.append(current_path)
                 else:
                     recurse(value, current_path)
 
@@ -68,7 +71,9 @@ def filter_features_by_confidence(features: Dict[str, Any], confidence_threshold
     return filtered_features
 
 
-def build_missing_features_structure(missing_features_list: List[str]) -> Dict[str, Any]:
+def build_missing_features_structure(
+    missing_features_list: List[str],
+) -> Dict[str, Any]:
     """
     Build a nested dictionary structure of missing features based on the list of missing feature paths.
     """
@@ -84,7 +89,8 @@ def build_missing_features_structure(missing_features_list: List[str]) -> Dict[s
                 current_level[key] = {}
             current_level = current_level[key]
 
-        current_level[keys[-1]] = "Not Available"
+        last_key = keys[-1]
+        current_level[last_key] = {"value": "Not available", "confidence": 0}
 
     logger.info(f"\n\nMissing features structure: {missing_features_structure}\n\n")
     return missing_features_structure

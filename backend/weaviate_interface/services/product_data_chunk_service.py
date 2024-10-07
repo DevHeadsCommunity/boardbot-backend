@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from .base_service import BaseService
 from weaviate.classes.query import Filter
 from weaviate_interface.weaviate_client import WeaviateClient
@@ -42,14 +42,23 @@ class ProductDataChunkService(BaseService):
         collection = self.client.get_collection(self.class_name)
         await collection.data.delete_many(where=Filter.by_property("product_id").equal(product_id))
 
-    async def semantic_search(self, query: str, product_id: str, limit: int = 5) -> List[Dict[str, Any]]:
+    async def semantic_search(
+        self, query: str, product_id: str, limit: int = 5, source_type: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """
         Perform a semantic search on ProductDataChunk objects.
         """
-        filter = Filter.by_property("product_id").equal(product_id)
+
+        filters = [Filter.by_property("product_id").equal(product_id)]
+
+        if source_type:
+            filters.append(Filter.by_property("source_type").equal(source_type))
+
+        combined_filter = Filter.all_of(filters) if len(filters) > 1 else filters[0]
+
         return await self.search(
             query_text=query,
-            filters=filter,
+            filters=combined_filter,
             limit=limit,
             return_properties=["chunk_text", "source_type"],
         )

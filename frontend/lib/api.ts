@@ -20,10 +20,17 @@ export const apiCall = async (method: string, endpoint: string, data?: any) => {
 
   const response = await fetch(url, options);
 
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+  let responseData;
+  try {
+    responseData = await response.json();
+  } catch (error) {
+    responseData = null;
   }
 
-  const responseData = await response.json();
+  if (!response.ok) {
+    const errorMessage = responseData?.detail || `HTTP error! status: ${response.status}`;
+    throw new Error(errorMessage);
+  }
+
   return transformKeys(responseData, "snakeToCamel");
 };

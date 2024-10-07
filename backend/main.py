@@ -1,17 +1,17 @@
 import logging
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from api import api_router
 from contextlib import asynccontextmanager
-from api import SocketIOHandler, api_router
-from dependencies import container
-from fastapi.exceptions import RequestValidationError
+from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
 from starlette.types import ASGIApp, Receive, Scope, Send
+from dependencies import container, get_socket_handler, get_weaviate_service, get_openai_service
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # CORS configuration
-origins = ["http://localhost:3000", "http://192.168.65.59:3000", "https://api.boardbot.ai"]
+origins = ["http://localhost:3000", "http://192.168.28.50:3000", "https://api.boardbot.ai"]
 
 
 class CustomCORSMiddleware:
@@ -40,13 +40,13 @@ class CustomCORSMiddleware:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    weaviate_service = container.weaviate_service()
-    await weaviate_service.initialize_weaviate(
-        container.config.OPENAI_API_KEY(), container.config.WEAVIATE_URL(), container.config.RESET_WEAVIATE()
-    )
-    session_manager = container.session_manager()
-    message_processor = container.message_processor()
-    socket_handler = SocketIOHandler(session_manager, message_processor)
+    weaviate_service = get_weaviate_service()
+    await weaviate_service.initialize_weaviate(container.config.RESET_WEAVIATE())
+
+    openai_service = get_openai_service()
+    await openai_service.initialize()
+
+    socket_handler = get_socket_handler()
 
     # Apply custom CORS middleware to socket.io app
     socket_app_with_cors = CustomCORSMiddleware(socket_handler.socket_app)

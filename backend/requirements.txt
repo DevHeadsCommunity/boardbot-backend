@@ -26,3 +26,4 @@ dependency-injector
 # pygraphviz
 python-multipart
 pytest
+tqdm

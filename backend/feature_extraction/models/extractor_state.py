@@ -1,6 +1,6 @@
 import operator
 from typing_extensions import Annotated
-from typing import TypedDict, List, Dict, Any
+from typing import Optional, TypedDict, List, Dict, Any
 
 
 def usage_data_reducer(a: Dict[str, List[Any]], b: Dict[str, List[Any]]) -> Dict[str, List[Any]]:
@@ -12,6 +12,10 @@ def usage_data_reducer(a: Dict[str, List[Any]], b: Dict[str, List[Any]]) -> Dict
     return result
 
 
+def list_appender(a: List[int], b: int) -> List[int]:
+    return a + [b]
+
+
 class UsageData(TypedDict):
     input_tokens: int
     output_tokens: int
@@ -19,11 +23,14 @@ class UsageData(TypedDict):
 
 
 class ExtractorState(TypedDict):
+    error: Optional[str]
     raw_data: str
     product_id: str
     extracted_features: Dict[str, Any]
-    missing_features: Annotated[List[str], operator.add]
-    low_confidence_features: Annotated[List[str], operator.add]
+    missing_features: List[str]
+    low_confidence_features: List[str]
+    missing_feature_counts: Annotated[List[int], list_appender]
+    low_confidence_feature_counts: Annotated[List[int], list_appender]
     missing_feature_attempts: int
     low_confidence_attempts: int
     exclude_domains: Annotated[List[str], operator.add]

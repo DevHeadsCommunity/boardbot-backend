@@ -1,37 +1,36 @@
 import json
-import logging
 import time
-import operator
 import asyncio
-from typing import List, Dict, Any, Tuple, Annotated
-from langgraph.graph import StateGraph, END
-from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage, ToolMessage
-from core.session_manager import SessionManager
+import logging
+import uuid
 from core.models.message import Message
-from services.openai_service import OpenAIService
-from services.weaviate_service import WeaviateService
-from services.query_processor import QueryProcessor
-from utils.response_formatter import ResponseFormatter
+from langgraph.graph import StateGraph, END
+from typing import List, Dict, Any, TypedDict
+from core.session_manager import SessionManager
 from prompts.prompt_manager import PromptManager
-from weaviate_interface.models.product import Product
+from services.openai_service import OpenAIService
+from services.query_processor import QueryProcessor
+from services.weaviate_service import WeaviateService
+from .utils.response_formatter import ResponseFormatter
+from langchain_core.messages import AnyMessage, HumanMessage, ToolMessage, SystemMessage
 
 logger = logging.getLogger(__name__)
 
 
-class AgentState(Dict[str, Any]):
-    messages: Annotated[List[AnyMessage], operator.add]
+class DynamicAgentState(TypedDict):
+    messages: List[AnyMessage]
     chat_history: List[Dict[str, str]]
     current_message: str
     model_name: str
-    input_tokens: Dict[str, int] = {}
-    output_tokens: Dict[str, int] = {}
-    time_taken: Dict[str, float] = {}
-    output: Dict[str, Any] = {}
-    search_results: List[Tuple[Product, float]] = []
+    input_tokens: Dict[str, int]
+    output_tokens: Dict[str, int]
+    time_taken: Dict[str, float]
+    output: Dict[str, Any]
+    search_results: List[Dict[str, Any]]
+    last_action: str
 
 
 class DynamicAgent:
-
     def __init__(
         self,
         session_manager: SessionManager,
@@ -46,30 +45,30 @@ class DynamicAgent:
         self.query_processor = query_processor
         self.prompt_manager = prompt_manager
         self.response_formatter = ResponseFormatter()
-
-        self.pipelines = {
-            "direct_search": self.direct_search,
-            "expanded_search": self.expanded_search,
-        }
-
         self.workflow = self.setup_workflow()
 
     def setup_workflow(self) -> StateGraph:
-        workflow = StateGraph(AgentState)
+        workflow = StateGraph(DynamicAgentState)
 
         workflow.add_node("agent", self.agent_step)
         workflow.add_node("pipeline", self.pipeline_step)
 
-        workflow.add_conditional_edges("agent", self.should_use_pipeline, {True: "pipeline", False: END})
+        workflow.add_conditional_edges(
+            "agent", self.should_use_pipeline, {"use_pipeline": "pipeline", "end": END, "continue": "agent"}
+        )
         workflow.add_edge("pipeline", "agent")
 
         workflow.set_entry_point("agent")
 
         return workflow.compile()
 
-    async def agent_step(self, state: AgentState) -> Dict[str, Any]:
+    async def agent_step(self, state: DynamicAgentState) -> Dict[str, Any]:
         start_time = time.time()
         system_message, user_message = self.prompt_manager.get_dynamic_agent_prompt(state["current_message"])
+
+        # Include search results in the prompt if available
+        if state["search_results"]:
+            user_message += f"\n\nSearch Results: {json.dumps(state['search_results'], indent=2)}"
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
             user_message=user_message,
@@ -78,42 +77,76 @@ class DynamicAgent:
             model=state["model_name"],
         )
 
-        state["input_tokens"]["agent"] = state["input_tokens"].get("agent", 0) + input_tokens
-        state["output_tokens"]["agent"] = state["output_tokens"].get("agent", 0) + output_tokens
-        state["time_taken"]["agent"] = state["time_taken"].get("agent", 0) + (time.time() - start_time)
+        # Handle the "ACTION:" prefix
+        if response.strip().startswith("ACTION:"):
+            response = response.strip()[7:].strip()  # Remove "ACTION:" and any leading/trailing whitespace
 
-        return {"messages": [HumanMessage(content=response)]}
+        return {
+            "messages": state["messages"] + [HumanMessage(content=response)],
+            "input_tokens": {**state["input_tokens"], "agent": state["input_tokens"].get("agent", 0) + input_tokens},
+            "output_tokens": {
+                **state["output_tokens"],
+                "agent": state["output_tokens"].get("agent", 0) + output_tokens,
+            },
+            "time_taken": {
+                **state["time_taken"],
+                "agent": state["time_taken"].get("agent", 0) + (time.time() - start_time),
+            },
+            "last_action": "agent",
+        }
 
-    def should_use_pipeline(self, state: AgentState) -> bool:
+    def should_use_pipeline(self, state: DynamicAgentState) -> str:
         last_message = state["messages"][-1]
-        return "PIPELINE" in last_message.content
+        try:
+            action = json.loads(last_message.content)
+            if "tool" in action:
+                return "use_pipeline"
+            elif state["last_action"] == "pipeline":
+                return "continue"
+            else:
+                return "end"
+        except json.JSONDecodeError:
+            if state["last_action"] == "pipeline":
+                return "continue"
+            else:
+                return "end"
 
-    async def pipeline_step(self, state: AgentState) -> Dict[str, Any]:
+    async def pipeline_step(self, state: DynamicAgentState) -> Dict[str, Any]:
         start_time = time.time()
         last_message = state["messages"][-1]
-        pipeline_content = last_message.content.split("PIPELINE:", 1)[1].strip()
 
         try:
-            pipeline_action = json.loads(pipeline_content)
-            pipeline_name = pipeline_action["pipeline"]
+            pipeline_action = json.loads(last_message.content)
+            pipeline_name = pipeline_action["tool"]
             pipeline_input = pipeline_action["input"]
-        except json.JSONDecodeError:
-            return {"messages": [ToolMessage(content="Invalid pipeline format. Please use valid JSON.")]}
-        except KeyError as e:
-            return {"messages": [ToolMessage(content=f"Missing required key in pipeline action: {str(e)}")]}
+        except (json.JSONDecodeError, KeyError) as e:
+            return {
+                "messages": state["messages"]
+                + [ToolMessage(content=f"Error in pipeline action: {str(e)}", tool_call_id=str(uuid.uuid4()))],
+                "time_taken": {**state["time_taken"], "pipeline": time.time() - start_time},
+                "last_action": "pipeline",
+            }
 
-        if pipeline_name not in self.pipelines:
-            return {"messages": [ToolMessage(content=f"Unknown pipeline: {pipeline_name}")]}
+        if pipeline_name not in ["direct_search", "expanded_search"]:
+            return {
+                "messages": state["messages"]
+                + [ToolMessage(content=f"Unknown pipeline: {pipeline_name}", tool_call_id=str(uuid.uuid4()))],
+                "time_taken": {**state["time_taken"], "pipeline": time.time() - start_time},
+                "last_action": "pipeline",
+            }
 
-        result = await self.pipelines[pipeline_name](**pipeline_input)
+        result = await getattr(self, pipeline_name)(**pipeline_input)
 
-        state["time_taken"][pipeline_name] = state["time_taken"].get(pipeline_name, 0) + (time.time() - start_time)
-
-        return {"messages": [ToolMessage(content=json.dumps(result))]}
+        return {
+            "messages": state["messages"] + [ToolMessage(content=json.dumps(result), tool_call_id=str(uuid.uuid4()))],
+            "search_results": result.get("results", []),
+            "time_taken": {**state["time_taken"], pipeline_name: time.time() - start_time},
+            "last_action": "pipeline",
+        }
 
     async def direct_search(self, query: str, limit: int = 5) -> Dict[str, Any]:
         results = await self.weaviate_service.search_products(query, limit)
-        return {"results": [{"product": product.dict(), "certainty": certainty} for product, certainty in results]}
+        return {"results": results}
 
     async def expanded_search(self, query: str, limit: int = 10) -> Dict[str, Any]:
         expanded_result, _, _ = await self.query_processor.process_query_comprehensive(query, [])
@@ -125,23 +158,29 @@ class DynamicAgent:
         all_results = await asyncio.gather(*[search(q) for q in expanded_queries])
         all_results = [item for sublist in all_results for item in sublist]  # Flatten the list
 
-        reranked_results, _, _ = await self.query_processor.rerank_products(query, [], all_results, limit)
+        reranked_results, _, _ = await self.query_processor.rerank_products(
+            query, [], all_results, expanded_result["filters"], expanded_result["query_context"], limit
+        )
 
-        return {"results": reranked_results}
+        return {"results": reranked_results["products"]}
 
-    async def run(self, message: Message) -> Tuple[str, Dict[str, Any]]:
+    async def run(self, message: Message) -> Dict[str, Any]:
+        logger.info(f"Running DynamicAgent with message: {message}")
         chat_history = self.session_manager.get_formatted_chat_history(
             message.session_id, message.history_management_choice, "message_only"
         )
-        initial_state = AgentState(
-            messages=[HumanMessage(content=message.message)],
-            chat_history=chat_history,
-            current_message=message.message,
-            model_name=message.model,
-            input_tokens={},
-            output_tokens={},
-            time_taken={},
-        )
+
+        initial_state: DynamicAgentState = {
+            "messages": [HumanMessage(content=message.message)],
+            "chat_history": chat_history,
+            "current_message": message.message,
+            "model_name": message.model,
+            "input_tokens": {},
+            "output_tokens": {},
+            "time_taken": {},
+            "output": {},
+            "search_results": [],
+        }
 
         try:
             final_state = await self.workflow.ainvoke(initial_state)
@@ -153,8 +192,13 @@ class DynamicAgent:
                 "time_taken": final_state["time_taken"],
             }
 
+            try:
+                parsed_response = json.loads(response)
+            except json.JSONDecodeError:
+                parsed_response = {"message": response}
+
             return self.response_formatter.format_response(
-                "dynamic_agent", response, metadata, final_state.get("search_results", [])
+                "dynamic_agent", parsed_response, metadata, final_state.get("search_results", [])
             )
 
         except Exception as e:
@@ -162,8 +206,4 @@ class DynamicAgent:
             error_response = self.response_formatter.format_error_response(
                 "An unexpected error occurred during processing."
             )
-            return json.dumps(error_response), {
-                "input_token_usage": {"total": 0},
-                "output_token_usage": {"total": 0},
-                "time_taken": {"total": 0},
-            }
+            return error_response

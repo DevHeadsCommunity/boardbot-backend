@@ -1,4 +1,5 @@
 from dependency_injector import containers, providers
+from api.socketio_handlers import SocketIOHandler
 from prompts.prompt_manager import PromptManager
 from core.session_manager import SessionManager
 from core.message_processor import MessageProcessor
@@ -13,20 +14,29 @@ from generators.semantic_router import SemanticRouter
 from generators.clear_intent_agent import ClearIntentAgent
 from generators.vague_intent_agent import VagueIntentAgent
 from feature_extraction import AgenticFeatureExtractor, ConfigSchema
+from services.feature_extraction_service import FeatureExtractionService, BatchFeatureExtractionService
+from feature_extraction.product_data_preprocessor import ProductDataProcessor
+
+
+from config import Config
 
 
 class Container(containers.DeclarativeContainer):
     config = providers.Configuration()
+    config_obj = providers.Singleton(Config)
 
     prompt_manager = providers.Singleton(PromptManager)
     session_manager = providers.Singleton(SessionManager)
-    openai_service = providers.Singleton(OpenAIService, api_key=config.OPENAI_API_KEY, config=config)
+    product_data_preprocessor = providers.Singleton(ProductDataProcessor)
+
+    openai_service = providers.Singleton(OpenAIService, api_key=config.OPENAI_API_KEY, config=config_obj)
     tavily_service = providers.Singleton(TavilyService, api_key=config.TAVILY_API_KEY)
 
     weaviate_service = providers.Singleton(
         WeaviateService,
         openai_key=config.OPENAI_API_KEY,
         weaviate_url=config.WEAVIATE_URL,
+        product_data_preprocessor=product_data_preprocessor,
     )
 
     query_processor = providers.Singleton(
@@ -98,11 +108,10 @@ class Container(containers.DeclarativeContainer):
         dynamic_agent=dynamic_agent,
     )
 
-    agentic_feature_extractor = providers.Singleton(
-        AgenticFeatureExtractor,
-        openai_service=openai_service,
-        tavily_service=tavily_service,
-        prompt_manager=prompt_manager,
+    socket_handler = providers.Singleton(
+        SocketIOHandler,
+        session_manager=session_manager,
+        message_processor=message_processor,
     )
 
     agentic_feature_extractor = providers.Singleton(
@@ -114,4 +123,18 @@ class Container(containers.DeclarativeContainer):
         },
         prompt_manager=prompt_manager,
         config=ConfigSchema(),
+    )
+
+    feature_extraction_service = providers.Singleton(
+        FeatureExtractionService,
+        prompt_manager=prompt_manager,
+        openai_service=openai_service,
+        tavily_service=tavily_service,
+    )
+
+    batch_feature_extraction_service = providers.Singleton(
+        BatchFeatureExtractionService,
+        prompt_manager=prompt_manager,
+        openai_service=openai_service,
+        tavily_service=tavily_service,
     )

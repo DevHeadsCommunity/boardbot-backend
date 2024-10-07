@@ -1,7 +1,6 @@
 import json
 import logging
-from typing import Dict, Any, List, Tuple
-from models.product import Product
+from typing import Dict, Any, List, Union
 
 logger = logging.getLogger(__name__)
 
@@ -9,7 +8,10 @@ logger = logging.getLogger(__name__)
 class ResponseFormatter:
     @staticmethod
     def format_response(
-        response_type: str, llm_output: str, metadata: Dict[str, Any], products: List[Tuple[Product, float]] = None
+        response_type: str,
+        llm_output: Union[str, Dict[str, Any]],
+        metadata: Dict[str, Any],
+        products: List[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
 
         llm_response = ResponseFormatter._clean_response(llm_output)
@@ -39,20 +41,18 @@ class ResponseFormatter:
 
     @staticmethod
     def _extract_product_details(
-        llm_response: Dict[str, Any], products: List[Tuple[Product, float]] = None
+        llm_response: Dict[str, Any], products: List[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
         product_details = []
         if products is not None:
             llm_product_names = {p["name"] for p in llm_response.get("products", [])}
-            product_details = [
-                {**product.__dict__, "certainty": certainty}
-                for product, certainty in products
-                if product.name in llm_product_names
-            ]
+            product_details = [product for product in products if product.get("name") in llm_product_names]
         return product_details
 
     @staticmethod
-    def _clean_response(response: str) -> Any:
+    def _clean_response(response: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
+        if isinstance(response, dict):
+            return response
         try:
             response = response.replace("```", "").replace("json", "").replace("\n", "").strip()
             return json.loads(response)

@@ -16,7 +16,7 @@ const BotResponse: React.FC<BotResponseProps> = memo(function BotResponse({ mess
   return (
     <div className="flex">
       <div className="flex-grow pr-4">
-        <p className="mb-2">{message.message.response}</p>
+        <p className="mb-2">{message.message.message}</p>
         <ProductList products={message.message.products} />
         <div className="mt-2">
           <strong>Reasoning:</strong> {message.message.reasoning}

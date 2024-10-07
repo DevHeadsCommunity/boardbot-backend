@@ -39,4 +39,5 @@ class ProductService(BaseService):
             "full_summary",
             "full_product_description",
             "target_applications",
+            "duplicate_ids",
         ]

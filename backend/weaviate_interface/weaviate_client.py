@@ -33,7 +33,7 @@ class WeaviateClient:
         try:
             await self.client.connect()
         except Exception as e:
-            logger.error(f"Error connecting to Weaviate: {e}")
+            logger.error(f"Error connecting to Weaviate: {e}", exc_info=True)
             raise
 
     async def close(self):
@@ -43,7 +43,7 @@ class WeaviateClient:
         try:
             return await self.client.is_ready()
         except Exception as e:
-            logger.error(f"Error checking Weaviate readiness: {e}")
+            logger.error(f"Error checking Weaviate readiness: {e}", exc_info=True)
             return False
 
     # section 2: collection management
@@ -51,7 +51,7 @@ class WeaviateClient:
         try:
             return await self.client.collections.list_all()
         except Exception as e:
-            logger.error(f"Error retrieving schema: {e}")
+            logger.error(f"Error retrieving schema: {e}", exc_info=True)
             raise
 
     async def create_collection(
@@ -74,21 +74,21 @@ class WeaviateClient:
             )
             await collection
         except Exception as e:
-            logger.error(f"Error creating collection {name}: {e}")
+            logger.error(f"Error creating collection {name}: {e}", exc_info=True)
             raise
 
     def get_collection(self, name: str):
         try:
             return self.client.collections.get(name)
         except Exception as e:
-            logger.error(f"Error retrieving collection {name}: {e}")
+            logger.error(f"Error retrieving collection {name}: {e}", exc_info=True)
             raise
 
     async def delete_collection(self, name: str) -> None:
         try:
             await self.client.collections.delete(name)
         except Exception as e:
-            logger.error(f"Error deleting collection {name}: {e}")
+            logger.error(f"Error deleting collection {name}: {e}", exc_info=True)
             raise
 
     async def delete_all_collections(self) -> None:
@@ -97,7 +97,7 @@ class WeaviateClient:
             for collection_name in collections:
                 await self.client.collections.delete(collection_name)
         except Exception as e:
-            logger.error(f"Error deleting all collections: {e}")
+            logger.error(f"Error deleting all collections: {e}", exc_info=True)
             raise
 
     # section 3: single object operations
@@ -122,7 +122,7 @@ class WeaviateClient:
             logger.info(f"Object inserted with UUID: {result}")
             return result
         except Exception as e:
-            logger.error(f"Error inserting object into collection {collection_name}: {e}")
+            logger.error(f"Error inserting object into collection {collection_name}: {e}", exc_info=True)
             raise
 
     async def get_object(
@@ -141,9 +141,17 @@ class WeaviateClient:
                 return_properties=return_properties,
                 return_references=return_references,
             )
-            return result.properties if result else None
+            if result:
+                properties = result.properties
+                # Extract the 'id' from 'uuid' and include it in properties
+                if hasattr(result, "uuid"):
+                    properties["id"] = str(result.uuid)
+                else:
+                    logger.warning(f"Object missing 'uuid' field: {result}")
+                return properties
+            return None
         except Exception as e:
-            logger.error(f"Error retrieving object {uuid} from collection {collection_name}: {e}")
+            logger.error(f"Error retrieving object {uuid} from collection {collection_name}: {e}", exc_info=True)
             return None
 
     async def update_object(self, collection_name: str, uuid: str, data: Dict[str, Any]) -> None:
@@ -151,7 +159,7 @@ class WeaviateClient:
             collection = self.get_collection(collection_name)
             await collection.data.update(uuid, data)
         except Exception as e:
-            logger.error(f"Error updating object {uuid} in collection {collection_name}: {e}")
+            logger.error(f"Error updating object {uuid} in collection {collection_name}: {e}", exc_info=True)
             raise
 
     async def delete_object(self, collection_name: str, uuid: str) -> None:
@@ -159,7 +167,7 @@ class WeaviateClient:
             collection = self.get_collection(collection_name)
             await collection.data.delete_by_id(uuid)
         except Exception as e:
-            logger.error(f"Error deleting object {uuid} from collection {collection_name}: {e}")
+            logger.error(f"Error deleting object {uuid} from collection {collection_name}: {e}", exc_info=True)
             raise
 
     # section 4: batch operations
@@ -184,9 +192,20 @@ class WeaviateClient:
                 return_properties=return_properties,
                 include_vector=include_vector,
             )
-            return [obj.properties for obj in results.objects]
+            objects = []
+            for obj in results.objects:
+                logger.info(f"\n\nObject: {obj}\n\n")
+                properties = obj.properties
+                logger.info(f"Properties: {properties}")
+                # Extract the 'id' from 'uuid' and include it in properties
+                if hasattr(obj, "uuid"):
+                    properties["id"] = str(obj.uuid)
+                else:
+                    logger.warning(f"Product missing 'uuid' field: {obj}")
+                objects.append(properties)
+            return objects
         except Exception as e:
-            logger.error(f"Error retrieving objects from collection {collection_name}: {e}")
+            logger.error(f"Error retrieving objects from collection {collection_name}: {e}", exc_info=True)
             return []
 
     # This function is not working because of bug in weaviate python client
@@ -205,7 +224,7 @@ class WeaviateClient:
     #         logger.info(f"Batch insert completed. {len(uuids)} objects inserted.")
     #         return uuids
     #     except Exception as e:
-    #         logger.error(f"Error batch inserting objects into collection {collection_name}: {e}")
+    #         logger.error(f"Error batch inserting objects into collection {collection_name}: {e}", exc_info=True)
     #         raise
 
     async def batch_insert_objects(
@@ -229,7 +248,7 @@ class WeaviateClient:
             logger.info(f"Batch insert completed. {len(uuids)} objects inserted.")
             return uuids
         except Exception as e:
-            logger.error(f"Error batch inserting objects into collection {collection_name}: {e}")
+            logger.error(f"Error batch inserting objects into collection {collection_name}: {e}", exc_info=True)
             raise
 
     async def batch_delete_objects(
@@ -243,7 +262,7 @@ class WeaviateClient:
             logger.info(f"Batch delete result: {result}")
             return result
         except Exception as e:
-            logger.error(f"Error batch deleting objects from collection {collection_name}: {e}")
+            logger.error(f"Error batch deleting objects from collection {collection_name}: {e}", exc_info=True)
             raise
 
     async def delete_objects_by_filter(
@@ -255,7 +274,7 @@ class WeaviateClient:
             logger.info(f"Delete by filter result: {result}")
             return result
         except Exception as e:
-            logger.error(f"Error deleting objects by filter from collection {collection_name}: {e}")
+            logger.error(f"Error deleting objects by filter from collection {collection_name}: {e}", exc_info=True)
             raise
 
     async def aggregate(
@@ -278,7 +297,7 @@ class WeaviateClient:
             logger.info(f"Aggregation results: {results}")
             return results
         except Exception as e:
-            logger.error(f"Error performing aggregation in collection {collection_name}: {e}")
+            logger.error(f"Error performing aggregation in collection {collection_name}: {e}", exc_info=True)
             return {}
 
     # section 5: search operations
@@ -320,7 +339,7 @@ class WeaviateClient:
                 for obj in results.objects
             ]
         except Exception as e:
-            logger.error(f"Error performing search in collection {collection_name}: {e}")
+            logger.error(f"Error performing search in collection {collection_name}: {e}", exc_info=True)
             return []
 
     async def hybrid_search(
@@ -355,7 +374,7 @@ class WeaviateClient:
                 for obj in results.objects
             ]
         except Exception as e:
-            logger.error(f"Error performing hybrid search in collection {collection_name}: {e}")
+            logger.error(f"Error performing hybrid search in collection {collection_name}: {e}", exc_info=True)
             return []
 
     async def keyword_search(
@@ -387,7 +406,7 @@ class WeaviateClient:
             )
             return [obj.properties for obj in response.objects]
         except Exception as e:
-            logger.error(f"Error performing keyword search: {e}")
+            logger.error(f"Error performing keyword search: {e}", exc_info=True)
             return []
 
     async def vector_search(
@@ -437,5 +456,5 @@ class WeaviateClient:
                 )
             return [obj.properties for obj in response.objects]
         except Exception as e:
-            logger.error(f"Error performing vector search: {e}")
+            logger.error(f"Error performing vector search: {e}", exc_info=True)
             return []

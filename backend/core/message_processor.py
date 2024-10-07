@@ -1,10 +1,11 @@
 import json
 import logging
+import datetime
 from generators.llm_router import LLMRouter
 from generators.dynamic_agent import DynamicAgent
 from generators.hybrid_router import HybridRouter
 from generators.semantic_router import SemanticRouter
-from models.message import Message, ResponseMessage
+from .models.message import Message, ResponseMessage
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,7 @@ class MessageProcessor:
         else:
             raise ValueError(f"Unknown architecture choice: {message.architecture_choice}")
 
-        return ResponseMessage(
+        response_message = ResponseMessage(
             session_id=message.session_id,
             id=f"{message.id}_response",
             message=json.dumps(response),
@@ -44,4 +45,6 @@ class MessageProcessor:
             model=message.model,
             architecture_choice=message.architecture_choice,
             history_management_choice=message.history_management_choice,
+            timestamp=datetime.datetime.now(),
         )
+        return response_message

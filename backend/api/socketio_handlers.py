@@ -1,10 +1,10 @@
 import logging
 import socketio
 from dateutil.parser import isoparse
-from models.message import RequestMessage
-from core.session_manager import SessionManager
-from core.message_processor import MessageProcessor
+from core.models.message import RequestMessage, ResponseMessage
+from core import SessionManager, MessageProcessor
 import datetime
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ class SocketIOHandler:
         # Configure CORS for socket.io
         self.sio = socketio.AsyncServer(
             async_mode="asgi",
-            cors_allowed_origins=["http://localhost:3000", "http://192.168.65.59:3000", "https://api.boardbot.ai"],
+            cors_allowed_origins=["http://localhost:3000", "http://192.168.28.50:3000", "https://api.boardbot.ai"],
             allow_credentials=True,
         )
         self.socket_app = socketio.ASGIApp(self.sio)
@@ -32,25 +32,27 @@ class SocketIOHandler:
         async def disconnect(sid):
             logger.info(f"Client Disconnected: {sid}")
 
-        @self.sio.on("connectionInit")
+        @self.sio.on("connection_init")
         async def handle_connection_init(sid):
-            await self.sio.emit("connectionAck", room=sid)
+            await self.sio.emit("connection_ack", room=sid)
 
-        @self.sio.on("sessionInit")
+        @self.sio.on("session_init")
         async def handle_session_init(sid, data):
             await self.initialize_session(sid, data)
 
-        @self.sio.on("textMessage")
+        @self.sio.on("text_message")
         async def handle_chat_message(sid, data):
             await self.process_message(sid, data)
 
     async def initialize_session(self, sid, data):
-        session_id = data.get("sessionId")
+        session_id = data.get("session_id")
         self.session_manager.initialize_session(session_id)
         logger.info(f"Session {session_id} initialized for {sid}")
         chat_history = self.session_manager.get_chat_history(session_id, "keep-all")
         formatted_chat_history = self.session_manager.format_chat_history(chat_history)
-        await self.sio.emit("sessionInit", {"sessionId": session_id, "chatHistory": formatted_chat_history}, room=sid)
+        await self.sio.emit(
+            "session_init", {"session_id": session_id, "chat_history": formatted_chat_history}, room=sid
+        )
 
     async def process_message(self, sid, data):
         logger.info(f"\n\n ===:> Received message from {sid}: {data}\n\n")
@@ -63,11 +65,12 @@ class SocketIOHandler:
             model=data.get("model"),
             architecture_choice=data.get("architecture_choice"),
             history_management_choice=data.get("history_management_choice"),
+            is_user_message=True,  # Add this line
         )
         response = await self.message_processor.process_message(message)
-
-        await self.sio.emit("textResponse", response.dict(), room=sid)
-        # print(f"Response sent to {sid}: {response}")
+        response_dict = response.to_dict()
+        logger.info(f"Response sent to {sid}: {response_dict}")
+        await self.sio.emit("text_response", response_dict, room=sid)
         self.session_manager.add_message(message)
         self.session_manager.add_message(response)
 

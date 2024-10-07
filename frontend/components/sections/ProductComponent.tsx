@@ -26,11 +26,11 @@ const ProductComponent = () => {
   const columns: TableColumn[] = [
     { header: "Name", accessor: "name", sortable: true },
     { header: "Manufacturer", accessor: "manufacturer", sortable: true },
-    { header: "Form", accessor: "formFactor", sortable: true },
-    { header: "Processor", accessor: "processor", sortable: true },
-    { header: "Core Count", accessor: "coreCount", sortable: true },
+    { header: "Form Factor", accessor: "formFactor", sortable: true },
+    { header: "Processor Architecture", accessor: "processorArchitecture", sortable: true },
+    { header: "Core Count", accessor: "processorCoreCount", sortable: true },
     { header: "Memory", accessor: "memory", sortable: true },
-    { header: "OS", accessor: "operatingSystem", sortable: true },
+    { header: "Operating System", accessor: "operatingSystemBsp", sortable: true },
   ];
 
   const handleFilterFeatureChange = (value: string) => {

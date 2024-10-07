@@ -24,6 +24,6 @@ class LLMRouter(BaseRouter):
             model=message.model,
         )
 
-        classification = self._clean_response(response)
+        classification = self.response_formatter._clean_response(response)
         logger.info(f"Route determined: {classification}")
         return classification, input_tokens, output_tokens, time.time() - start_time

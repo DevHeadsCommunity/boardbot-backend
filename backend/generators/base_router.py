@@ -7,7 +7,7 @@ from core.models.message import Message
 from prompts.prompt_manager import PromptManager
 from services.openai_service import OpenAIService
 from services.weaviate_service import WeaviateService
-from utils.response_formatter import ResponseFormatter
+from .utils.response_formatter import ResponseFormatter
 from generators.clear_intent_agent import ClearIntentAgent
 from generators.vague_intent_agent import VagueIntentAgent
 
@@ -32,17 +32,16 @@ class BaseRouter:
         self.prompt_manager = prompt_manager
         self.response_formatter = ResponseFormatter()
 
-    async def run(self, message: Message) -> Tuple[str, Dict[str, int]]:
+    async def run(self, message: Message) -> Dict[str, Any]:
         chat_history = self.session_manager.get_formatted_chat_history(
             message.session_id, message.history_management_choice, "message_only"
         )
         classification, input_tokens, output_tokens, time_taken = await self.determine_route(
-            message, json.dumps(chat_history, indent=2)
+            message, chat_history  # Pass as list of dicts
         )
         response = await self.handle_route(
-            classification, message, json.dumps(chat_history), input_tokens, output_tokens, time_taken
+            classification, message, chat_history, input_tokens, output_tokens, time_taken
         )
-        # logger.info(f"\n\n===:> Response: {response}")
         return response
 
     async def determine_route(
@@ -185,10 +184,3 @@ class BaseRouter:
     async def handle_unknown_route(self, base_metadata: Dict[str, Any]) -> Dict[str, Any]:
         logger.error(f"Unknown route encountered: {base_metadata['classification_result']['category']}")
         return self.response_formatter.format_error_response("An error occurred while processing your request.")
-
-    @staticmethod
-    def _clean_response(response: str) -> Any:
-        try:
-            return json.loads(response.replace("```json", "").replace("```", "").strip())
-        except json.JSONDecodeError:
-            raise ValueError(f"Invalid JSON response: {response}")

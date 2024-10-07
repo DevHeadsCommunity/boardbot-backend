@@ -99,6 +99,13 @@ SCHEMA = {
             "description": "A class representing products.",
             "properties": [
                 Property(
+                    name="product_id",
+                    description="The unique identifier of the product",
+                    data_type=DataType.TEXT,
+                    index_filterable=True,
+                    index_searchable=True,
+                ),
+                Property(
                     name="name",
                     description="The official name of the product.",
                     data_type=DataType.TEXT,
@@ -122,9 +129,9 @@ SCHEMA = {
                 Property(
                     name="evaluation_or_commercialization",
                     description="Indicates if the product is for evaluation or commercial use.",
-                    data_type=DataType.BOOL,
+                    data_type=DataType.TEXT,
                     index_filterable=True,
-                    index_searchable=False,
+                    index_searchable=True,
                 ),
                 Property(
                     name="processor_architecture",
@@ -136,9 +143,9 @@ SCHEMA = {
                 Property(
                     name="processor_core_count",
                     description="The number of cores in the processor.",
-                    data_type=DataType.INT,
+                    data_type=DataType.TEXT,
                     index_filterable=True,
-                    index_searchable=False,
+                    index_searchable=True,
                 ),
                 Property(
                     name="processor_manufacturer",
@@ -178,14 +185,14 @@ SCHEMA = {
                 Property(
                     name="io_count",
                     description="The count and types of Input/Output interfaces.",
-                    data_type=DataType.TEXT,
+                    data_type=DataType.TEXT_ARRAY,
                     index_filterable=False,
                     index_searchable=True,
                 ),
                 Property(
                     name="wireless",
                     description="Wireless capabilities of the product.",
-                    data_type=DataType.TEXT,
+                    data_type=DataType.TEXT_ARRAY,
                     index_filterable=False,
                     index_searchable=True,
                 ),
@@ -218,27 +225,6 @@ SCHEMA = {
                     index_searchable=True,
                 ),
                 Property(
-                    name="price",
-                    description="The cost of the product.",
-                    data_type=DataType.TEXT,
-                    index_filterable=False,
-                    index_searchable=True,
-                ),
-                Property(
-                    name="stock_availability",
-                    description="Current stock status of the product.",
-                    data_type=DataType.TEXT,
-                    index_filterable=True,
-                    index_searchable=False,
-                ),
-                Property(
-                    name="lead_time",
-                    description="Time required to fulfill an order.",
-                    data_type=DataType.TEXT,
-                    index_filterable=False,
-                    index_searchable=True,
-                ),
-                Property(
                     name="short_summary",
                     description="A concise description highlighting key features.",
                     data_type=DataType.TEXT,
@@ -266,9 +252,37 @@ SCHEMA = {
                     index_filterable=True,
                     index_searchable=True,
                 ),
+                Property(
+                    name="duplicate_ids",
+                    description="IDs of duplicate or related products.",
+                    data_type=DataType.TEXT_ARRAY,
+                    index_filterable=True,
+                    index_searchable=True,
+                ),
+                Property(
+                    name="price",
+                    description="The cost of the product.",
+                    data_type=DataType.TEXT,
+                    index_filterable=True,
+                    index_searchable=True,
+                ),
+                Property(
+                    name="stock_availability",
+                    description="Current stock status (e.g., In Stock, Out of Stock).",
+                    data_type=DataType.TEXT,
+                    index_filterable=True,
+                    index_searchable=True,
+                ),
+                Property(
+                    name="lead_time",
+                    description="Time required to fulfill an order.",
+                    data_type=DataType.TEXT,
+                    index_filterable=True,
+                    index_searchable=True,
+                ),
             ],
             "vectorizer_config": Configure.Vectorizer.text2vec_openai(
-                model="text-embedding-3-small",
+                model="text-embedding-3-small",  # Consider using a more recent and powerful model
             ),
             "generative_config": Configure.Generative.openai(),
         },

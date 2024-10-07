@@ -27,12 +27,34 @@ class BaseService(ABC):
         return_references: Optional[QueryReference] = None,
     ) -> Optional[Dict[str, Any]]:
         try:
-            return await self.client.get_object(
+            if return_properties is None:
+                return_properties = self.get_properties()
+            result = await self.client.get_object(
                 self.class_name, uuid, include_vector, return_properties, return_references
             )
+            return result
         except Exception as e:
             logger.error(f"Error retrieving object {uuid} from {self.class_name}: {e}")
             return None
+
+    async def get_all(
+        self,
+        limit: int = 20,
+        offset: int = 0,
+        filters: Optional[Filter] = None,
+        sort: Optional[Sort] = None,
+        return_properties: Optional[List[str]] = None,
+        include_vector: bool = False,
+    ) -> List[Dict[str, Any]]:
+        try:
+            if return_properties is None:
+                return_properties = self.get_properties()
+            return await self.client.get_objects(
+                self.class_name, filters, limit, offset, sort, return_properties, include_vector
+            )
+        except Exception as e:
+            logger.error(f"Error retrieving all objects from {self.class_name}: {e}")
+            return []
 
     async def update(self, uuid: str, data: Dict[str, Any]) -> None:
         try:
@@ -91,23 +113,6 @@ class BaseService(ABC):
             )
         except Exception as e:
             logger.error(f"Error performing hybrid search in {self.class_name}: {e}")
-            return []
-
-    async def get_all(
-        self,
-        limit: int = 20,
-        offset: int = 0,
-        filters: Optional[Filter] = None,
-        sort: Optional[Sort] = None,
-        return_properties: Optional[List[str]] = None,
-        include_vector: bool = False,
-    ) -> List[Dict[str, Any]]:
-        try:
-            return await self.client.get_objects(
-                self.class_name, filters, limit, offset, sort, return_properties, include_vector
-            )
-        except Exception as e:
-            logger.error(f"Error retrieving all objects from {self.class_name}: {e}")
             return []
 
     async def count(self) -> int:
