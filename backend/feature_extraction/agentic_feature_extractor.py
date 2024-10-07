@@ -36,6 +36,9 @@ class AgenticFeatureExtractor:
         }
         return ConfigSchema(**{**defaults, **config})
 
+    def update_config(self, new_config: ConfigSchema):
+        self.config = self.initialize_config(new_config)
+
     def setup_workflow(self) -> Any:
         workflow = StateGraph(ExtractorState, config_schema=ConfigSchema)
 

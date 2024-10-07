@@ -2,14 +2,15 @@ import json
 import logging
 import time
 from typing import List, Tuple, Dict, Any
-from models.message import Message
-from models.product import Product
+from core.models.message import Message
 from services.openai_service import OpenAIService
 from services.query_processor import QueryProcessor
 from services.weaviate_service import WeaviateService
 from utils.response_formatter import ResponseFormatter
 from prompts.prompt_manager import PromptManager
 from langgraph.graph import StateGraph, END
+
+from weaviate_interface.models.product import Product
 
 logger = logging.getLogger(__name__)
 

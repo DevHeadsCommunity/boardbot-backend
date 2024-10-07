@@ -7,13 +7,13 @@ from typing import List, Dict, Any, Tuple, Annotated
 from langgraph.graph import StateGraph, END
 from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage, ToolMessage
 from core.session_manager import SessionManager
-from models.message import Message
+from core.models.message import Message
 from services.openai_service import OpenAIService
 from services.weaviate_service import WeaviateService
 from services.query_processor import QueryProcessor
 from utils.response_formatter import ResponseFormatter
 from prompts.prompt_manager import PromptManager
-from models.product import Product
+from weaviate_interface.models.product import Product
 
 logger = logging.getLogger(__name__)
 

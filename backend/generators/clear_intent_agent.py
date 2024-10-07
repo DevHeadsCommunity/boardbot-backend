@@ -2,14 +2,14 @@ import json
 import time
 import logging
 from typing import List, Tuple, Dict, Any
-from models.message import Message
-from models.product import Product
+from core.models.message import Message
 from services.openai_service import OpenAIService
 from services.query_processor import QueryProcessor
 from services.weaviate_service import WeaviateService
 from utils.response_formatter import ResponseFormatter
 from prompts.prompt_manager import PromptManager
 from langgraph.graph import StateGraph, END
+from weaviate_interface.models.product import Product
 
 logger = logging.getLogger(__name__)
 
@@ -106,38 +106,6 @@ class ClearIntentAgent:
 
         logger.info(f"\n\n\nFound {len(state['search_results'])} unique products\n\n\n")
         return state
-
-    # async def result_reranking_node(self, state: ClearIntentState) -> ClearIntentState:
-    #     start_time = time.time()
-    #     products_for_reranking = [
-    #         {
-    #             "name": p.name,
-    #             **{attr: getattr(p, attr) for attr in state["filters"].keys()},
-    #             "certainty": certainty,
-    #         }
-    #         for p, certainty in state["search_results"]
-    #     ]
-    #     reranked_result, input_tokens, output_tokens = await self.query_processor.rerank_products(
-    #         state["current_message"],
-    #         state["chat_history"],
-    #         products_for_reranking,
-    #         state["filters"],
-    #         state["query_context"],
-    #         top_k=10,
-    #         model=state["model_name"],
-    #     )
-
-    #     state["reranking_result"] = reranked_result
-    #     name_to_product = {p.name: (p, certainty) for p, certainty in state["search_results"]}
-    #     state["final_results"] = [
-    #         name_to_product[p["name"]] for p in reranked_result["products"] if p["name"] in name_to_product
-    #     ]
-    #     state["input_tokens"]["rerank"] = input_tokens
-    #     state["output_tokens"]["rerank"] = output_tokens
-    #     state["time_taken"]["rerank"] = time.time() - start_time
-
-    #     logger.info(f"Reranked results: {state['reranking_result']}")
-    #     return state
 
     async def result_reranking_node(self, state: ClearIntentState) -> ClearIntentState:
         start_time = time.time()

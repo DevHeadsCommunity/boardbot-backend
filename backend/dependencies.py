@@ -21,8 +21,4 @@ def get_agentic_feature_extractor():
     return container.agentic_feature_extractor()
 
 
-def get_simple_feature_extractor():
-    return container.simple_feature_extractor()
-
-
 graph = container.dynamic_agent().workflow

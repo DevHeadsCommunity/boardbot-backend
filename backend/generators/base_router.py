@@ -3,7 +3,7 @@ import logging
 import time
 from typing import Any, Dict, List, Tuple
 from core.session_manager import SessionManager
-from models.message import Message
+from core.models.message import Message
 from prompts.prompt_manager import PromptManager
 from services.openai_service import OpenAIService
 from services.weaviate_service import WeaviateService

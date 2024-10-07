@@ -442,63 +442,7 @@ class SimpleDataExtractionPrompt(BaseChatPrompt):
         6. Use the exact attribute names as provided in the JSON structure below.
 
         Extract the following attributes:
-        {{
-            "name": "Product name (clear, capital case, no special characters, singular)",
-            "manufacturer": "Company name (clear, capital case, no special characters, singular)",
-            "is_prototype": "Boolean (true/false) indicating whether the product is a prototype",
-            "form_factor": "Physical dimensions or form factor",
-            "processor": {{
-                "manufacturer": "Processor manufacturer name",
-                "model": "Specific processor model",
-                "speed": "Base clock speed in GHz",
-                "max_speed": "Maximum turbo/boost speed in GHz, if applicable",
-                "core_count": "Number of physical cores, as an integer",
-                "thread_count": "Number of threads, as an integer",
-                "architecture": "Instruction set architecture",
-                "features": "List of special processor features",
-                "tdp": "Thermal Design Power in watts"
-            }},
-            "memory": {{
-                "ram_type": "Type of RAM",
-                "ram_speed": "RAM speed in MHz",
-                "ram_capacity": "Total RAM capacity",
-                "ram_configuration": "RAM slot configuration or soldered"
-            }},
-            "storage": {{
-                "storage_type": "Type of storage",
-                "storage_capacity": "Total storage capacity"
-            }},
-            "gpu_model": "Model of GPU, if available",
-            "interfaces": {{
-                "display_outputs": "List of display output types and quantities",
-                "ethernet_ports": "List of Ethernet ports with speeds",
-                "usb_ports": "List of USB ports with types and versions",
-                "serial_ports": "List of serial ports with types",
-                "pcie_slots": "List of PCIe slots with generations",
-                "storage_interfaces": "List of storage interfaces",
-                "other_io": "List of additional I/O interfaces"
-            }},
-            "wireless_connectivity": "List of wireless connectivity options",
-            "operating_system_support": "List of supported operating systems",
-            "power": {{
-                "power_input": "Input voltage range or power requirements",
-                "power_consumption": "Typical or maximum power consumption"
-            }},
-            "environmental_specifications": {{
-                "cooling_method": "Method used for cooling the device",
-                "operating_temperature": "Operating temperature range",
-                "storage_temperature": "Storage temperature range",
-                "operating_humidity": "Operating humidity range",
-                "shock_resistance": "Shock resistance specification, if available",
-                "vibration_resistance": "Vibration resistance specification, if available"
-            }},
-            "ip_rating": "Ingress Protection rating, if applicable",
-            "certifications": "List of industry certifications and standards",
-            "target_applications": "List of intended use cases or industries",
-            "short_summary": "Brief product overview (1-2 sentences)",
-            "full_summary": "Detailed product overview (3-5 sentences)",
-            "full_product_description": "Comprehensive product description"
-        }}
+        {attribute_descriptions}
 
         Ensure the extracted information is accurate, well-formatted, and provided in the exact JSON structure as shown above.
         """
@@ -514,14 +458,15 @@ class DataExtractionPrompt(BaseChatPrompt):
         1. Extract information for each attribute listed below.
         2. Each extracted feature should contain a single, distinct piece of information, with confidence score.
         3. Ensure consistency across all features - avoid contradictions.
-        4. If information for an attribute is not available or not applicable, use 'Not available' with a confidence score of 0.
-        5. For each attribute, provide:
+        4. For names, like product name, or manufacturer name, ensure it is in clear, capital case, singular, without special characters. (Only the official name, dont include Code Name, or any other variant)
+        5. If information for an attribute is not available or not applicable, use 'Not available' with a confidence score of 0.
+        6. For each attribute, provide:
            - "value": the extracted information.
            - "confidence": a score between 0 and 1 indicating confidence in the extraction.
-        6. For list-type attributes:
+        7. For list-type attributes:
            - If data is available, provide items as a JSON array.
            - If data is not available, use 'Not available' (as a string).
-        7. Use the exact attribute names as provided in the JSON structure below.
+        8. Use the exact attribute names as provided in the JSON structure below.
 
         Extract the following attributes:
         {attribute_descriptions}

@@ -6,14 +6,13 @@ from services.openai_service import OpenAIService
 from services.tavily_service import TavilyService
 from services.query_processor import QueryProcessor
 from services.weaviate_service import WeaviateService
-from services.agentic_feature_extractor import AgenticFeatureExtractor
-from feature_extraction.simple_feature_extractor import SimpleFeatureExtractor
 from generators.llm_router import LLMRouter
 from generators.dynamic_agent import DynamicAgent
 from generators.hybrid_router import HybridRouter
 from generators.semantic_router import SemanticRouter
 from generators.clear_intent_agent import ClearIntentAgent
 from generators.vague_intent_agent import VagueIntentAgent
+from feature_extraction import AgenticFeatureExtractor, ConfigSchema
 
 
 class Container(containers.DeclarativeContainer):
@@ -21,9 +20,14 @@ class Container(containers.DeclarativeContainer):
 
     prompt_manager = providers.Singleton(PromptManager)
     session_manager = providers.Singleton(SessionManager)
-    weaviate_service = providers.Singleton(WeaviateService)
     openai_service = providers.Singleton(OpenAIService, api_key=config.OPENAI_API_KEY, config=config)
     tavily_service = providers.Singleton(TavilyService, api_key=config.TAVILY_API_KEY)
+
+    weaviate_service = providers.Singleton(
+        WeaviateService,
+        openai_key=config.OPENAI_API_KEY,
+        weaviate_url=config.WEAVIATE_URL,
+    )
 
     query_processor = providers.Singleton(
         QueryProcessor,
@@ -94,13 +98,20 @@ class Container(containers.DeclarativeContainer):
         dynamic_agent=dynamic_agent,
     )
 
-    simple_feature_extractor = providers.Singleton(
-        SimpleFeatureExtractor, openai_service=openai_service, prompt_manager=prompt_manager
-    )
-
     agentic_feature_extractor = providers.Singleton(
         AgenticFeatureExtractor,
         openai_service=openai_service,
         tavily_service=tavily_service,
         prompt_manager=prompt_manager,
+    )
+
+    agentic_feature_extractor = providers.Singleton(
+        AgenticFeatureExtractor,
+        services={
+            "openai_service": openai_service,
+            "tavily_service": tavily_service,
+            "weaviate_service": weaviate_service,
+        },
+        prompt_manager=prompt_manager,
+        config=ConfigSchema(),
     )
