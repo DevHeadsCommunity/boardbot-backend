@@ -14,7 +14,9 @@ const filterableFeatures = [
   { value: "name", label: "Name" },
   { value: "manufacturer", label: "Manufacturer" },
   { value: "form_factor", label: "Form Factor" },
-  { value: "processor", label: "Processor" },
+  { value: "processor_architecture", label: "Processor Architecture" },
+  { value: "processor_core_count", label: "Core Count" },
+  { value: "memory", label: "Memory" },
   { value: "operating_system", label: "Operating System" },
 ];
 

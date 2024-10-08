@@ -3,9 +3,10 @@ import time
 import asyncio
 import logging
 import uuid
-from core.models.message import Message
+from typing import List, Dict, Any, TypedDict, Annotated
+from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph, END
-from typing import List, Dict, Any, TypedDict
+from core.models.message import Message
 from core.session_manager import SessionManager
 from prompts.prompt_manager import PromptManager
 from services.openai_service import OpenAIService
@@ -17,14 +18,18 @@ from langchain_core.messages import AnyMessage, HumanMessage, ToolMessage, Syste
 logger = logging.getLogger(__name__)
 
 
+def merge_dict(a: Dict[str, Any], b: Dict[str, Any]) -> Dict[str, Any]:
+    return {**a, **b}
+
+
 class DynamicAgentState(TypedDict):
     messages: List[AnyMessage]
     chat_history: List[Dict[str, str]]
     current_message: str
     model_name: str
-    input_tokens: Dict[str, int]
-    output_tokens: Dict[str, int]
-    time_taken: Dict[str, float]
+    input_tokens: Annotated[Dict[str, int], merge_dict]
+    output_tokens: Annotated[Dict[str, int], merge_dict]
+    time_taken: Annotated[Dict[str, float], merge_dict]
     output: Dict[str, Any]
     search_results: List[Dict[str, Any]]
     last_action: str
@@ -62,11 +67,10 @@ class DynamicAgent:
 
         return workflow.compile()
 
-    async def agent_step(self, state: DynamicAgentState) -> Dict[str, Any]:
+    async def agent_step(self, state: DynamicAgentState, config: RunnableConfig) -> Dict[str, Any]:
         start_time = time.time()
         system_message, user_message = self.prompt_manager.get_dynamic_agent_prompt(state["current_message"])
 
-        # Include search results in the prompt if available
         if state["search_results"]:
             user_message += f"\n\nSearch Results: {json.dumps(state['search_results'], indent=2)}"
 
@@ -77,21 +81,16 @@ class DynamicAgent:
             model=state["model_name"],
         )
 
-        # Handle the "ACTION:" prefix
         if response.strip().startswith("ACTION:"):
-            response = response.strip()[7:].strip()  # Remove "ACTION:" and any leading/trailing whitespace
+            response = response.strip()[7:].strip()
+
+        logger.info(f"Agent step response: {response}")
 
         return {
             "messages": state["messages"] + [HumanMessage(content=response)],
-            "input_tokens": {**state["input_tokens"], "agent": state["input_tokens"].get("agent", 0) + input_tokens},
-            "output_tokens": {
-                **state["output_tokens"],
-                "agent": state["output_tokens"].get("agent", 0) + output_tokens,
-            },
-            "time_taken": {
-                **state["time_taken"],
-                "agent": state["time_taken"].get("agent", 0) + (time.time() - start_time),
-            },
+            "input_tokens": {"agent": input_tokens},
+            "output_tokens": {"agent": output_tokens},
+            "time_taken": {"agent": time.time() - start_time},
             "last_action": "agent",
         }
 
@@ -111,7 +110,7 @@ class DynamicAgent:
             else:
                 return "end"
 
-    async def pipeline_step(self, state: DynamicAgentState) -> Dict[str, Any]:
+    async def pipeline_step(self, state: DynamicAgentState, config: RunnableConfig) -> Dict[str, Any]:
         start_time = time.time()
         last_message = state["messages"][-1]
 
@@ -120,27 +119,30 @@ class DynamicAgent:
             pipeline_name = pipeline_action["tool"]
             pipeline_input = pipeline_action["input"]
         except (json.JSONDecodeError, KeyError) as e:
+            logger.error(f"Error in pipeline action: {str(e)}")
             return {
                 "messages": state["messages"]
                 + [ToolMessage(content=f"Error in pipeline action: {str(e)}", tool_call_id=str(uuid.uuid4()))],
-                "time_taken": {**state["time_taken"], "pipeline": time.time() - start_time},
+                "time_taken": {"pipeline": time.time() - start_time},
                 "last_action": "pipeline",
             }
 
         if pipeline_name not in ["direct_search", "expanded_search"]:
+            logger.warning(f"Unknown pipeline: {pipeline_name}")
             return {
                 "messages": state["messages"]
                 + [ToolMessage(content=f"Unknown pipeline: {pipeline_name}", tool_call_id=str(uuid.uuid4()))],
-                "time_taken": {**state["time_taken"], "pipeline": time.time() - start_time},
+                "time_taken": {"pipeline": time.time() - start_time},
                 "last_action": "pipeline",
             }
 
         result = await getattr(self, pipeline_name)(**pipeline_input)
+        logger.info(f"Pipeline {pipeline_name} result: {result}")
 
         return {
             "messages": state["messages"] + [ToolMessage(content=json.dumps(result), tool_call_id=str(uuid.uuid4()))],
             "search_results": result.get("results", []),
-            "time_taken": {**state["time_taken"], pipeline_name: time.time() - start_time},
+            "time_taken": {pipeline_name: time.time() - start_time},
             "last_action": "pipeline",
         }
 
@@ -149,7 +151,7 @@ class DynamicAgent:
         return {"results": results}
 
     async def expanded_search(self, query: str, limit: int = 10) -> Dict[str, Any]:
-        expanded_result, _, _ = await self.query_processor.process_query_comprehensive(query, [])
+        expanded_result, input_tokens, output_tokens = await self.query_processor.process_query_comprehensive(query, [])
         expanded_queries = expanded_result["expanded_queries"]
 
         async def search(exp_query):
@@ -158,11 +160,15 @@ class DynamicAgent:
         all_results = await asyncio.gather(*[search(q) for q in expanded_queries])
         all_results = [item for sublist in all_results for item in sublist]  # Flatten the list
 
-        reranked_results, _, _ = await self.query_processor.rerank_products(
+        reranked_results, rerank_input_tokens, rerank_output_tokens = await self.query_processor.rerank_products(
             query, [], all_results, expanded_result["filters"], expanded_result["query_context"], limit
         )
 
-        return {"results": reranked_results["products"]}
+        return {
+            "results": reranked_results["products"],
+            "input_tokens": {"expand": input_tokens, "rerank": rerank_input_tokens},
+            "output_tokens": {"expand": output_tokens, "rerank": rerank_output_tokens},
+        }
 
     async def run(self, message: Message) -> Dict[str, Any]:
         logger.info(f"Running DynamicAgent with message: {message}")
@@ -180,6 +186,7 @@ class DynamicAgent:
             "time_taken": {},
             "output": {},
             "search_results": [],
+            "last_action": "",
         }
 
         try:

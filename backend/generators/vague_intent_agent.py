@@ -1,16 +1,21 @@
 import json
 import logging
 import time
-from typing import List, Dict, Any, TypedDict
+from typing import List, Dict, Any, TypedDict, Annotated
+from langchain_core.runnables import RunnableConfig
+from langgraph.graph import StateGraph, END
 from core.models.message import Message
 from services.openai_service import OpenAIService
 from services.query_processor import QueryProcessor
 from services.weaviate_service import WeaviateService
 from .utils.response_formatter import ResponseFormatter
 from prompts.prompt_manager import PromptManager
-from langgraph.graph import StateGraph, END
 
 logger = logging.getLogger(__name__)
+
+
+def merge_dict(a: Dict[str, Any], b: Dict[str, Any]) -> Dict[str, Any]:
+    return {**a, **b}
 
 
 class VagueIntentState(TypedDict):
@@ -20,9 +25,9 @@ class VagueIntentState(TypedDict):
     semantic_search_query: str
     product_count: int
     search_results: List[Dict[str, Any]]
-    input_tokens: Dict[str, int]
-    output_tokens: Dict[str, int]
-    time_taken: Dict[str, float]
+    input_tokens: Annotated[Dict[str, int], merge_dict]
+    output_tokens: Annotated[Dict[str, int], merge_dict]
+    time_taken: Annotated[Dict[str, float], merge_dict]
     output: Dict[str, Any]
 
 
@@ -56,11 +61,12 @@ class VagueIntentAgent:
 
         return workflow.compile()
 
-    async def query_generation_node(self, state: VagueIntentState) -> Dict[str, Any]:
+    async def query_generation_node(self, state: VagueIntentState, config: RunnableConfig) -> Dict[str, Any]:
         start_time = time.time()
         result, input_tokens, output_tokens = await self.query_processor.generate_semantic_search_query(
             state["current_message"], state["chat_history"], model=state["model_name"]
         )
+        logger.info(f"Generated semantic search query: {result['query']}")
 
         return {
             "semantic_search_query": result["query"],
@@ -70,21 +76,21 @@ class VagueIntentAgent:
             "time_taken": {"query_generation": time.time() - start_time},
         }
 
-    async def product_search_node(self, state: VagueIntentState) -> Dict[str, Any]:
+    async def product_search_node(self, state: VagueIntentState, config: RunnableConfig) -> Dict[str, Any]:
         start_time = time.time()
         results = await self.weaviate_service.search_products(
             state["semantic_search_query"], limit=state["product_count"]
         )
+        logger.info(f"Found {len(results)} products")
 
-        # We don't need to convert to Product objects here, as the results are already in the correct format
-        search_results = results
+        return {
+            "search_results": results,
+            "time_taken": {"search": time.time() - start_time},
+        }
 
-        return {"search_results": search_results, "time_taken": {"search": time.time() - start_time}}
-
-    async def response_generation_node(self, state: VagueIntentState) -> Dict[str, Any]:
+    async def response_generation_node(self, state: VagueIntentState, config: RunnableConfig) -> Dict[str, Any]:
         start_time = time.time()
 
-        # The search results are already in the correct format, so we can use them directly
         products_with_certainty = state["search_results"]
 
         system_message, user_message = self.prompt_manager.get_vague_intent_response_prompt(
@@ -99,6 +105,7 @@ class VagueIntentAgent:
             temperature=0.1,
             model=state["model_name"],
         )
+        logger.info("Generated response for vague intent query")
 
         return {
             "output": response,

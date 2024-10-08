@@ -2,17 +2,21 @@ import asyncio
 import json
 import time
 import logging
+from typing import TypedDict, List, Dict, Any, Annotated
+from langchain_core.runnables import RunnableConfig
+from langgraph.graph import StateGraph, END
 from core.models.message import Message
-from typing import List, Tuple, Dict, Any, TypedDict
 from services.openai_service import OpenAIService
 from services.query_processor import QueryProcessor
 from services.weaviate_service import WeaviateService
 from .utils.response_formatter import ResponseFormatter
 from prompts.prompt_manager import PromptManager
-from langgraph.graph import StateGraph, END
-from weaviate_interface.models.product import NewProduct, Product
 
 logger = logging.getLogger(__name__)
+
+
+def merge_dict(a: Dict[str, Any], b: Dict[str, Any]) -> Dict[str, Any]:
+    return {**a, **b}
 
 
 class ClearIntentState(TypedDict):
@@ -25,9 +29,9 @@ class ClearIntentState(TypedDict):
     search_results: List[Dict[str, Any]]
     reranking_result: Dict[str, Any]
     final_results: List[Dict[str, Any]]
-    input_tokens: Dict[str, int]
-    output_tokens: Dict[str, int]
-    time_taken: Dict[str, float]
+    input_tokens: Annotated[Dict[str, int], merge_dict]
+    output_tokens: Annotated[Dict[str, int], merge_dict]
+    time_taken: Annotated[Dict[str, float], merge_dict]
     output: Dict[str, Any]
 
 
@@ -63,12 +67,12 @@ class ClearIntentAgent:
 
         return workflow.compile()
 
-    async def query_processing_node(self, state: ClearIntentState) -> Dict[str, Any]:
+    async def query_processing_node(self, state: ClearIntentState, config: RunnableConfig) -> Dict[str, Any]:
         start_time = time.time()
         query_result, input_tokens, output_tokens = await self.query_processor.process_query_comprehensive(
             state["current_message"], state["chat_history"], model=state["model_name"]
         )
-        logger.info(f"\n\n===:> Query result: {query_result}\n\n")
+        logger.info(f"Query result: {query_result}")
 
         return {
             "expanded_queries": query_result["expanded_queries"],
@@ -79,28 +83,29 @@ class ClearIntentAgent:
             "time_taken": {"query_processing": time.time() - start_time},
         }
 
-    async def product_search_node(self, state: ClearIntentState) -> Dict[str, Any]:
+    async def product_search_node(self, state: ClearIntentState, config: RunnableConfig) -> Dict[str, Any]:
         start_time = time.time()
         queries = [state["current_message"]] + state["expanded_queries"]
         limit = state["query_context"].get("num_products_requested", 5)
         filters = state["filters"]
 
-        logger.info(f"\n\n===:> Queries: {queries}\n\n")
-        logger.info(f"\n\n===:> Filters: {filters}\n\n")
+        logger.info(f"Queries: {queries}")
+        logger.info(f"Filters: {filters}")
 
         async def search_query(query: str) -> List[Dict[str, Any]]:
             return await self.weaviate_service.search_products(query=query, limit=limit, search_type="semantic")
 
         results = await asyncio.gather(*[search_query(query) for query in queries])
         all_results = [item for sublist in results for item in sublist]
-        logger.info(f"\n\n===:> All results: {all_results}\n\n")
 
-        # Remove duplicate products based on name
         unique_results = {result["name"].lower(): result for result in all_results}.values()
 
-        return {"search_results": list(unique_results), "time_taken": {"search": time.time() - start_time}}
+        return {
+            "search_results": list(unique_results),
+            "time_taken": {"search": time.time() - start_time},
+        }
 
-    async def result_reranking_node(self, state: ClearIntentState) -> Dict[str, Any]:
+    async def result_reranking_node(self, state: ClearIntentState, config: RunnableConfig) -> Dict[str, Any]:
         start_time = time.time()
         products_for_reranking = [
             {
@@ -110,7 +115,7 @@ class ClearIntentAgent:
             }
             for p in state["search_results"]
         ]
-        logger.info(f"\n\n===:> Products for reranking: {products_for_reranking}\n\n")
+        logger.info(f"Products for reranking: {products_for_reranking}")
         reranked_result, input_tokens, output_tokens = await self.query_processor.rerank_products(
             state["current_message"],
             state["chat_history"],
@@ -120,7 +125,7 @@ class ClearIntentAgent:
             top_k=10,
             model=state["model_name"],
         )
-        logger.info(f"\n\n===:> Reranked result: {reranked_result}\n\n")
+        logger.info(f"Reranked result: {reranked_result}")
 
         name_to_product = {p["name"]: p for p in state["search_results"]}
         final_results = [
@@ -135,7 +140,7 @@ class ClearIntentAgent:
             "time_taken": {"rerank": time.time() - start_time},
         }
 
-    async def response_generation_node(self, state: ClearIntentState) -> Dict[str, Any]:
+    async def response_generation_node(self, state: ClearIntentState, config: RunnableConfig) -> Dict[str, Any]:
         start_time = time.time()
 
         relevant_products = json.dumps(
