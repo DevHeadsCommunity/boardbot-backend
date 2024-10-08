@@ -410,50 +410,46 @@ class DynamicAgentPrompt(BaseChatPrompt):
         You have access to the following tools:
 
         1. direct_search:
-           - Input: query (string), limit (optional int, default 5)
-           - Output: List of products matching the query, each with a certainty score
-           - Description: Simple semantic search for products based on the query
-           - When to use: For straightforward queries, when the user is not specific about what they are looking for
+        - Input: {{"query": "search query", "limit": 5}}
+        - Description: Performs a semantic search to find products matching the query.
+        - When to use: For straightforward queries or when the user is not specific.
 
         2. expanded_search:
-           - Input: query (string), limit (optional int, default 10)
-           - Output: List of reranked products based on expanded queries, each with a relevance score
-           - Description: Expands the query, performs semantic search, and reranks results
-           - When to use: For complex queries or when the user is specif about what they are looking for.
+        - Input: {{"query": "search query", "limit": 10}}
+        - Description: Expands the query, generates filters, performs searches, and reranks results.
+        - When to use: For complex queries or when the user provides specific criteria.
 
-        When you need to use a tool, respond with the following format:
-        ACTION: {{"tool": "tool_name", "input": {{"param1": "value1", "param2": "value2"}}}}
+        When you decide to use a tool, respond with the following format:
+        {{
+            "action": "tool",
+            "tool": "tool_name",
+            "input": {{
+                // tool input parameters
+            }}
+        }}
 
-        If you don't need to use a tool and can respond directly, provide your response in the specified JSON format.
+        After receiving the tool output, analyze it and decide whether to use another tool or provide the final answer.
 
-        Always strive to provide accurate, up-to-date information and clarify any ambiguities in user queries.
-        Maintain a professional yet approachable tone in your responses.
-
-        After using a tool, analyze the results and provide a comprehensive response to the user's query.
-        Include relevant product information, comparisons, and recommendations based on the tool results.
-
-        Guidelines for tool usage:
-        - Use direct_search for simple, straightforward queries about specific products
-        - Use expanded_search for more complex queries or when you need a broader range of results
-        - Use detailed_product_analysis when the user needs in-depth comparisons or detailed recommendations
-
-        Remember to interpret the tool outputs correctly and use the information to formulate your final response to the user.
-
-        IMPORTANT: Always provide your final response in the following JSON format:
+        When you are ready to provide the final answer, respond with:
 
         {{
-            "message": "A concise response to the user's query",
+            "message": "Your response to the user",
             "products": [
                 {{
-                    "product_id": "Product ID", // We only need product id
+                    "product_id": "Product ID"
                 }},
                 // ... more products if applicable
             ],
-            "reasoning": "Explanation of your thought process and how you arrived at this response",
-            "follow_up_question": "A question to clarify the user's needs or to get more information",
+            "reasoning": "Your reasoning or additional information",
+            "follow_up_question": "A question to engage the user further"
         }}
+        Always ensure your responses are in valid JSON format.
 
-        Ensure all fields are filled appropriately based on the query and tool results. If a field is not applicable, use an empty string, empty list, or empty object as appropriate.
+        Guidelines:
+            Use tools when necessary to retrieve information needed to answer the user's query.
+            Do not mention the tools or the fact that you are using them in the final answer.
+            Be concise and informative in your responses.
+            Maintain a professional and friendly tone.
         """
         )
 

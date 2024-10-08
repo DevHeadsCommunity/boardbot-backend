@@ -150,7 +150,11 @@ class WeaviateService:
 
     async def update_product(self, id: str, product_data: Dict[str, Any]) -> None:
         try:
-            await self.wi.product_service.update(id, product_data)
+            # Remove 'id' from product_data if it exists
+            product_data_copy = product_data.copy()
+            product_data_copy.pop("id", None)
+
+            await self.wi.product_service.update(id, product_data_copy)
         except Exception as e:
             logger.error(f"Error updating product {id}: {e}", exc_info=True)
             raise
