@@ -1,3 +1,4 @@
+weaviate-client==4.8.1
 fastapi
 fastapi-cli
 httpx
@@ -24,3 +25,5 @@ tavily-python
 dependency-injector
 # pygraphviz
 python-multipart
+pytest
+tqdm

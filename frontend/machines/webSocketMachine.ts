@@ -36,8 +36,8 @@ export const webSocketMachine = setup({
         ...event.data,
         sessionId: context.sessionId,
       });
-      const snakeCaseMessage = requestDataToJson(message);
-      context.socket?.emit("textMessage", snakeCaseMessage);
+      const snake_case_message = requestDataToJson(message);
+      context.socket?.emit("text_message", snake_case_message);
     },
   },
   actors: {
@@ -48,9 +48,9 @@ export const webSocketMachine = setup({
           reconnectionDelay: RECONNECTION_DELAY,
         });
 
-        socket.on("connect", () => socket.emit("connectionInit"));
-        socket.on("connectionAck", () => socket.emit("sessionInit", { sessionId: input.sessionId }));
-        socket.on("sessionInit", (data: any) => {
+        socket.on("connect", () => socket.emit("connection_init"));
+        socket.on("connection_ack", () => socket.emit("session_init", { session_id: input.sessionId }));
+        socket.on("session_init", (data: any) => {
           console.log("Session init data:", data);
           resolve({ socket, data });
         });
@@ -69,11 +69,11 @@ export const webSocketMachine = setup({
         }
       };
 
-      socket.on("textResponse", handleTextResponse);
+      socket.on("text_response", handleTextResponse);
       socket.on("disconnect", () => sendBack({ type: "socketListener.disconnected" }));
 
       return () => {
-        socket.off("textResponse", handleTextResponse);
+        socket.off("text_response", handleTextResponse);
         socket.off("disconnect");
       };
     }),

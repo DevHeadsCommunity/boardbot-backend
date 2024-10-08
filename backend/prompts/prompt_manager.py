@@ -13,9 +13,10 @@ from .templates import (
     DynamicAgentPrompt,
     SimpleDataExtractionPrompt,
     DataExtractionPrompt,
-    ContextualExtractionPrompt,
-    FeatureRefinementPrompt,
+    MissingFeatureExtractionPrompt,
+    LowConfidenceFeatureRefinementPrompt,
 )
+from weaviate_interface.models.product import attribute_descriptions
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +35,8 @@ class PromptManager:
             "dynamic_agent": DynamicAgentPrompt(),
             "simple_data_extraction": SimpleDataExtractionPrompt(),
             "data_extraction": DataExtractionPrompt(),
-            "contextual_extraction": ContextualExtractionPrompt(),
-            "feature_refinement": FeatureRefinementPrompt(),
+            "missing_feature_extraction": MissingFeatureExtractionPrompt(),
+            "low_confidence_feature_refinement": LowConfidenceFeatureRefinementPrompt(),
         }
 
     def get_prompt(self, prompt_type: str, **kwargs) -> Tuple[str, str]:
@@ -43,8 +44,8 @@ class PromptManager:
             raise ValueError(f"Unknown prompt type: {prompt_type}")
 
         prompt = self.prompts[prompt_type]
-        logger.info(f"Generating prompt for {prompt_type} with kwargs: {kwargs}")
-        logger.info(f"Prompt input variables: {prompt.input_variables}")
+        # logger.info(f"Generating prompt for {prompt_type} with kwargs: {kwargs}")
+        # logger.info(f"Prompt input variables: {prompt.input_variables}")
 
         try:
             messages = prompt.format(**kwargs)
@@ -91,13 +92,21 @@ class PromptManager:
         )
 
     def get_product_reranking_prompt(
-        self, query: str, products: str, attribute_mapping_str: str, top_k: int
+        self,
+        query: str,
+        products: List[Dict[str, Any]],
+        attribute_mapping_str: str,
+        filters: Dict[str, Any],
+        query_context: Dict[str, Any],
+        top_k: int,
     ) -> Tuple[str, str]:
         return self.get_prompt(
             "product_reranking",
             query=query,
-            products=products,
+            products=json.dumps(products, indent=2),
             attribute_mapping_str=attribute_mapping_str,
+            filters=json.dumps(filters, indent=2),
+            query_context=json.dumps(query_context, indent=2),
             top_k=top_k,
         )
 
@@ -129,25 +138,29 @@ class PromptManager:
     def get_simple_data_extraction_prompt(self, raw_data: str) -> Tuple[str, str]:
         return self.get_prompt("simple_data_extraction", raw_data=raw_data)
 
-    def get_data_extraction_prompt(self, raw_data: str) -> Tuple[str, str]:
-        return self.get_prompt("data_extraction", raw_data=raw_data)
-
-    def get_contextual_extraction_prompt(
-        self, context: str, extracted_features: str, features_to_extract: List[str]
+    def get_missing_feature_extraction_prompt(
+        self, context: str, extracted_features: Dict[str, Any], features_to_extract: Dict[str, Any]
     ) -> Tuple[str, str]:
         return self.get_prompt(
-            "contextual_extraction",
+            "missing_feature_extraction",
             context=context,
-            extracted_features=extracted_features,
-            features_to_extract=", ".join(features_to_extract),
+            extracted_features=json.dumps(extracted_features, indent=2),
+            features_to_extract=json.dumps(features_to_extract, indent=2),
         )
 
-    def get_feature_refinement_prompt(
-        self, context: str, extracted_features: str, features_to_refine: List[str]
+    def get_low_confidence_feature_refinement_prompt(
+        self, context: str, extracted_features: Dict[str, Any], features_to_refine: Dict[str, Any]
     ) -> Tuple[str, str]:
         return self.get_prompt(
-            "feature_refinement",
+            "low_confidence_feature_refinement",
             context=context,
-            extracted_features=extracted_features,
-            features_to_refine=", ".join(features_to_refine),
+            extracted_features=json.dumps(extracted_features, indent=2),
+            features_to_refine=json.dumps(features_to_refine, indent=2),
+        )
+
+    def get_data_extraction_prompt(self, raw_data: str) -> Tuple[str, str]:
+        return self.get_prompt(
+            "data_extraction",
+            raw_data=raw_data,
+            attribute_descriptions=json.dumps(attribute_descriptions, indent=2),
         )

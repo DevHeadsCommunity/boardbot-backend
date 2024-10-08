@@ -33,27 +33,43 @@ export const productMachine = setup({
       | { type: "user.closeProductDetailModal" }
       | { type: "user.selectUpdateProduct" }
       | { type: "user.selectDeleteProduct" }
-      | { type: "user.submitDeleteProduct"; productId: string }
+      | { type: "user.submitDeleteProduct"; id: string }
       | { type: "user.submitUpdateProduct"; productData: Product }
       | { type: "user.cancelProductUpdate" }
       | { type: "user.submitAddProduct"; productData: Product }
-      | { type: "user.submitAddProductRawData"; productId: string; rawData: string; extractorType: FeatureExtractorType }
-      | { type: "user.submitAddProductsRawData"; file: File; extractorType: FeatureExtractorType }
+      | {
+          type: "user.submitAddProductRawData";
+          productId: string;
+          rawData: string;
+          maxMissingFeatureAttempts: number;
+          maxLowConfidenceAttempts: number;
+          maxNoProgressAttempts: number;
+          confidenceThreshold: number;
+        }
+      | {
+          type: "user.submitAddProductsRawData";
+          file: File;
+          maxMissingFeatureAttempts: number;
+          maxLowConfidenceAttempts: number;
+          maxNoProgressAttempts: number;
+          confidenceThreshold: number;
+          batchSize: number;
+        }
       | { type: "user.cancelAddProduct" }
       | { type: "user.nextPage" }
       | { type: "user.previousPage" }
       | { type: "user.applyFilter"; filter: Record<string, string> },
   },
   actors: {
-    productUpdater: fromPromise(async ({ input }: { input: { productId: string; productData: Product } }) => {
-      console.log("+++ productUpdater productId", input.productId);
+    productUpdater: fromPromise(async ({ input }: { input: { id: string; productData: Product } }) => {
+      console.log("+++ productUpdater id", input.id);
       console.log("+++ productUpdater input", productToJson(input.productData));
-      const response = await apiCall("PUT", `/products/${input.productId}`, productToJson(input.productData));
+      const response = await apiCall("PUT", `/products/${input.id}`, productToJson(input.productData));
       if (response.message) return input.productData;
       throw new Error("Failed to update product");
     }),
-    productDeleter: fromPromise(async ({ input }: { input: { productId: string } }) => {
-      const response = await apiCall("DELETE", `/products/${input.productId}`);
+    productDeleter: fromPromise(async ({ input }: { input: { id: string } }) => {
+      const response = await apiCall("DELETE", `/products/${input.id}`);
       if (response.message) return response;
       throw new Error("Failed to delete product");
     }),
@@ -62,49 +78,74 @@ export const productMachine = setup({
       if (response.id) return response;
       throw new Error("Failed to add product");
     }),
-    rawProductAdder: fromPromise(async ({ input }: { input: { ids: string; rawData: string; extractorType: FeatureExtractorType } }) => {
-      const response = await apiCall("POST", "/products/raw", {
-        raw_data: input.rawData,
-        ids: input.ids,
-        extractor_type: input.extractorType,
-      });
-      if (response.id) return response;
-      throw new Error("Failed to add product from raw data");
-    }),
-    rawProductsAdder: fromPromise(async ({ input }: { input: { file: File; extractorType: FeatureExtractorType } }) => {
-      return new Promise((resolve, reject) => {
-        Papa.parse(input.file, {
-          complete: async (results) => {
-            if (results.errors.length > 0) {
-              reject(new Error("CSV parsing failed"));
-              return;
-            }
-            const products = results.data.map((row: any) => ({
-              ids: row.ids,
-              raw_data: row.raw_data,
-            }));
-            const batchInput = {
-              products: products,
-              extractor_type: input.extractorType,
-            };
-
-            try {
-              // console.log("batchInput", JSON.stringify(batchInput));
-              const response = await apiCall("POST", "/products/batch/parsed", batchInput);
-              if (response.products) {
-                resolve(response);
-              } else {
-                reject(new Error("Failed to add products from CSV"));
+    rawProductAdder: fromPromise(
+      async ({
+        input,
+      }: {
+        input: {
+          product_id: string;
+          raw_data: string;
+          max_missing_feature_attempts: number;
+          max_low_confidence_attempts: number;
+          max_no_progress_attempts: number;
+          confidence_threshold: number;
+        };
+      }) => {
+        const response = await apiCall("POST", "/products/raw", input);
+        if (response.id) return response;
+        throw new Error("Failed to add product from raw data");
+      }
+    ),
+    rawProductsAdder: fromPromise(
+      async ({
+        input,
+      }: {
+        input: {
+          file: File;
+          max_missing_feature_attempts: number;
+          max_low_confidence_attempts: number;
+          max_no_progress_attempts: number;
+          confidence_threshold: number;
+          batch_size: number;
+        };
+      }) => {
+        return new Promise((resolve, reject) => {
+          Papa.parse(input.file, {
+            complete: async (results) => {
+              if (results.errors.length > 0) {
+                reject(new Error("CSV parsing failed"));
+                return;
               }
-            } catch (error) {
-              reject(error);
-            }
-          },
-          header: true,
-          skipEmptyLines: true,
+              const products = results.data.map((row: any) => ({
+                product_id: row.product_id,
+                raw_data: row.raw_data,
+              }));
+              const batchInput = {
+                products: products,
+                batch_size: input.batch_size,
+                max_missing_feature_attempts: input.max_missing_feature_attempts,
+                max_low_confidence_attempts: input.max_low_confidence_attempts,
+                max_no_progress_attempts: input.max_no_progress_attempts,
+                confidence_threshold: input.confidence_threshold,
+              };
+
+              try {
+                const response = await apiCall("POST", "/products/batch/raw", batchInput);
+                if (response.products) {
+                  resolve(response);
+                } else {
+                  reject(new Error("Failed to add products from CSV"));
+                }
+              } catch (error) {
+                reject(error);
+              }
+            },
+            header: true,
+            skipEmptyLines: true,
+          });
         });
-      });
-    }),
+      }
+    ),
     productsFetcher: fromPromise(async ({ input }: { input: { page: number; pageSize: number; filter?: Record<string, string> } }) => {
       const queryParams = new URLSearchParams({
         page: (input.page + 1).toString(),
@@ -264,7 +305,7 @@ export const productMachine = setup({
                     throw new Error("Invalid event");
                   }
                   return {
-                    productId: context.product.id,
+                    id: context.product.id,
                     productData: event.productData,
                   };
                 },
@@ -273,7 +314,7 @@ export const productMachine = setup({
                   actions: [
                     assign({
                       product: ({ event }) => event.output,
-                      products: ({ context, event }) => context.products.map((p) => (p.ids === event.output.ids ? event.output : p)),
+                      products: ({ context, event }) => context.products.map((p) => (p.id === event.output.id ? event.output : p)),
                     }),
                     emit({
                       type: "notification",
@@ -301,7 +342,7 @@ export const productMachine = setup({
               invoke: {
                 id: "productDeleter",
                 input: ({ context }) => ({
-                  productId: context.product?.id!,
+                  id: context.product?.id!,
                 }),
                 onDone: {
                   target: "#productActor.displayingProducts.fetchingProducts",
@@ -387,7 +428,14 @@ export const productMachine = setup({
                 id: "rawProductAdder",
                 input: ({ event }) => {
                   if (event.type !== "user.submitAddProductRawData") throw new Error("Invalid event type");
-                  return { ids: event.productId, rawData: event.rawData, extractorType: event.extractorType };
+                  return {
+                    product_id: event.productId,
+                    raw_data: event.rawData,
+                    max_missing_feature_attempts: event.maxMissingFeatureAttempts,
+                    max_low_confidence_attempts: event.maxLowConfidenceAttempts,
+                    max_no_progress_attempts: event.maxNoProgressAttempts,
+                    confidence_threshold: event.confidenceThreshold,
+                  };
                 },
                 onDone: {
                   target: "#productActor.displayingProducts.fetchingProducts",
@@ -417,7 +465,14 @@ export const productMachine = setup({
                 id: "rawProductsAdder",
                 input: ({ event }) => {
                   if (event.type !== "user.submitAddProductsRawData") throw new Error("Invalid event type");
-                  return { file: event.file, extractorType: event.extractorType };
+                  return {
+                    file: event.file,
+                    max_missing_feature_attempts: event.maxMissingFeatureAttempts,
+                    max_low_confidence_attempts: event.maxLowConfidenceAttempts,
+                    max_no_progress_attempts: event.maxNoProgressAttempts,
+                    confidence_threshold: event.confidenceThreshold,
+                    batch_size: event.batchSize,
+                  };
                 },
                 onDone: {
                   target: "#productActor.displayingProducts.fetchingProducts",

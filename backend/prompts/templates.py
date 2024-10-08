@@ -23,43 +23,37 @@ class RouteClassificationPrompt(BaseChatPrompt):
             PROCESSING_BASE
             + """
         Your task is to categorize the given query into one of the following categories:
-        1. politics - for queries related to political topics.
-        2. chitchat - for general conversation or small talk.
-        3. vague_intent_product - for product-related queries that are general, lack specific criteria, or request listings without detailed specifications.
-        4. clear_intent_product - for product-related queries with specific technical criteria or constraints.
-        5. do_not_respond - for queries that are inappropriate, offensive, or outside the system's scope.
+        1. politics
+        2. chitchat
+        3. vague_intent_product
+        4. clear_intent_product
+        5. do_not_respond
 
-        Provide your classification along with a brief justification and a confidence score (0-100).
-
-        Respond in JSON format as follows:
+        Provide your classification in JSON format as follows:
         {{
             "category": "category_name",
             "justification": "A brief explanation for this classification",
             "confidence": 85
         }}
 
+        Category Definitions:
+        - politics: Queries primarily related to political topics or figures.
+        - chitchat: General conversation or small talk unrelated to products.
+        - vague_intent_product: Product-related queries that lack specific technical criteria.
+        - clear_intent_product: Product-related queries with at least two specific technical criteria or constraints.
+        - do_not_respond: Queries that are inappropriate, offensive, or completely unrelated to our domain.
+
         Guidelines:
-        - Classify as clear_intent_product only if the query contains specific technical criteria or constraints about product features (e.g., processor type, RAM size, specific interfaces).
-        - Classify as vague_intent_product if the query is about products but lacks specific technical criteria, or if it's a request for a list of products without detailed specifications.
-        - The number of products requested (e.g., "List 5 products") does not qualify as a specific criterion for clear intent.
-        - Consider the chat history when making your classification. A vague query might become clear in the context of previous messages.
-        - Classify as politics only if the query is primarily about political topics.
-        - Use do_not_respond for queries that are inappropriate, offensive, or completely unrelated to computer hardware and embedded systems.
-        - Be decisive - always choose the most appropriate category even if the query is ambiguous.
+        - For clear_intent_product, look for specific technical specifications (e.g., processor type, RAM size, interface types).
+        - The mere mention of a product category or a request for a list without specifications is vague_intent_product.
+        - The number of products requested does not count as a specific criterion for clear intent.
+        - Be decisive - choose the most appropriate category even for ambiguous queries.
+        - Provide a confidence score (0-100) for your classification.
+        - In the justification, briefly explain why you chose this category over others.
 
         Examples:
-        - clear_intent_product:
-            - "Find me a board with an Intel processor and at least 8GB of RAM"
-            - "List Single Board Computers with a processor frequency of 1.5 GHz or higher"
-            - "What are the top ARM-based development kits with built-in Wi-Fi and 4GB or more RAM?"
-
-        - vague_intent_product:
-            - "Tell me about single board computers"
-            - "What are some good development kits?"
-            - "I'm looking for industrial communication devices"
-            - "List 12 Single Board Computers"
-            - "Show me the best microcontrollers"
-
+        - Clear intent: "Find a board with an Intel processor and at least 8GB of RAM"
+        - Vague intent: "Tell me about single board computers" or "List 5 microcontrollers"
         """
         )
 
@@ -76,65 +70,74 @@ class QueryProcessorPrompt(BaseChatPrompt):
         system_template = (
             PROCESSING_BASE
             + """
-        Your task is to process and expand the given query to improve product search results.
-        Extract relevant product attributes, generate expanded queries, and identify additional query context.
-
-        Here's a description of all the product attributes and data types stored for each product:
-        {attribute_descriptions}
+        Your task is to process and expand queries related to computer hardware, particularly single-board computers, embedded systems, and development kits. Extract relevant product attributes, generate expanded queries, and identify additional query context.
 
         Perform the following tasks:
-        1. Extract relevant product attributes mentioned or implied in the query. Only use attributes that are explicitly listed in the product feature descriptions above.
-        2. If the query mentions attributes not in the list (e.g., processor frequency), map them to the most relevant existing attribute (e.g., 'processor') and include the specific details in that attribute's value.
+        1. Carefully extract relevant product attributes mentioned or implied in the query. Use these to create filters.
+        2. Only use attribute names from the provided list for filters. Do not invent new attributes or use attributes not in the list.
         3. Generate {num_expansions} expanded queries that could help find relevant products. These should be based on the original query and the extracted attributes.
         4. Identify any additional query context, such as the number of products requested or any sorting preferences.
 
         Respond in JSON format as follows:
         {{
-            "extracted_attributes": {{
-                // Include only relevant attributes that exist in the product feature descriptions
+            "filters": {{
+                // Include only relevant attributes from the provided list
                 // If an attribute is not mentioned or cannot be inferred, do not include it
-                // For attributes not in the list, map to the most relevant existing attribute
+                // Use exact values or ranges as appropriate
             }},
             "expanded_queries": [
                 // List of {num_expansions} expanded queries
             ],
             "query_context": {{
-                "num_products_requested": null, // Number of products explicitly requested, or null if not specified
-                "sort_preference": null // Any sorting preference mentioned (e.g., "cheapest", "newest"), or null if not specified
+                "num_products_requested": 5,
+                "sort_preference": null
             }}
         }}
 
         Guidelines:
-        - Only use attribute names that are explicitly listed in the product feature descriptions.
-        - For attributes mentioned in the query but not in our list (e.g., processor frequency), include them in the most relevant existing attribute (e.g., 'processor').
-        - Ensure all values are specific and aligned with our product database format.
-        - Use technical specifications and numeric values where applicable, rather than general terms like "high" or "large".
-        - If the query doesn't provide enough information to extract specific attributes, it's okay to leave the "extracted_attributes" empty.
-        - Expanded queries should provide variations that might help in finding relevant products, considering different phrasings or related terms.
-        - In the query_context, capture any explicit request for a specific number of products or sorting preference.
+        - Use only attribute names from the provided list for filters. Omit attributes not mentioned or implied in the query.
+        - Be specific with filter values. Use exact values where mentioned.
+        - For processor_core_count, use numeric values (e.g., "2", "4", "8").
+        - For memory and onboard_storage, use the specific values mentioned (e.g., "8 GB DDR3L", "64 GB eMMC").
+        - For processor_architecture, use specific terms like "ARM" or "x86".
+        - For operating_system_bsp, include specific OS names mentioned (e.g., ["Linux", "Windows"]).
+        - Include "form_factor" as "Single Board Computer" when SBCs are explicitly mentioned.
+        - For processor_manufacturer, use specific names like "INTEL", "AMD", or "FREESCALE" when mentioned.
+        - Use ranges for operating temperatures when mentioned (e.g., "operating_temperature_min": "-20", "operating_temperature_max": "60").
+        - Generate diverse expanded queries, including more specific and slightly broader variations.
+        - Set num_products_requested to the number specified in the query, or default to 5 if not mentioned.
+        - Do not include explanatory comments in the final JSON response.
+        - If a query mentions attributes not in the provided list, do not include them in the filters. Instead, use relevant attributes from the list to approximate the intent.
 
-        Example:
-        For a query like "List Single Board Computers with a processor frequency of 1.5 GHz or higher and manufactured by Broadcom", your response might look like:
+        Example query and response:
+        Query: "Find Single Board Computers with x86 architecture and Linux support"
 
+        Response:
         {{
-            "extracted_attributes": {{
-                "name": "Single Board Computers",
-                "manufacturer": "Broadcom",
-                "processor": "1.5 GHz or higher"
+            "filters": {{
+                "form_factor": "Single Board Computer",
+                "processor_architecture": "x86",
+                "operating_system_bsp": ["Linux"]
             }},
             "expanded_queries": [
-                "Broadcom Single Board Computers with high-speed processors",
-                "Single Board Computers by Broadcom with processors over 1.5 GHz",
-                "Fast Broadcom SBCs with 1.5 GHz+ processors"
+                "Find Single Board Computers with x86 architecture and Linux support",
+                "x86 SBCs with Linux compatibility",
+                "Linux-supported single board computers with x86 processors",
+                "x86 architecture embedded systems running Linux"
             ],
             "query_context": {{
-                "num_products_requested": null,
+                "num_products_requested": 5,
                 "sort_preference": null
             }}
         }}
+
+        Strive for precision and relevance in your filters and expanded queries. Your goal is to capture all relevant information from the query while adhering strictly to the provided attribute list.
         """
         )
         human_template = """
+        Attribute list:
+        {attribute_descriptions}
+
         User Query: {query}
 
         Response:
@@ -147,43 +150,60 @@ class ProductRerankingPrompt(BaseChatPrompt):
         system_template = (
             PROCESSING_BASE
             + """
-        Rerank the given products based on their relevance to the user query.
-        Focus on exact matching of specified criteria rather than general relevance.
-        Carefully evaluate each product against ALL criteria specified in the user query. A product must match EVERY single criterion to be included.
-        Do NOT confuse different attributes (e.g., processor manufacturer vs product manufacturer).
-        Return the top {top_k} products based on relevance.
+        Your task is to rerank the given products based on their relevance to the user query and the specified filters.
 
-        When evaluating products, use the following attribute mapping:
+        Instructions:
+        1. Analyze each product against ONLY the criteria specified in the filters.
+        2. Rank products based on how closely they match the criteria in the filters.
+        3. Return the top {top_k} most relevant products.
+        4. Provide a clear justification for the ranking of each product.
+
+        Use the following attribute mapping for evaluation:
         {attribute_mapping_str}
 
-        For any numerical criteria (e.g., processor frequency, memory size), ensure the product meets or exceeds the specified value.
+        Filters to consider:
+        {filters}
 
-        Return the list of matching products and justification in the following format:
+        Query context:
+        {query_context}
+
+        Return the reranked products and justification in the following JSON format:
         {{
             "products": [
                 {{
-                    "name": "Product Name",
+                    "product_id": "Product ID",
                     "relevance_score": 0.95,
-                    "score_explanation": "Brief explanation of this score",
-                    "matching_criteria": ["List of criteria that this product matches"],
-                    "missing_criteria": ["List of criteria that this product doesn't match, if any"]
+                    "matching_criteria": ["List of criteria from the filters that this product matches"],
+                    "missing_criteria": ["List of criteria from the filters that this product doesn't match"]
                 }},
-                // ... more products if applicable
+                // ... more products
             ],
-            "justification": "Clear, concise list or bullet points explaining why products are included or excluded, addressing each criterion from the query."
+            "justification": "Clear, concise explanation of the ranking, addressing only the criteria from the filters."
         }}
 
-        If no products match, return: {{"products": [], "justification": "Detailed explanation why no products match, addressing each criterion from the query"}}
+        Guidelines:
+        - Only consider attributes present in the provided filters. Ignore any other information.
+        - Do not introduce or consider criteria not present in the filters, even if mentioned in the query.
+        - Prioritize exact matches of specified criteria over general relevance.
+        - If no products fully match all criteria in the filters, include partial matches and clearly explain the mismatches.
+        - Provide a relevance score (0-1) for each product, where 1 is a perfect match and 0 is completely irrelevant.
+        - In the justification, explain why products are included or excluded, addressing only the criteria from the filters.
+        - If no products match any criteria from the filters, return an empty product list and explain why in the justification.
+        - Completely disregard any criteria or attributes not present in the filters, even if they seem relevant to the query.
         """
         )
 
         human_template = """
-        Relevant Products: {products}
-        User Query: {query}
+        Filters: {filters}
+        Products to Rerank: {products}
 
-        Response:
+        Reranked Products:
         """
-        super().__init__(system_template, human_template, ["query", "products", "attribute_mapping_str", "top_k"])
+        super().__init__(
+            system_template,
+            human_template,
+            ["products", "attribute_mapping_str", "filters", "query_context", "top_k"],
+        )
 
 
 class SemanticSearchQueryPrompt(BaseChatPrompt):
@@ -221,19 +241,31 @@ class ChitchatPrompt(BaseChatPrompt):
         system_template = (
             USER_FACING_BASE
             + """
-        Engage in casual conversation while maintaining a friendly and professional tone.
-        If the conversation steers towards product-related topics, be prepared to seamlessly transition
-        into providing relevant information or assistance.
+        Your task is to engage in casual conversation while maintaining a friendly and professional tone. If appropriate, be prepared to smoothly transition into product-related topics.
 
-        Always respond in JSON format with the following structure:
+        Instructions:
+        1. Analyze the user's message and determine the most appropriate response.
+        2. Generate a friendly and engaging response that addresses the user's input.
+        3. If possible, include a subtle reference or transition to product-related topics.
+        4. Formulate a follow-up question to continue the conversation.
+
+        Respond in the following JSON format:
         {{
-            "message": "Your response to the user's message.",
-            "follow_up_question": "A question to keep the conversation going."
+            "message": "Your friendly response to the user's message",
+            "follow_up_question": "A question to keep the conversation going or transition to product-related topics"
         }}
+
+        Guidelines:
+        - Maintain a friendly, conversational tone in your responses.
+        - The message should directly address the user's input in a natural, conversational manner.
+        - Do not force product information into the conversation if it's not relevant or appropriate.
+        - The follow-up question should aim to either continue the current topic of conversation or smoothly transition to product-related topics if appropriate.
+        - If the user expresses interest in product-related topics, use that opportunity to transition into your area of expertise.
+        - Be mindful of context and previous messages in the conversation if provided.
         """
         )
         human_template = """
-        User Query: {query}
+        User Message: {query}
 
         Response:
         """
@@ -275,27 +307,41 @@ class VagueIntentResponsePrompt(BaseChatPrompt):
         system_template = (
             USER_FACING_BASE
             + """
-        Generate a response to a user's vague product-related question using the provided search results.
-        Your response should be clear, informative, and directly address the user's query.
+        Your task is to generate an informative response to a vague product-related query using the provided search results.
 
-        Always respond in JSON format with the following structure:
+        Instructions:
+        1. Analyze the user's query and the provided product search results.
+        2. Generate a response that provides general information related to the query.
+        3. Suggest a few relevant products that may interest the user.
+        4. Provide reasoning for your suggestions and information.
+        5. Formulate a follow-up question to help the user specify their requirements.
+
+        Respond in the following JSON format:
         {{
-            "message": "A concise introductory message addressing the user's query",
+            "message": "An informative message addressing the user's query, providing general product category information, and any additional context",
             "products": [
                 {{
-                    "name": "Product Name" // We only need the name of the product
-                }}
-                // ... more products if applicable
+                    "product_id": "Product ID", // We only need product id
+                }},
+                // ... 2-3 more products if applicable
             ],
-            "reasoning": "Clear and concise reasoning for the provided response and product selection",
-            "follow_up_question": "A single, clear follow-up question based on the user's query and the products found"
+            "reasoning": "Explanation of why these products were suggested and how they relate to the query. Include any additional general information about the product category or technology here.",
+            "follow_up_question": "A question to help the user specify their requirements or narrow down their search"
         }}
+
+        Guidelines:
+        - The message should provide an overview of the product category or technology mentioned in the query, along with any relevant general information.
+        - Include 2-4 relevant products in the products list.
+        - In the reasoning, explain why each product was suggested and how it relates to the query. Also include any additional context or explanations about the product category here.
+        - Avoid making assumptions about specific requirements the user hasn't mentioned.
+        - The follow-up question should aim to clarify the user's needs or use case.
+        - If the query is extremely vague, focus on providing general information in the message and reasoning, and ask clarifying questions.
+        - Maintain a helpful and informative tone, encouraging the user to provide more details.
         """
         )
-
         human_template = """
-        Relevant Products: {products}
         User Query: {query}
+        Relevant Products: {products}
 
         Response:
         """
@@ -307,37 +353,51 @@ class ClearIntentResponsePrompt(BaseChatPrompt):
         system_template = (
             USER_FACING_BASE
             + """
-        Analyze the user's query and the relevant products found, then provide a comprehensive and helpful response.
-        Your response should be clear, informative, and directly address the user's query.
+        Your task is to generate an engaging and conversational response to a clear intent product query based on the provided reranking results and relevant products.
 
-        IMPORTANT:
-        1. Only include products that FULLY match ALL criteria specified in the user's query.
-        2. Pay special attention to the user's query, and the specifications of the products.
-        3. Do NOT confuse the processor manufacturer with the product manufacturer. This applies to all attributes.
-        4. If no products match ALL criteria, return an empty list of products and explain why.
+        Instructions:
+        1. Analyze the user's query and the reranking results.
+        2. Generate a response that addresses the user's requirements in a natural, conversational tone.
+        3. Include ALL products provided in the reranking results, sorted by their relevance score.
+        4. Discuss the products that best match the criteria and those that partially match in a flowing, engaging manner.
+        5. Avoid explicitly categorizing products as "perfect matches" or "partial matches". Instead, weave this information into the conversation naturally.
 
-        Always respond in JSON format with the following structure:
+        Respond in the following JSON format:
         {{
-            "message": "A concise introductory message addressing the user's query",
+            "message": "An engaging, conversational message addressing the query results, highlighting relevant products and their features",
             "products": [
                 {{
-                    "name": "Product Name" // We only need the name of the product
-                }}
-                // ... more products if applicable
+                    "product_id": "Product ID", // We only need product id
+                }},
+                // ... include all products from the reranking results
             ],
-            "reasoning": "Clear and concise reasoning for the provided response and product selection",
-            "follow_up_question": "A single, clear follow-up question based on the user's query and the products found"
+            "reasoning": "A natural explanation of the product selection and how they relate to the user's needs",
+            "follow_up_question": "A conversational follow-up question to further assist the user"
         }}
+
+        Guidelines:
+        - Write in a friendly, approachable tone as if you're having a conversation with the user.
+        - Keep the "message" concise and focused, ideally not exceeding a few sentences.
+        - Highlight the most relevant products first, mentioning key features that align with the user's needs.
+        - Avoid lengthy descriptions; focus on how each product meets the user's criteria.
+        - Don't repeat the user's query verbatim. Instead, refer to their requirements naturally within the context of your response.
+        - Ensure the response is engaging and human-like, avoiding robotic or overly formal language.
+        - Highlight the most relevant products first, smoothly transitioning to less perfect matches.
+        - Briefly mention key features or specifications that make each product relevant to the user's needs.
+        - If no products perfectly match all criteria, acknowledge this in a positive way and focus on the closest matches.
+        - Keep the language simple and avoid overly technical jargon unless it's essential.
+        - The "reasoning" should feel like a natural continuation of the conversation, explaining your recommendations.
+        - Frame the follow-up question as a curious inquiry to learn more about the user's needs or preferences.
         """
         )
         human_template = """
+        User Query: {query}
         Reranking Result: {reranking_result}
         Relevant Products: {products}
-        User Query: {query}
 
         Response:
         """
-        super().__init__(system_template, human_template, ["query", "products", "reranking_result"])
+        super().__init__(system_template, human_template, ["query", "reranking_result", "products"])
 
 
 class DynamicAgentPrompt(BaseChatPrompt):
@@ -350,50 +410,46 @@ class DynamicAgentPrompt(BaseChatPrompt):
         You have access to the following tools:
 
         1. direct_search:
-           - Input: query (string), limit (optional int, default 5)
-           - Output: List of products matching the query, each with a certainty score
-           - Description: Simple semantic search for products based on the query
-           - When to use: For straightforward queries, when the user is not specific about what they are looking for
+        - Input: {{"query": "search query", "limit": 5}}
+        - Description: Performs a semantic search to find products matching the query.
+        - When to use: For straightforward queries or when the user is not specific.
 
         2. expanded_search:
-           - Input: query (string), limit (optional int, default 10)
-           - Output: List of reranked products based on expanded queries, each with a relevance score
-           - Description: Expands the query, performs semantic search, and reranks results
-           - When to use: For complex queries or when the user is specif about what they are looking for.
+        - Input: {{"query": "search query", "limit": 10}}
+        - Description: Expands the query, generates filters, performs searches, and reranks results.
+        - When to use: For complex queries or when the user provides specific criteria.
 
-        When you need to use a tool, respond with the following format:
-        ACTION: {{"tool": "tool_name", "input": {{"param1": "value1", "param2": "value2"}}}}
+        When you decide to use a tool, respond with the following format:
+        {{
+            "action": "tool",
+            "tool": "tool_name",
+            "input": {{
+                // tool input parameters
+            }}
+        }}
 
-        If you don't need to use a tool and can respond directly, provide your response in the specified JSON format.
+        After receiving the tool output, analyze it and decide whether to use another tool or provide the final answer.
 
-        Always strive to provide accurate, up-to-date information and clarify any ambiguities in user queries.
-        Maintain a professional yet approachable tone in your responses.
-
-        After using a tool, analyze the results and provide a comprehensive response to the user's query.
-        Include relevant product information, comparisons, and recommendations based on the tool results.
-
-        Guidelines for tool usage:
-        - Use direct_search for simple, straightforward queries about specific products
-        - Use expanded_search for more complex queries or when you need a broader range of results
-        - Use detailed_product_analysis when the user needs in-depth comparisons or detailed recommendations
-
-        Remember to interpret the tool outputs correctly and use the information to formulate your final response to the user.
-
-        IMPORTANT: Always provide your final response in the following JSON format:
+        When you are ready to provide the final answer, respond with:
 
         {{
-            "message": "A concise response to the user's query",
+            "message": "Your response to the user",
             "products": [
                 {{
-                    "name": "Product Name", // We only need the name of the product
+                    "product_id": "Product ID"
                 }},
                 // ... more products if applicable
             ],
-            "reasoning": "Explanation of your thought process and how you arrived at this response",
-            "follow_up_question": "A question to clarify the user's needs or to get more information",
+            "reasoning": "Your reasoning or additional information",
+            "follow_up_question": "A question to engage the user further"
         }}
+        Always ensure your responses are in valid JSON format.
 
-        Ensure all fields are filled appropriately based on the query and tool results. If a field is not applicable, use an empty string, empty list, or empty object as appropriate.
+        Guidelines:
+            Use tools when necessary to retrieve information needed to answer the user's query.
+            Do not mention the tools or the fact that you are using them in the final answer.
+            Be concise and informative in your responses.
+            Maintain a professional and friendly tone.
         """
         )
 
@@ -408,25 +464,19 @@ class DynamicAgentPrompt(BaseChatPrompt):
 class SimpleDataExtractionPrompt(BaseChatPrompt):
     def __init__(self):
         system_template = """
-        You are an intelligent assistant specialized in extracting detailed information from raw product data. Your goal is to identify and extract specific attributes related to a product. For each attribute, if the information is not available, state 'Not available'. The attributes to be extracted are:
+        You are an intelligent assistant specialized in extracting detailed information from raw product data for computer hardware, particularly embedded systems, development kits, and industrial communication devices. Your goal is to identify and extract specific attributes related to a product. Follow these guidelines:
+
+        1. Extract information for each attribute listed below.
+        2. Each extracted feature should contain a single, distinct piece of information.
+        3. Ensure consistency across all features - avoid contradictions.
+        4. If information for an attribute is not available or not applicable, use 'Not available'.
+        5. For list-type attributes, provide items as a JSON array, even if there's only one item.
+        6. Use the exact attribute names as provided in the JSON structure below.
 
         Extract the following attributes:
-        - name: Product name (clear, capital case, no special characters, singular)
-        - manufacturer: Company name (clear, capital case, no special characters, singular)
-        - form_factor: Physical dimensions or form factor
-        - processor: Processor type or model
-        - core_count: Number of processor cores
-        - processor_tdp: Processor's thermal design power
-        - memory: Memory type and size
-        - io: Input/output interfaces
-        - operating_system: Operating system or board support package
-        - environmentals: Environmental specifications (e.g., operating temperature)
-        - certifications: Product certifications
-        - short_summary: Brief product summary
-        - full_summary: Comprehensive product summary
-        - full_product_description: Complete product description
+        {attribute_descriptions}
 
-        Ensure the extracted information is accurate and well-formatted. Provide the extracted details in JSON format.
+        Ensure the extracted information is accurate, well-formatted, and provided in the exact JSON structure as shown above.
         """
         human_template = "Raw product data: {raw_data}"
         super().__init__(system_template, human_template, ["raw_data"])
@@ -435,76 +485,91 @@ class SimpleDataExtractionPrompt(BaseChatPrompt):
 class DataExtractionPrompt(BaseChatPrompt):
     def __init__(self):
         system_template = """
-        You are an AI assistant specialized in extracting detailed product information.
-        Your task is to identify and extract specific attributes from raw product data.
-        If information for an attribute is not available, use 'Not available'.
+        You are an intelligent assistant specialized in extracting detailed information from raw product data for computer hardware, particularly embedded systems, development kits, and industrial communication devices. Your goal is to identify and extract specific attributes related to a product. Follow these guidelines:
+
+        1. Extract information for each attribute listed below.
+        2. Each extracted feature should contain a single, distinct piece of information, with confidence score.
+        3. Ensure consistency across all features - avoid contradictions.
+        4. For names, like product name, or manufacturer name, ensure it is in clear, capital case, singular, without special characters. (Only the official name, dont include Code Name, or any other variant)
+        5. The following attributes should always be single values, not lists: name, manufacturer, form_factor, processor_architecture, processor_manufacturer, input_voltage, operating_temperature_max, operating_temperature_min.
+        6. If information for an attribute is not available or not applicable, use 'Not available' with a confidence score of 0.
+        7. For each attribute, provide:
+           - "value": the extracted information.
+           - "confidence": a score between 0 and 1 indicating confidence in the extraction.
+        8. For list-type attributes:
+           - If data is available, provide items as a JSON array.
+           - If data is not available, use 'Not available' (as a string).
+        9. Use the exact attribute names as provided in the JSON structure below.
 
         Extract the following attributes:
-        - name: Product name (clear, capital case, no special characters, singular)
-        - manufacturer: Company name (clear, capital case, no special characters, singular)
-        - form_factor: Physical dimensions or form factor
-        - processor: Processor type or model
-        - core_count: Number of processor cores
-        - processor_tdp: Processor's thermal design power
-        - memory: Memory type and size
-        - io: Input/output interfaces
-        - operating_system: Operating system or board support package
-        - environmentals: Environmental specifications (e.g., operating temperature)
-        - certifications: Product certifications
-        - short_summary: Brief product summary
-        - full_summary: Comprehensive product summary
-        - full_product_description: Complete product description
+        {attribute_descriptions}
 
-        For each attribute, provide a value and a confidence score between 0 and 1.
-        Provide the extracted details in JSON format.
+        Ensure the extracted information is accurate, well-formatted, and provided in the exact nested JSON structure as shown above, with confidence score for each attribute
         """
         human_template = "Raw product data: {raw_data}"
-        super().__init__(system_template, human_template, ["raw_data"])
+        super().__init__(system_template, human_template, ["raw_data", "attribute_descriptions"])
 
 
-class ContextualExtractionPrompt(BaseChatPrompt):
+class MissingFeatureExtractionPrompt(BaseChatPrompt):
     def __init__(self):
         system_template = """
         You are an AI assistant specialized in extracting product information from context.
-        Your task is to identify and extract the following specific attributes: {features_to_extract}.
-        Ensure the extracted information is accurate and provided in JSON format.
-        For each attribute, provide a value and a confidence score between 0 and 1.
+        Your task is to identify and extract **only** the following specific attributes, provided in the nested JSON structure below. Ensure the extracted information is accurate and provided in the same nested JSON format.
+
+        For each attribute, provide:
+        - "value": the extracted information.
+        - "confidence": a score between 0 and 1.
         If information for an attribute is not found, use 'Not available' with a confidence score of 0.
+        Ensure that attributes like name, manufacturer, form_factor, processor_architecture, processor_manufacturer, input_voltage, operating_temperature_max, and operating_temperature_min are always single string values, not lists.
+
+        Attributes to extract:
+        {features_to_extract}
         """
         human_template = """
-        Context: {context}
+        Context:
+        {context}
 
-        Extracted features so far: {extracted_features}
+        Extracted features so far:
+        {extracted_features}
 
-        Please provide the following missing features based on the given context:
-        {features_to_extract}
+        Please provide **only** the missing features based on the given context, following the same nested JSON structure as provided in 'Attributes to extract'.
 
-        Format your response as a JSON object containing only the missing features.
-        For each feature, provide a value and a confidence score between 0 and 1.
-        If a feature is not found in the context, use "Not available" with a confidence score of 0.
+        Response:
         """
-        super().__init__(system_template, human_template, ["context", "extracted_features", "features_to_extract"])
+        super().__init__(
+            system_template,
+            human_template,
+            ["context", "extracted_features", "features_to_extract"],
+        )
 
 
-class FeatureRefinementPrompt(BaseChatPrompt):
+class LowConfidenceFeatureRefinementPrompt(BaseChatPrompt):
     def __init__(self):
         system_template = """
         You are an AI assistant specialized in refining product information from context.
-        Your task is to refine the following specific attributes: {features_to_refine}.
-        Ensure the refined information is accurate and provided in JSON format.
-        For each attribute, provide a value and a confidence score between 0 and 1.
+        Your task is to refine **only** the following specific attributes, provided in the nested JSON structure below. Ensure the refined information is accurate and provided in the same nested JSON format.
+
+        For each attribute, provide:
+        - "value": the refined information.
+        - "confidence": a score between 0 and 1.
         If a feature cannot be refined, keep its current value and confidence score.
+
+        Attributes to refine:
+        {features_to_refine}
         """
         human_template = """
-        Context: {context}
+        Context:
+        {context}
 
-        Extracted features so far: {extracted_features}
+        Extracted features so far:
+        {extracted_features}
 
-        Please refine the following low confidence features based on the given context:
-        {features_to_refine}
+        Please refine the following low-confidence features based on the given context, following the same nested JSON structure as provided in 'Attributes to refine'.
 
-        Format your response as a JSON object containing only the refined features.
-        For each feature, provide a value and a confidence score between 0 and 1.
-        If a feature cannot be refined, keep its current value and confidence score.
+        Response:
         """
-        super().__init__(system_template, human_template, ["context", "extracted_features", "features_to_refine"])
+        super().__init__(
+            system_template,
+            human_template,
+            ["context", "extracted_features", "features_to_refine"],
+        )

@@ -1,7 +1,7 @@
 import csv
 import asyncio
 from socketio_handlers import SocketIOHandler
-from weaviate import initialize_weaviate
+from weaviate_old import initialize_weaviate
 from openai_client import OpenAIClient
 
 

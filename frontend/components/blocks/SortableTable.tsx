@@ -43,6 +43,10 @@ const SortableTable: React.FC<SortableTableProps> = ({ columns, data, onRowClick
   };
 
   const displayItem = (item: any, column: TableColumn) => {
+    if (item === null || item === undefined) {
+      return "-";
+    }
+
     if (column.cell) {
       return column.cell(item);
     }
@@ -53,10 +57,12 @@ const SortableTable: React.FC<SortableTableProps> = ({ columns, data, onRowClick
       return <Minus size={14} strokeWidth={2} className="text-red-500" />;
     } else if (item instanceof Date) {
       return item.toLocaleString();
+    } else if (Array.isArray(item)) {
+      return item.length > 0 ? item.join(", ") : "-";
     } else if (typeof item === "object") {
       return JSON.stringify(item);
     } else {
-      return item;
+      return item.toString();
     }
   };
 

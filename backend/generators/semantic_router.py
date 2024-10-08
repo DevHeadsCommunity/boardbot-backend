@@ -1,7 +1,6 @@
 import time
 import logging
-
-from models.message import Message
+from core.models.message import Message
 from .base_router import BaseRouter
 from typing import Any, Dict, List, Tuple
 

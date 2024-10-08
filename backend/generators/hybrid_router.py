@@ -1,7 +1,7 @@
 import time
 import logging
 
-from models.message import Message
+from core.models.message import Message
 from .base_router import BaseRouter
 from typing import Any, Dict, List, Tuple
 
@@ -33,7 +33,7 @@ class HybridRouter(BaseRouter):
                 temperature=0.1,
                 model=message.model,
             )
-            classification = self._clean_response(response)
+            classification = self.response_formatter._clean_response(response)
         else:
             classification = {
                 "category": route,
