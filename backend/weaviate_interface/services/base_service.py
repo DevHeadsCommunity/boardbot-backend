@@ -118,7 +118,8 @@ class BaseService(ABC):
     async def count(self) -> int:
         try:
             result = await self.client.aggregate(self.class_name)
-            return result.get("total_count", 0)
+            logger.info(f"Count result: {result}")
+            return result.total_count
         except Exception as e:
             logger.error(f"Error counting objects in {self.class_name}: {e}")
             return 0

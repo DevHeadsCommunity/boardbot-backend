@@ -165,7 +165,16 @@ class WeaviateService:
         self, limit: int = 10, offset: int = 0, filter_dict: Optional[Dict[str, Any]] = None
     ) -> Tuple[List[Dict[str, Any]], int]:
         try:
-            products = await self.wi.product_service.get_all(limit=limit, offset=offset, filters=filter_dict)
+            weaviate_filter = None
+            if filter_dict:
+                filter_conditions = []
+                for key, value in filter_dict.items():
+                    filter_conditions.append(Filter.by_property(key).equal(value))
+                weaviate_filter = (
+                    Filter.all_of(filter_conditions) if len(filter_conditions) > 1 else filter_conditions[0]
+                )
+
+            products = await self.wi.product_service.get_all(limit=limit, offset=offset, filters=weaviate_filter)
             total_count = await self.wi.product_service.count()
             return products, total_count
         except Exception as e:

@@ -13,7 +13,6 @@ class ProductService(BaseService):
 
     def get_properties(self) -> List[str]:
         return [
-            "_additional{id}",
             "product_id",
             "name",
             "manufacturer",
