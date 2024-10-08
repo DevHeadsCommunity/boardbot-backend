@@ -36,10 +36,23 @@ class QueryProcessor:
         )
         processed_response = self._clean_response(response)
 
+        # Validate filters
+        processed_response["filters"] = self._validate_filters(processed_response.get("filters", {}))
+
         # Add the original query to the expanded queries
         processed_response["expanded_queries"].insert(0, query)
 
         return processed_response, input_tokens, output_tokens
+
+    def _validate_filters(self, filters: Dict[str, Any]) -> Dict[str, Any]:
+        valid_filters = {}
+        valid_attributes = set(attribute_descriptions.keys())
+        for key, value in filters.items():
+            if key in valid_attributes:
+                valid_filters[key] = value
+            else:
+                logger.warning(f"Ignoring invalid filter attribute: {key}")
+        return valid_filters
 
     async def rerank_products(
         self,

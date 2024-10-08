@@ -4,6 +4,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from weaviate_interface import WeaviateInterface, route_descriptions
 from feature_extraction.product_data_preprocessor import ProductDataProcessor
 from weaviate.classes.query import Filter
+from weaviate.classes.config import Property, DataType
 
 logger = logging.getLogger(__name__)
 

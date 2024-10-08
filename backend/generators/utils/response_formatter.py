@@ -45,8 +45,8 @@ class ResponseFormatter:
     ) -> List[Dict[str, Any]]:
         product_details = []
         if products is not None:
-            llm_product_names = {p["name"] for p in llm_response.get("products", [])}
-            product_details = [product for product in products if product.get("name") in llm_product_names]
+            llm_product_ids = {p["product_id"] for p in llm_response.get("products", [])}
+            product_details = [product for product in products if product.get("product_id") in llm_product_ids]
         return product_details
 
     @staticmethod

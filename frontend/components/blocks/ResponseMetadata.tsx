@@ -12,19 +12,28 @@ interface ResponseMetadataProps {
 }
 
 const ResponseMetadata: React.FC<ResponseMetadataProps> = memo(function ResponseMetadata({ metadata, model }) {
-  const calculateTokenCost = (tokenCount: number, model: Model) => {
-    // TODO: this function should be updated to reflect the actual cost of the model,
-    // input, and output cost for a model is not the same, for example for gpt-4o input token cost is 5$ per million tokens, while output token cost is 10$ per million tokens
-
-    const costPerMillionTokens = model === "gpt-4o" ? 5 : 1;
+  const calculateTokenCost = (tokenCount: number, model: Model, isOutput: boolean) => {
+    let costPerMillionTokens;
+    if (model === "gpt-4o") {
+      costPerMillionTokens = isOutput ? 10 : 5; // $10 per million output tokens, $5 per million input tokens
+    } else {
+      costPerMillionTokens = isOutput ? 2 : 1; // Example rates for other models, adjust as needed
+    }
     return (tokenCount / 1000000) * costPerMillionTokens;
   };
 
-  const steps = ["classification", "expansion", "rerank", "generate"];
+  const formatCost = (cost: number) => {
+    return `$${cost.toFixed(2)}`;
+  };
 
+  const steps = Object.keys(metadata.timeTaken);
   const inputTotal = Object.values(metadata.inputTokenUsage).reduce((sum, value) => sum + value, 0);
   const outputTotal = Object.values(metadata.outputTokenUsage).reduce((sum, value) => sum + value, 0);
   const timeTotal = Object.values(metadata.timeTaken).reduce((sum, value) => sum + value, 0);
+
+  const inputCost = calculateTokenCost(inputTotal, model, false);
+  const outputCost = calculateTokenCost(outputTotal, model, true);
+  const totalCost = inputCost + outputCost;
 
   return (
     <Table>
@@ -53,10 +62,9 @@ const ResponseMetadata: React.FC<ResponseMetadataProps> = memo(function Response
         </TableRow>
         <TableRow>
           <TableCell className="font-bold">Cost</TableCell>
-          <TableCell>{calculateTokenCost(inputTotal, model).toFixed(4)}</TableCell>
-          <TableCell>{calculateTokenCost(outputTotal, model).toFixed(4)}</TableCell>
-          {/* TODO: We need to define a funtion that canlculates to total cost by adding the input and output costs  */}
-          <TableCell>{calculateTokenCost(inputTotal, model).toFixed(4) + calculateTokenCost(outputTotal, model).toFixed(4)}</TableCell>
+          <TableCell>{formatCost(inputCost)}</TableCell>
+          <TableCell>{formatCost(outputCost)}</TableCell>
+          <TableCell>{formatCost(totalCost)}</TableCell>
         </TableRow>
       </TableBody>
     </Table>

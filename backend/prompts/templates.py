@@ -70,39 +70,68 @@ class QueryProcessorPrompt(BaseChatPrompt):
         system_template = (
             PROCESSING_BASE
             + """
-        Your task is to process and expand the given query to improve product search results.
-        Extract relevant product attributes, generate expanded queries, and identify additional query context.
+        Your task is to process and expand queries related to computer hardware, particularly single-board computers, embedded systems, and development kits. Extract relevant product attributes, generate expanded queries, and identify additional query context.
 
         Perform the following tasks:
-        1. Extract relevant product attributes mentioned or implied in the query. Use these to create filters.
-        2. Generate {num_expansions} expanded queries that could help find relevant products. These should be based on the original query and the extracted attributes.
-        3. Identify any additional query context, such as the number of products requested or any sorting preferences.
+        1. Carefully extract relevant product attributes mentioned or implied in the query. Use these to create filters.
+        2. Only use attribute names from the provided list for filters. Do not invent new attributes or use attributes not in the list.
+        3. Generate {num_expansions} expanded queries that could help find relevant products. These should be based on the original query and the extracted attributes.
+        4. Identify any additional query context, such as the number of products requested or any sorting preferences.
 
         Respond in JSON format as follows:
         {{
             "filters": {{
                 // Include only relevant attributes from the provided list
                 // If an attribute is not mentioned or cannot be inferred, do not include it
-                // Use exact values where possible, or ranges if a specific value is not given
+                // Use exact values or ranges as appropriate
             }},
             "expanded_queries": [
                 // List of {num_expansions} expanded queries
             ],
             "query_context": {{
-                "num_products_requested": 5, // Default to 5 if not specified in the query
-                "sort_preference": null // Any sorting preference mentioned (e.g., "cheapest", "newest"), or null if not specified
+                "num_products_requested": 5,
+                "sort_preference": null
             }}
         }}
 
         Guidelines:
-        - Only use attribute names from the provided list for filters.
-        - Ensure all filter values are specific and aligned with our product database format.
-        - Use technical specifications and numeric values where applicable.
-        - For numeric attributes, use ranges when a specific value is not given (e.g., "processor_speed": ">=2.5 GHz").
-        - Always include "num_products_requested" in query_context, defaulting to 5 if not specified in the query.
-        - Expanded queries should provide variations that might help in finding relevant products, considering different phrasings or related terms.
-        - If the query is very specific, some expanded queries can be more general to broaden the search.
-        - If the query is vague, some expanded queries should attempt to be more specific based on common use cases or popular configurations.
+        - Use only attribute names from the provided list for filters. Omit attributes not mentioned or implied in the query.
+        - Be specific with filter values. Use exact values where mentioned.
+        - For processor_core_count, use numeric values (e.g., "2", "4", "8").
+        - For memory and onboard_storage, use the specific values mentioned (e.g., "8 GB DDR3L", "64 GB eMMC").
+        - For processor_architecture, use specific terms like "ARM" or "x86".
+        - For operating_system_bsp, include specific OS names mentioned (e.g., ["Linux", "Windows"]).
+        - Include "form_factor" as "Single Board Computer" when SBCs are explicitly mentioned.
+        - For processor_manufacturer, use specific names like "INTEL", "AMD", or "FREESCALE" when mentioned.
+        - Use ranges for operating temperatures when mentioned (e.g., "operating_temperature_min": "-20", "operating_temperature_max": "60").
+        - Generate diverse expanded queries, including more specific and slightly broader variations.
+        - Set num_products_requested to the number specified in the query, or default to 5 if not mentioned.
+        - Do not include explanatory comments in the final JSON response.
+        - If a query mentions attributes not in the provided list, do not include them in the filters. Instead, use relevant attributes from the list to approximate the intent.
+
+        Example query and response:
+        Query: "Find Single Board Computers with x86 architecture and Linux support"
+
+        Response:
+        {{
+            "filters": {{
+                "form_factor": "Single Board Computer",
+                "processor_architecture": "x86",
+                "operating_system_bsp": ["Linux"]
+            }},
+            "expanded_queries": [
+                "Find Single Board Computers with x86 architecture and Linux support",
+                "x86 SBCs with Linux compatibility",
+                "Linux-supported single board computers with x86 processors",
+                "x86 architecture embedded systems running Linux"
+            ],
+            "query_context": {{
+                "num_products_requested": 5,
+                "sort_preference": null
+            }}
+        }}
+
+        Strive for precision and relevance in your filters and expanded queries. Your goal is to capture all relevant information from the query while adhering strictly to the provided attribute list.
         """
         )
         human_template = """
@@ -124,8 +153,8 @@ class ProductRerankingPrompt(BaseChatPrompt):
         Your task is to rerank the given products based on their relevance to the user query and the specified filters.
 
         Instructions:
-        1. Analyze each product against ALL criteria specified in the user query and filters.
-        2. Rank products based on how closely they match the criteria.
+        1. Analyze each product against ONLY the criteria specified in the filters.
+        2. Rank products based on how closely they match the criteria in the filters.
         3. Return the top {top_k} most relevant products.
         4. Provide a clear justification for the ranking of each product.
 
@@ -142,29 +171,30 @@ class ProductRerankingPrompt(BaseChatPrompt):
         {{
             "products": [
                 {{
-                    "name": "Product Name",
+                    "product_id": "Product ID",
                     "relevance_score": 0.95,
-                    "matching_criteria": ["List of criteria that this product matches"],
-                    "missing_criteria": ["List of criteria that this product doesn't match, if any"]
+                    "matching_criteria": ["List of criteria from the filters that this product matches"],
+                    "missing_criteria": ["List of criteria from the filters that this product doesn't match"]
                 }},
                 // ... more products
             ],
-            "justification": "Clear, concise explanation of the ranking, addressing each criterion from the query and filters."
+            "justification": "Clear, concise explanation of the ranking, addressing only the criteria from the filters."
         }}
 
         Guidelines:
+        - Only consider attributes present in the provided filters. Ignore any other information.
+        - Do not introduce or consider criteria not present in the filters, even if mentioned in the query.
         - Prioritize exact matches of specified criteria over general relevance.
-        - For numerical criteria (e.g., processor frequency, memory size), the product must meet or exceed the specified value.
-        - If no products fully match all criteria, include partial matches and clearly explain the mismatches.
+        - If no products fully match all criteria in the filters, include partial matches and clearly explain the mismatches.
         - Provide a relevance score (0-1) for each product, where 1 is a perfect match and 0 is completely irrelevant.
-        - In the justification, explain why products are included or excluded, addressing each criterion from the query and filters.
-        - If no products match any criteria, return an empty product list and explain why in the justification.
-        - Consider the query context (e.g., number of products requested, sort preference) in your ranking.
+        - In the justification, explain why products are included or excluded, addressing only the criteria from the filters.
+        - If no products match any criteria from the filters, return an empty product list and explain why in the justification.
+        - Completely disregard any criteria or attributes not present in the filters, even if they seem relevant to the query.
         """
         )
 
         human_template = """
-        User Query: {query}
+        Filters: {filters}
         Products to Rerank: {products}
 
         Reranked Products:
@@ -172,7 +202,7 @@ class ProductRerankingPrompt(BaseChatPrompt):
         super().__init__(
             system_template,
             human_template,
-            ["query", "products", "attribute_mapping_str", "filters", "query_context", "top_k"],
+            ["products", "attribute_mapping_str", "filters", "query_context", "top_k"],
         )
 
 
@@ -291,7 +321,7 @@ class VagueIntentResponsePrompt(BaseChatPrompt):
             "message": "An informative message addressing the user's query, providing general product category information, and any additional context",
             "products": [
                 {{
-                    "name": "Product Name"
+                    "product_id": "Product ID", // We only need product id
                 }},
                 // ... 2-3 more products if applicable
             ],
@@ -323,35 +353,41 @@ class ClearIntentResponsePrompt(BaseChatPrompt):
         system_template = (
             USER_FACING_BASE
             + """
-        Your task is to generate a comprehensive response to a clear intent product query based on the provided reranking results and relevant products.
+        Your task is to generate an engaging and conversational response to a clear intent product query based on the provided reranking results and relevant products.
 
         Instructions:
         1. Analyze the user's query and the reranking results.
-        2. Generate a response that directly addresses the user's specific requirements.
-        3. Only include products that FULLY match ALL criteria specified in the user's query.
-        4. Provide clear reasoning for product inclusion or exclusion.
+        2. Generate a response that addresses the user's requirements in a natural, conversational tone.
+        3. Include ALL products provided in the reranking results, sorted by their relevance score.
+        4. Discuss the products that best match the criteria and those that partially match in a flowing, engaging manner.
+        5. Avoid explicitly categorizing products as "perfect matches" or "partial matches". Instead, weave this information into the conversation naturally.
 
         Respond in the following JSON format:
         {{
-            "message": "A concise introductory message addressing the user's query",
+            "message": "An engaging, conversational message addressing the query results, highlighting relevant products and their features",
             "products": [
                 {{
-                    "name": "Product Name" // only the name of the product
+                    "product_id": "Product ID", // We only need product id
                 }},
-                // ... more products if applicable
+                // ... include all products from the reranking results
             ],
-            "reasoning": "Clear explanation of product selection, including why products were included or excluded",
-            "follow_up_question": "A single, relevant follow-up question based on the query and results"
+            "reasoning": "A natural explanation of the product selection and how they relate to the user's needs",
+            "follow_up_question": "A conversational follow-up question to further assist the user"
         }}
 
         Guidelines:
-        - Ensure absolute accuracy in matching products to the query criteria.
-        - Do NOT confuse processor manufacturer with product manufacturer, or any other attributes.
-        - If no products fully match ALL criteria, return an empty product list and explain why in the reasoning.
-        - For products that match some but not all criteria, mention them in the reasoning but do not include in the product list.
-        - The introductory message should be concise but informative, directly addressing the user's requirements.
-        - The reasoning should be clear and detailed, explaining how each included product meets the criteria.
-        - The follow-up question should aim to clarify or refine the user's requirements if needed.
+        - Write in a friendly, approachable tone as if you're having a conversation with the user.
+        - Keep the "message" concise and focused, ideally not exceeding a few sentences.
+        - Highlight the most relevant products first, mentioning key features that align with the user's needs.
+        - Avoid lengthy descriptions; focus on how each product meets the user's criteria.
+        - Don't repeat the user's query verbatim. Instead, refer to their requirements naturally within the context of your response.
+        - Ensure the response is engaging and human-like, avoiding robotic or overly formal language.
+        - Highlight the most relevant products first, smoothly transitioning to less perfect matches.
+        - Briefly mention key features or specifications that make each product relevant to the user's needs.
+        - If no products perfectly match all criteria, acknowledge this in a positive way and focus on the closest matches.
+        - Keep the language simple and avoid overly technical jargon unless it's essential.
+        - The "reasoning" should feel like a natural continuation of the conversation, explaining your recommendations.
+        - Frame the follow-up question as a curious inquiry to learn more about the user's needs or preferences.
         """
         )
         human_template = """
@@ -409,7 +445,7 @@ class DynamicAgentPrompt(BaseChatPrompt):
             "message": "A concise response to the user's query",
             "products": [
                 {{
-                    "name": "Product Name", // We only need the name of the product
+                    "product_id": "Product ID", // We only need product id
                 }},
                 // ... more products if applicable
             ],

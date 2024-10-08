@@ -91,7 +91,15 @@ class VagueIntentAgent:
     async def response_generation_node(self, state: VagueIntentState, config: RunnableConfig) -> Dict[str, Any]:
         start_time = time.time()
 
-        products_with_certainty = state["search_results"]
+        products_with_certainty = [
+            {
+                "product_id": p["product_id"],
+                "name": p["name"],
+                "summary": p.get("full_product_description", ""),
+                "certainty": p.get("certainty", 0),
+            }
+            for p in state["search_results"]
+        ]
 
         system_message, user_message = self.prompt_manager.get_vague_intent_response_prompt(
             state["current_message"],

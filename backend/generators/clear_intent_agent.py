@@ -95,10 +95,29 @@ class ClearIntentAgent:
         async def search_query(query: str) -> List[Dict[str, Any]]:
             return await self.weaviate_service.search_products(query=query, limit=limit, search_type="semantic")
 
-        results = await asyncio.gather(*[search_query(query) for query in queries])
-        all_results = [item for sublist in results for item in sublist]
+        async def hybrid_search_with_filter(filter_dict: Dict[str, Any]) -> List[Dict[str, Any]]:
+            return await self.weaviate_service.search_products(
+                query=state["current_message"], limit=limit, filters=filter_dict, search_type="hybrid"
+            )
 
-        unique_results = {result["name"].lower(): result for result in all_results}.values()
+        # Prepare all search tasks
+        search_tasks = [search_query(query) for query in queries]
+
+        # Add hybrid search with all filters combined
+        search_tasks.append(hybrid_search_with_filter(filters))
+
+        # Add hybrid searches with individual filters
+        for key, value in filters.items():
+            search_tasks.append(hybrid_search_with_filter({key: value}))
+
+        # Run all searches in parallel
+        all_search_results = await asyncio.gather(*search_tasks)
+
+        # Combine and deduplicate results
+        all_results = [item for sublist in all_search_results for item in sublist]
+        unique_results = {result["product_id"].lower(): result for result in all_results}.values()
+
+        logger.info(f"\n\n===:> Unique results: {list(unique_results)}\n\n")
 
         return {
             "search_results": list(unique_results),
@@ -109,27 +128,31 @@ class ClearIntentAgent:
         start_time = time.time()
         products_for_reranking = [
             {
+                "product_id": p["product_id"],
                 "name": p["name"],
                 **{attr: p.get(attr, "Not specified") for attr in state["filters"].keys()},
-                "certainty": p.get("certainty", 0),
+                "summary": p.get("full_product_description", ""),
             }
             for p in state["search_results"]
         ]
         logger.info(f"Products for reranking: {products_for_reranking}")
+        top_k = state["query_context"].get("num_products_requested", 5)
         reranked_result, input_tokens, output_tokens = await self.query_processor.rerank_products(
             state["current_message"],
             state["chat_history"],
             products_for_reranking,
             state["filters"],
             state["query_context"],
-            top_k=10,
+            top_k=top_k,
             model=state["model_name"],
         )
         logger.info(f"Reranked result: {reranked_result}")
 
-        name_to_product = {p["name"]: p for p in state["search_results"]}
+        id_to_product = {p["product_id"]: p for p in state["search_results"]}
         final_results = [
-            name_to_product.get(p["name"], p) for p in reranked_result["products"] if p["name"] in name_to_product
+            id_to_product.get(p["product_id"], p)
+            for p in reranked_result["products"]
+            if p["product_id"] in id_to_product
         ]
 
         return {
@@ -146,6 +169,7 @@ class ClearIntentAgent:
         relevant_products = json.dumps(
             [
                 {
+                    "product_id": p["product_id"],
                     "name": p["name"],
                     **{attr: p.get(attr, "Not specified") for attr in state["filters"].keys()},
                     "summary": p.get("full_product_description", ""),
@@ -161,6 +185,9 @@ class ClearIntentAgent:
             relevant_products,
             json.dumps(state["reranking_result"], indent=2),
         )
+
+        logger.info(f"\n\nSystem message: {system_message}\n\n")
+        logger.info(f"\n\nUser message: {user_message}\n\n")
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
             user_message=user_message,

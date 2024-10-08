@@ -16,8 +16,16 @@ const filterableFeatures = [
   { value: "form_factor", label: "Form Factor" },
   { value: "processor_architecture", label: "Processor Architecture" },
   { value: "processor_core_count", label: "Core Count" },
+  { value: "processor_manufacturer", label: "Processor Manufacturer" },
+  { value: "processor_tdp", label: "Processor TDP" },
   { value: "memory", label: "Memory" },
-  { value: "operating_system", label: "Operating System" },
+  { value: "onboard_storage", label: "Onboard Storage" },
+  { value: "input_voltage", label: "Input Voltage" },
+  { value: "operating_system_bsp", label: "Operating System BSP" },
+  { value: "operating_temperature_max", label: "Max Operating Temperature" },
+  { value: "operating_temperature_min", label: "Min Operating Temperature" },
+  { value: "price", label: "Price" },
+  { value: "stock_availability", label: "Stock Availability" },
 ];
 
 const ProductComponent = () => {
@@ -31,8 +39,19 @@ const ProductComponent = () => {
     { header: "Form Factor", accessor: "formFactor", sortable: true },
     { header: "Processor Architecture", accessor: "processorArchitecture", sortable: true },
     { header: "Core Count", accessor: "processorCoreCount", sortable: true },
+    { header: "Processor Manufacturer", accessor: "processorManufacturer", sortable: true },
+    { header: "Processor TDP", accessor: "processorTdp", sortable: true },
     { header: "Memory", accessor: "memory", sortable: true },
-    { header: "Operating System", accessor: "operatingSystemBsp", sortable: true },
+    { header: "Onboard Storage", accessor: "onboardStorage", sortable: true },
+    { header: "Input Voltage", accessor: "inputVoltage", sortable: true },
+    { header: "I/O Count", accessor: "ioCount", sortable: true, cell: (value: string[]) => value.join(", ") },
+    { header: "Wireless", accessor: "wireless", sortable: true, cell: (value: string[]) => value.join(", ") },
+    { header: "Operating System BSP", accessor: "operatingSystemBsp", sortable: true, cell: (value: string[]) => value.join(", ") },
+    { header: "Max Operating Temperature", accessor: "operatingTemperatureMax", sortable: true },
+    { header: "Min Operating Temperature", accessor: "operatingTemperatureMin", sortable: true },
+    { header: "Certifications", accessor: "certifications", sortable: true, cell: (value: string[]) => value.join(", ") },
+    { header: "Price", accessor: "price", sortable: true },
+    { header: "Stock Availability", accessor: "stockAvailability", sortable: true },
   ];
 
   const handleFilterFeatureChange = (value: string) => {
