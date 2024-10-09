@@ -120,8 +120,8 @@ class PromptManager:
     def get_low_confidence_prompt(self, query: str, classification: Dict[str, Any]) -> Tuple[str, str]:
         return self.get_prompt("low_confidence", query=query, classification=classification)
 
-    def get_vague_intent_response_prompt(self, query: str, products: str) -> Tuple[str, str]:
-        return self.get_prompt("vague_intent_response", query=query, products=products)
+    def get_vague_intent_response_prompt(self, query: str, products: str, product_count: int) -> Tuple[str, str]:
+        return self.get_prompt("vague_intent_response", query=query, products=products, product_count=product_count)
 
     def get_clear_intent_response_prompt(self, query: str, products: str, reranking_result: str) -> Tuple[str, str]:
         return self.get_prompt(

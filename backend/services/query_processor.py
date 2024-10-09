@@ -25,7 +25,7 @@ class QueryProcessor:
         chat_history: List[Dict[str, str]],
         num_expansions: int = 3,
         model: str = "gpt-4o",
-        temperature: float = 0.1,
+        temperature: float = 0,
     ) -> Dict[str, Any]:
         system_message, user_message = self.prompt_manager.get_query_processor_prompt(
             query, num_expansions, attribute_descriptions=attribute_descriptions
@@ -63,7 +63,7 @@ class QueryProcessor:
         query_context: Dict[str, Any],
         top_k: int = 5,
         model: str = "gpt-4o",
-        temperature: float = 0.1,
+        temperature: float = 0,
     ) -> Tuple[Dict[str, Any], int, int]:
         attribute_mapping_str = self._generate_attribute_mapping_str(products)
         system_message, user_message = self.prompt_manager.get_product_reranking_prompt(

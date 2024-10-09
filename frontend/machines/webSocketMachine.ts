@@ -36,7 +36,9 @@ export const webSocketMachine = setup({
         ...event.data,
         sessionId: context.sessionId,
       });
+
       const snake_case_message = requestDataToJson(message);
+      console.log("\n\n:===> Sending message:", snake_case_message, "\n\n");
       context.socket?.emit("text_message", snake_case_message);
     },
   },
@@ -63,6 +65,7 @@ export const webSocketMachine = setup({
       const handleTextResponse = (data: unknown) => {
         try {
           const validatedData = responseMessageFromJson(data);
+          console.log("\n\n:===> Received message:", validatedData, "\n\n");
           sendBack({ type: "socketListener.messageReceived", data: validatedData });
         } catch (error) {
           console.error("Invalid response data:", error);

@@ -11,7 +11,7 @@ from dependencies import container, get_socket_handler, get_weaviate_service, ge
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # CORS configuration
-origins = ["http://localhost:3000", "http://192.168.28.50:3000", "https://api.boardbot.ai"]
+origins = ["http://localhost:3000", "http://192.168.181.50:3000", "https://api.boardbot.ai", "https://boardbot.ai"]
 
 
 class CustomCORSMiddleware:

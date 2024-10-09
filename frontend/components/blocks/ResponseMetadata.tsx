@@ -15,7 +15,7 @@ const ResponseMetadata: React.FC<ResponseMetadataProps> = memo(function Response
   const calculateTokenCost = (tokenCount: number, model: Model, isOutput: boolean) => {
     let costPerMillionTokens;
     if (model === "gpt-4o") {
-      costPerMillionTokens = isOutput ? 10 : 5; // $10 per million output tokens, $5 per million input tokens
+      costPerMillionTokens = isOutput ? 10 : 2.5; // $10 per million output tokens, $2.5 per million input tokens
     } else {
       costPerMillionTokens = isOutput ? 2 : 1; // Example rates for other models, adjust as needed
     }
