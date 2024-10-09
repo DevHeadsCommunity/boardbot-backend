@@ -79,7 +79,7 @@ class VagueIntentAgent:
     async def product_search_node(self, state: VagueIntentState, config: RunnableConfig) -> Dict[str, Any]:
         start_time = time.time()
         results = await self.weaviate_service.search_products(
-            state["semantic_search_query"], limit=state["product_count"]
+            state["semantic_search_query"], limit=state["product_count"] * 2
         )
         logger.info(f"Found {len(results)} products")
 
@@ -104,13 +104,14 @@ class VagueIntentAgent:
         system_message, user_message = self.prompt_manager.get_vague_intent_response_prompt(
             state["current_message"],
             json.dumps(products_with_certainty, indent=2),
+            state["product_count"],
         )
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
             user_message=user_message,
             system_message=system_message,
             formatted_chat_history=state["chat_history"],
-            temperature=0.1,
+            temperature=0,
             model=state["model_name"],
         )
         logger.info("Generated response for vague intent query")

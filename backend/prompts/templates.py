@@ -104,7 +104,7 @@ class QueryProcessorPrompt(BaseChatPrompt):
         - Include "form_factor" as "Single Board Computer" when SBCs are explicitly mentioned.
         - For processor_manufacturer, use specific names like "INTEL", "AMD", or "FREESCALE" when mentioned.
         - Use ranges for operating temperatures when mentioned (e.g., "operating_temperature_min": "-20", "operating_temperature_max": "60").
-        - Generate diverse expanded queries, including more specific and slightly broader variations.
+        - Generate consistent expanded queries closely related to the original query without introducing new variations.
         - Set num_products_requested to the number specified in the query, or default to 5 if not mentioned.
         - Do not include explanatory comments in the final JSON response.
         - If a query mentions attributes not in the provided list, do not include them in the filters. Instead, use relevant attributes from the list to approximate the intent.
@@ -153,10 +153,12 @@ class ProductRerankingPrompt(BaseChatPrompt):
         Your task is to rerank the given products based on their relevance to the user query and the specified filters.
 
         Instructions:
-        1. Analyze each product against ONLY the criteria specified in the filters.
+        1. Analyze each product against the criteria specified in the filters.
         2. Rank products based on how closely they match the criteria in the filters.
-        3. Return the top {top_k} most relevant products.
-        4. Provide a clear justification for the ranking of each product.
+        3. Include ALL products that match at least one criterion, sorted by relevance.
+        4. If fewer than {top_k} products match any criteria, include all matching products.
+        5. If more than {top_k} products match at least one criterion, return the top {top_k} most relevant products.
+        6. Provide a clear justification for the ranking of each product.
 
         Use the following attribute mapping for evaluation:
         {attribute_mapping_str}
@@ -178,17 +180,15 @@ class ProductRerankingPrompt(BaseChatPrompt):
                 }},
                 // ... more products
             ],
-            "justification": "Clear, concise explanation of the ranking, addressing only the criteria from the filters."
+            "justification": "Clear, concise explanation of the ranking, addressing the criteria from the filters."
         }}
 
         Guidelines:
-        - Only consider attributes present in the provided filters. Ignore any other information.
-        - Do not introduce or consider criteria not present in the filters, even if mentioned in the query.
-        - Prioritize exact matches of specified criteria over general relevance.
-        - If no products fully match all criteria in the filters, include partial matches and clearly explain the mismatches.
+        - Include ALL products that match at least one criterion, up to {top_k} products.
+        - Sort products by relevance, with those matching more criteria ranked higher.
         - Provide a relevance score (0-1) for each product, where 1 is a perfect match and 0 is completely irrelevant.
-        - In the justification, explain why products are included or excluded, addressing only the criteria from the filters.
-        - If no products match any criteria from the filters, return an empty product list and explain why in the justification.
+        - In the justification, explain the overall ranking and mention if some products only partially match the criteria.
+        - If no products match any criteria, return an empty product list and explain why in the justification.
         - Completely disregard any criteria or attributes not present in the filters, even if they seem relevant to the query.
         """
         )
@@ -312,40 +312,41 @@ class VagueIntentResponsePrompt(BaseChatPrompt):
         Instructions:
         1. Analyze the user's query and the provided product search results.
         2. Generate a response that provides general information related to the query.
-        3. Suggest a few relevant products that may interest the user.
-        4. Provide reasoning for your suggestions and information.
-        5. Formulate a follow-up question to help the user specify their requirements.
+        3. Select exactly {product_count} products that best answer the user's query. Include all {product_count} products, even if some only partially match the query.
+        4. Sort the products by relevance to the query, with the most relevant products first.
+        5. Provide reasoning for your selection and information.
+        6. Formulate a follow-up question to help the user specify their requirements.
 
         Respond in the following JSON format:
         {{
             "message": "An informative message addressing the user's query, providing general product category information, and any additional context",
             "products": [
                 {{
-                    "product_id": "Product ID", // We only need product id
+                    "product_id": "Product ID" // We only need product id
                 }},
-                // ... 2-3 more products if applicable
+                // ... Exactly {product_count} products
             ],
-            "reasoning": "Explanation of why these products were suggested and how they relate to the query. Include any additional general information about the product category or technology here.",
+            "reasoning": "Explanation of why these products were selected and how they relate to the query. Include any additional general information about the product category or technology here. If some products only partially match the query, explain this.",
             "follow_up_question": "A question to help the user specify their requirements or narrow down their search"
         }}
 
         Guidelines:
         - The message should provide an overview of the product category or technology mentioned in the query, along with any relevant general information.
-        - Include 2-4 relevant products in the products list.
-        - In the reasoning, explain why each product was suggested and how it relates to the query. Also include any additional context or explanations about the product category here.
-        - Avoid making assumptions about specific requirements the user hasn't mentioned.
-        - The follow-up question should aim to clarify the user's needs or use case.
-        - If the query is extremely vague, focus on providing general information in the message and reasoning, and ask clarifying questions.
-        - Maintain a helpful and informative tone, encouraging the user to provide more details.
+        - Include exactly {product_count} products in the products list, sorted by relevance to the query.
+        - In the reasoning, explain the overall selection and mention if some products only partially match the query.
+        - Maintain a helpful and informative tone, providing answers rather than suggestions.
+        - Ensure that the response adheres strictly to the specified JSON format.
+        - Frame the follow-up question as a curious inquiry to learn more about the user's needs or preferences.
         """
         )
         human_template = """
         User Query: {query}
         Relevant Products: {products}
+        Number of Products to Return: {product_count}
 
         Response:
         """
-        super().__init__(system_template, human_template, ["query", "products"])
+        super().__init__(system_template, human_template, ["query", "products", "product_count"])
 
 
 class ClearIntentResponsePrompt(BaseChatPrompt):
@@ -367,7 +368,7 @@ class ClearIntentResponsePrompt(BaseChatPrompt):
             "message": "An engaging, conversational message addressing the query results, highlighting relevant products and their features",
             "products": [
                 {{
-                    "product_id": "Product ID", // We only need product id
+                    "product_id": "Product ID"
                 }},
                 // ... include all products from the reranking results
             ],
@@ -379,14 +380,9 @@ class ClearIntentResponsePrompt(BaseChatPrompt):
         - Write in a friendly, approachable tone as if you're having a conversation with the user.
         - Keep the "message" concise and focused, ideally not exceeding a few sentences.
         - Highlight the most relevant products first, mentioning key features that align with the user's needs.
-        - Avoid lengthy descriptions; focus on how each product meets the user's criteria.
-        - Don't repeat the user's query verbatim. Instead, refer to their requirements naturally within the context of your response.
+        - Include ALL products from the reranking results, even if some only partially match the criteria.
         - Ensure the response is engaging and human-like, avoiding robotic or overly formal language.
-        - Highlight the most relevant products first, smoothly transitioning to less perfect matches.
-        - Briefly mention key features or specifications that make each product relevant to the user's needs.
         - If no products perfectly match all criteria, acknowledge this in a positive way and focus on the closest matches.
-        - Keep the language simple and avoid overly technical jargon unless it's essential.
-        - The "reasoning" should feel like a natural continuation of the conversation, explaining your recommendations.
         - Frame the follow-up question as a curious inquiry to learn more about the user's needs or preferences.
         """
         )
@@ -424,7 +420,8 @@ class DynamicAgentPrompt(BaseChatPrompt):
             "action": "tool",
             "tool": "tool_name",
             "input": {{
-                // tool input parameters
+                "query": "search query",
+                "limit": 5  // Use 5 as default, or the number specified by the user
             }}
         }}
 
@@ -438,7 +435,7 @@ class DynamicAgentPrompt(BaseChatPrompt):
                 {{
                     "product_id": "Product ID"
                 }},
-                // ... more products if applicable
+                // ... Include all products from the search results, up to the requested limit
             ],
             "reasoning": "Your reasoning or additional information",
             "follow_up_question": "A question to engage the user further"
@@ -446,10 +443,14 @@ class DynamicAgentPrompt(BaseChatPrompt):
         Always ensure your responses are in valid JSON format.
 
         Guidelines:
-            Use tools when necessary to retrieve information needed to answer the user's query.
-            Do not mention the tools or the fact that you are using them in the final answer.
-            Be concise and informative in your responses.
-            Maintain a professional and friendly tone.
+        - Use tools when necessary to retrieve information needed to answer the user's query.
+        - Do not mention the tools or the fact that you are using them in the final answer.
+        - Be concise and informative in your responses.
+        - Maintain a professional and friendly tone.
+        - Include all products returned by the search, up to the limit specified by the user or 5 if not specified.
+        - Sort products by relevance, mentioning the most relevant ones first in your response.
+        - If some products only partially match the query, acknowledge this in your response.
+        - Frame the follow-up question as a curious inquiry to learn more about the user's needs or preferences.
         """
         )
 

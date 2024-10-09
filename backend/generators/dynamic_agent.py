@@ -140,12 +140,19 @@ class DynamicAgent:
         tool_input = action.get("input", {})
 
         if tool_name == "direct_search":
-            return await self.execute_direct_search(state, tool_input)
+            tool_output = await self.execute_direct_search(state, tool_input)
         elif tool_name == "expanded_search":
-            return await self.execute_expanded_search(state, tool_input)
+            tool_output = await self.execute_expanded_search(state, tool_input)
         else:
             logger.error(f"Unknown tool: {tool_name}")
             raise ValueError(f"Unknown tool: {tool_name}")
+
+        return {
+            "tool_output": tool_output,
+            "input_tokens": {"action_execution": tool_output.get("input_tokens", 0)},
+            "output_tokens": {"action_execution": tool_output.get("output_tokens", 0)},
+            "time_taken": {"action_execution": time.time() - start_time},
+        }
 
     async def response_generation_node(self, state: DynamicAgentState, config: RunnableConfig) -> Dict[str, Any]:
         start_time = time.time()
@@ -154,8 +161,12 @@ class DynamicAgent:
         chat_history = self.prepare_chat_history(state)
         system_message, user_message = self.prompt_manager.get_dynamic_agent_prompt(state["current_message"])
 
+        # Include tool output in the user message if available
+        if state.get("tool_output"):
+            user_message += f"\n\nTool Output: {json.dumps(state['tool_output'])}"
+
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
-            user_message=state["current_message"],
+            user_message=user_message,
             system_message=system_message,
             formatted_chat_history=chat_history,
             model=state["model_name"],
@@ -190,13 +201,11 @@ class DynamicAgent:
         logger.info(f"Executing direct_search with query: {query} and limit: {limit}")
 
         results = await self.weaviate_service.search_products(query=query, limit=limit)
-        tool_output = {"tool": "direct_search", "output": results}
-
         return {
-            "tool_output": tool_output,
-            "input_tokens": {"action_execution": 0},
-            "output_tokens": {"action_execution": 0},
-            "time_taken": {"action_execution": time.time() - start_time},
+            "tool": "direct_search",
+            "output": results,
+            "input_tokens": 0,
+            "output_tokens": 0,
         }
 
     async def execute_expanded_search(self, state: DynamicAgentState, tool_input: Dict[str, Any]) -> Dict[str, Any]:
@@ -215,13 +224,11 @@ class DynamicAgent:
         search_results = await self.perform_searches(query, expanded_queries, limit)
         reranked_result = await self.rerank_results(query, state, search_results, filters, query_context, limit)
 
-        tool_output = {"tool": "expanded_search", "output": reranked_result}
-
         return {
-            "tool_output": tool_output,
-            "input_tokens": {"action_execution": input_tokens_qp + reranked_result["input_tokens"]},
-            "output_tokens": {"action_execution": output_tokens_qp + reranked_result["output_tokens"]},
-            "time_taken": {"action_execution": time.time() - start_time},
+            "tool": "expanded_search",
+            "output": reranked_result["products"],
+            "input_tokens": input_tokens_qp + reranked_result["input_tokens"],
+            "output_tokens": output_tokens_qp + reranked_result["output_tokens"],
         }
 
     async def perform_searches(
@@ -282,6 +289,8 @@ class DynamicAgent:
 
     def format_final_response(self, final_state: DynamicAgentState) -> Dict[str, Any]:
         if final_state.get("final_response"):
+            tool_output = final_state.get("tool_output") or {}
+            products = tool_output.get("output", []) if isinstance(tool_output, dict) else []
             return self.response_formatter.format_response(
                 "dynamic_agent",
                 final_state["final_response"],
@@ -290,7 +299,7 @@ class DynamicAgent:
                     "output_token_usage": final_state["output_tokens"],
                     "time_taken": final_state["time_taken"],
                 },
-                products=final_state.get("tool_output", {}).get("output", []),
+                products=products,
             )
         else:
             raise ValueError("No final response generated.")
