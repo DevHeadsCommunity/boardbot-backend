@@ -110,9 +110,13 @@ class PromptManager:
             top_k=top_k,
         )
 
-    def get_semantic_search_query_prompt(self, query: str) -> Tuple[str, str]:
+    def get_semantic_search_query_prompt(
+        self,
+        query: str,
+        attribute_descriptions: str,
+    ) -> Tuple[str, str]:
         logger.info(f"Generating semantic search query prompt for query: {query}")
-        return self.get_prompt("semantic_search_query", query=query)
+        return self.get_prompt("semantic_search_query", query=query, attribute_descriptions=attribute_descriptions)
 
     def get_chitchat_prompt(self, query: str) -> Tuple[str, str]:
         return self.get_prompt("chitchat", query=query)

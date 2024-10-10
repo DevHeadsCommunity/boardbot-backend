@@ -115,7 +115,7 @@ class ClearIntentAgent:
 
         # Combine and deduplicate results
         all_results = [item for sublist in all_search_results for item in sublist]
-        unique_results = {result["product_id"].lower(): result for result in all_results}.values()
+        unique_results = {result["product_id"]: result for result in all_results}.values()
 
         logger.info(f"\n\n===:> Unique results: {list(unique_results)}\n\n")
 

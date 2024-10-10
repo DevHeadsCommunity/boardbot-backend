@@ -212,19 +212,31 @@ class SemanticSearchQueryPrompt(BaseChatPrompt):
             PROCESSING_BASE
             + """
         Your task is to generate a semantic search query based on the user's vague product-related question.
-        Also, determine the number of products that should be returned based on the user's query.
+        Also, determine the number of products that should be returned based on the user's query and extract any specific filters mentioned.
 
         Respond in JSON format as follows:
         {{
-            "query": "The generated semantic search query",
-            "product_count": 5  // Number of products to return, default to 5 if not specified
+            "query": "The generated semantic search query, that can allow for making a vector search that retrieves the specific products the user expects.
+            "product_count": 5,  // Number of products to return, default to 5 if not specified
+            "filters": {{
+                // Include only relevant attributes from the provided list
+                // If an attribute is not mentioned or cannot be inferred, do not include it
+                // Use exact values or ranges as appropriate
+            }}
         }}
 
         Guidelines:
-        - The query should be more detailed and specific than the user's original question.
-        - Include relevant technical terms and specifications that might help in finding appropriate products.
+        - The query should be more focused and relevant to the main intent, avoiding unnecessary details.
+        - Include relevant technical terms and specifications only if they are crucial to the user's request.
         - If the user specifies a number of products they want to see, use that number for product_count.
         - If no number is specified, use 5 as the default product_count.
+        - Extract filters only if they are explicitly mentioned or strongly implied in the user's query.
+        - Use only attribute names from the provided list for filters. Do not invent new attributes.
+        - If a query mentions attributes not in the provided list, do not include them in the filters. Instead, use relevant attributes from the list to approximate the intent.
+
+
+        Attribute list for filters:
+        {attribute_descriptions}
         """
         )
 
@@ -233,7 +245,7 @@ class SemanticSearchQueryPrompt(BaseChatPrompt):
 
         Generated Search Query:
         """
-        super().__init__(system_template, human_template, ["query"])
+        super().__init__(system_template, human_template, ["query", "attribute_descriptions"])
 
 
 class ChitchatPrompt(BaseChatPrompt):
