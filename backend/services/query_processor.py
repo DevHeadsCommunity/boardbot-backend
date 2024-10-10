@@ -117,13 +117,19 @@ class QueryProcessor:
         model: str = "gpt-4o",
         temperature: float = 0.1,
     ) -> Dict[str, Any]:
-        # logger.info(f"Generating semantic search query for: {query}")
-        system_message, user_message = self.prompt_manager.get_semantic_search_query_prompt(query)
+        system_message, user_message = self.prompt_manager.get_semantic_search_query_prompt(
+            query, attribute_descriptions
+        )
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
             user_message, system_message, formatted_chat_history=chat_history, temperature=temperature, model=model
         )
         processed_response = self._clean_response(response)
+
+        # Validate and clean filters
+        if "filters" in processed_response:
+            processed_response["filters"] = self._validate_filters(processed_response["filters"])
+
         return processed_response, input_tokens, output_tokens
 
     @staticmethod

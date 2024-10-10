@@ -1,6 +1,7 @@
 import json
 import logging
 import time
+import asyncio
 from typing import List, Dict, Any, TypedDict, Annotated
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph, END
@@ -29,6 +30,7 @@ class VagueIntentState(TypedDict):
     output_tokens: Annotated[Dict[str, int], merge_dict]
     time_taken: Annotated[Dict[str, float], merge_dict]
     output: Dict[str, Any]
+    filters: Dict[str, Any]  # Add this line
 
 
 class VagueIntentAgent:
@@ -67,10 +69,12 @@ class VagueIntentAgent:
             state["current_message"], state["chat_history"], model=state["model_name"]
         )
         logger.info(f"Generated semantic search query: {result['query']}")
+        logger.info(f"Generated semantic search filters: {result['filters']}")
 
         return {
             "semantic_search_query": result["query"],
             "product_count": result.get("product_count", 5),
+            "filters": result.get("filters", {}),  # Keep filters in the state
             "input_tokens": {"query_generation": input_tokens},
             "output_tokens": {"query_generation": output_tokens},
             "time_taken": {"query_generation": time.time() - start_time},
@@ -78,13 +82,43 @@ class VagueIntentAgent:
 
     async def product_search_node(self, state: VagueIntentState, config: RunnableConfig) -> Dict[str, Any]:
         start_time = time.time()
-        results = await self.weaviate_service.search_products(
-            state["semantic_search_query"], limit=state["product_count"] * 2
-        )
-        logger.info(f"Found {len(results)} products")
+
+        # Double the limit if there are no filters
+        limit = state["product_count"] * 2 if not state["filters"] else state["product_count"]
+
+        async def search_query(query: str, search_type: str, filters: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+            return await self.weaviate_service.search_products(
+                query=query, limit=limit, filters=filters, search_type=search_type
+            )
+
+        # Prepare search tasks
+        search_tasks = [
+            search_query(state["semantic_search_query"], "semantic"),
+            search_query(state["semantic_search_query"], "hybrid", state["filters"]),
+        ]
+
+        # Run all searches in parallel
+        all_search_results = await asyncio.gather(*search_tasks)
+
+        # Combine and deduplicate results
+        all_results = [item for sublist in all_search_results for item in sublist]
+        unique_results = {result["product_id"]: result for result in all_results}.values()
+
+        # # Sort results by certainty (if available) or any other relevant metric
+        # def get_sort_key(x):
+        #     certainty = x.get("certainty")
+        #     return certainty if certainty is not None else float("-inf")
+
+        # sorted_results = sorted(unique_results, key=get_sort_key, reverse=True)
+
+        # Limit to the requested product count
+        # final_results = sorted_results[: state["product_count"]]
+
+        logger.info(f"Found {len(unique_results)} unique products")
+        logger.info(f"Final results: {unique_results}")
 
         return {
-            "search_results": results,
+            "search_results": list(unique_results),
             "time_taken": {"search": time.time() - start_time},
         }
 
@@ -95,6 +129,7 @@ class VagueIntentAgent:
             {
                 "product_id": p["product_id"],
                 "name": p["name"],
+                **{attr: p.get(attr, "Not specified") for attr in state["filters"].keys()},
                 "summary": p.get("full_product_description", ""),
                 "certainty": p.get("certainty", 0),
             }
@@ -137,6 +172,7 @@ class VagueIntentAgent:
             "output_tokens": {},
             "time_taken": {},
             "output": {},
+            "filters": {},  # Add this line
         }
 
         try:
