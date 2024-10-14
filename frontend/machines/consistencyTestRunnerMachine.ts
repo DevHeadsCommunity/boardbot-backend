@@ -21,21 +21,37 @@ import { webSocketMachine } from "./webSocketMachine";
 
 // Helper functions
 function calculateProductConsistency(mainProducts: Product[], variationProductsList: Product[][]): number {
+  if (mainProducts.length === 0) {
+    // If main prompt returned no products, check if variations also return no products
+    const emptyVariations = variationProductsList.filter((products) => products.length === 0);
+    return emptyVariations.length / Math.max(variationProductsList.length, 1);
+  }
+
   const mainProductSet = new Set(mainProducts.map((p) => p.name.toLowerCase()));
   const consistencyScores = variationProductsList.map((variationProducts) => {
     const commonProducts = variationProducts.filter((p) => mainProductSet.has(p.name.toLowerCase()));
-    return commonProducts.length / Math.max(mainProductSet.size, variationProducts.length);
+    return commonProducts.length / Math.max(mainProductSet.size, variationProducts.length, 1);
   });
-  return consistencyScores.reduce((sum, score) => sum + score, 0) / consistencyScores.length;
+  return consistencyScores.length > 0 ? consistencyScores.reduce((sum, score) => sum + score, 0) / consistencyScores.length : 0;
 }
 
 function calculateOrderConsistency(mainProducts: Product[], variationProductsList: Product[][]): number {
+  if (mainProducts.length === 0) {
+    // If main prompt returned no products, check if variations also return no products
+    const emptyVariations = variationProductsList.filter((products) => products.length === 0);
+    return emptyVariations.length / Math.max(variationProductsList.length, 1);
+  }
+
+  if (variationProductsList.length === 0) {
+    return 0;
+  }
+
   const mainProductOrder = mainProducts.map((p) => p.name.toLowerCase());
   const orderScores = variationProductsList.map((variationProducts) => {
     const variationOrder = variationProducts.map((p) => p.name.toLowerCase());
-    return longestCommonSubsequence(mainProductOrder, variationOrder) / Math.max(mainProductOrder.length, variationOrder.length);
+    return longestCommonSubsequence(mainProductOrder, variationOrder) / Math.max(mainProductOrder.length, variationOrder.length, 1);
   });
-  return orderScores.reduce((sum, score) => sum + score, 0) / orderScores.length;
+  return orderScores.length > 0 ? orderScores.reduce((sum, score) => sum + score, 0) / orderScores.length : 0;
 }
 
 function longestCommonSubsequence(arr1: string[], arr2: string[]): number {
@@ -151,19 +167,20 @@ export const consistencyTestRunnerMachine = setup({
     updateTestResults: assign({
       testResults: ({ context }) => {
         if (context.currentResponses.length === 0) {
-          throw new Error("No responses to evaluate");
+          console.warn("No responses to evaluate");
+          return context.testResults;
         }
         const mainPromptResponse = context.currentResponses[0];
         const variationResponses = context.currentResponses.slice(1);
 
         const productConsistency = calculateProductConsistency(
-          mainPromptResponse.message.products,
-          variationResponses.map((r) => r.message.products)
+          mainPromptResponse.message.products || [],
+          variationResponses.map((r) => r.message.products || [])
         );
 
         const orderConsistency = calculateOrderConsistency(
-          mainPromptResponse.message.products,
-          variationResponses.map((r) => r.message.products)
+          mainPromptResponse.message.products || [],
+          variationResponses.map((r) => r.message.products || [])
         );
 
         const newTestResult: ConsistencyTestResult = {

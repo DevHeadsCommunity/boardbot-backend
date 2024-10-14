@@ -1,16 +1,15 @@
 import json
 import logging
 import time
-import asyncio
-from typing import List, Dict, Any, TypedDict, Annotated
-from langchain_core.runnables import RunnableConfig
-from langgraph.graph import StateGraph, END
 from core.models.message import Message
+from prompts.prompt_manager import PromptManager
 from services.openai_service import OpenAIService
 from services.query_processor import QueryProcessor
 from services.weaviate_service import WeaviateService
 from .utils.response_formatter import ResponseFormatter
-from prompts.prompt_manager import PromptManager
+from langgraph.graph import StateGraph, END
+from langchain_core.runnables import RunnableConfig
+from typing import List, Dict, Any, TypedDict, Annotated
 
 logger = logging.getLogger(__name__)
 
@@ -82,43 +81,62 @@ class VagueIntentAgent:
 
     async def product_search_node(self, state: VagueIntentState, config: RunnableConfig) -> Dict[str, Any]:
         start_time = time.time()
+        limit = state["product_count"]
+        filters = state.get("filters", {})
 
-        # Double the limit if there are no filters
-        limit = state["product_count"] * 2 if not state["filters"] else state["product_count"]
+        logger.info(f"Filters: {filters}")
+        logger.info(f"Semantic search query: {state['semantic_search_query']}")
 
-        async def search_query(query: str, search_type: str, filters: Dict[str, Any] = None) -> List[Dict[str, Any]]:
-            return await self.weaviate_service.search_products(
-                query=query, limit=limit, filters=filters, search_type=search_type
+        unique_results = {}
+
+        # If filters exist, start with hybrid search
+        if filters:
+            filter_query = " ".join([f"{key}:{value}" for key, value in filters.items()])
+            hybrid_results = await self.weaviate_service.search_products(
+                query=filter_query, limit=limit * 2, filters=filters, search_type="hybrid"
             )
 
-        # Prepare search tasks
-        search_tasks = [
-            search_query(state["semantic_search_query"], "semantic"),
-            search_query(state["semantic_search_query"], "hybrid", state["filters"]),
-        ]
+            for result in hybrid_results:
+                if len(unique_results) >= limit:
+                    break
+                unique_results[result["product_id"]] = result
 
-        # Run all searches in parallel
-        all_search_results = await asyncio.gather(*search_tasks)
+            # If not enough results, perform partial hybrid searches
+            if len(unique_results) < limit:
+                for key, value in filters.items():
+                    if len(unique_results) >= limit:
+                        break
+                    partial_results = await self.weaviate_service.search_products(
+                        query=f"{key}:{value}",
+                        limit=limit - len(unique_results),
+                        filters={key: value},
+                        search_type="hybrid",
+                    )
+                    for result in partial_results:
+                        if result["product_id"] not in unique_results:
+                            unique_results[result["product_id"]] = result
+                            if len(unique_results) >= limit:
+                                break
 
-        # Combine and deduplicate results
-        all_results = [item for sublist in all_search_results for item in sublist]
-        unique_results = {result["product_id"]: result for result in all_results}.values()
+        # If still not enough results or no filters, use direct semantic search
+        if len(unique_results) < limit:
+            semantic_results = await self.weaviate_service.search_products(
+                query=state["semantic_search_query"], limit=limit * 2 - len(unique_results), search_type="semantic"
+            )
 
-        # # Sort results by certainty (if available) or any other relevant metric
-        # def get_sort_key(x):
-        #     certainty = x.get("certainty")
-        #     return certainty if certainty is not None else float("-inf")
+            for result in semantic_results:
+                if result["product_id"] not in unique_results:
+                    unique_results[result["product_id"]] = result
+                    if len(unique_results) >= limit:
+                        break
 
-        # sorted_results = sorted(unique_results, key=get_sort_key, reverse=True)
+        final_results = list(unique_results.values())[:limit]
 
-        # Limit to the requested product count
-        # final_results = sorted_results[: state["product_count"]]
-
-        logger.info(f"Found {len(unique_results)} unique products")
-        logger.info(f"Final results: {unique_results}")
+        logger.info(f"\n\n===:> Final results: {final_results}\n\n")
+        logger.info(f"Number of products found: {len(final_results)}")
 
         return {
-            "search_results": list(unique_results),
+            "search_results": final_results,
             "time_taken": {"search": time.time() - start_time},
         }
 

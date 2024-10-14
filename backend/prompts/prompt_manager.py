@@ -81,13 +81,10 @@ class PromptManager:
     def get_route_classification_prompt(self, query: str) -> Tuple[str, str]:
         return self.get_prompt("route_classification", query=query)
 
-    def get_query_processor_prompt(
-        self, query: str, num_expansions: int, attribute_descriptions: Dict[str, str]
-    ) -> Tuple[str, str]:
+    def get_query_processor_prompt(self, query: str, attribute_descriptions: Dict[str, str]) -> Tuple[str, str]:
         return self.get_prompt(
             "query_processor",
             query=query,
-            num_expansions=num_expansions,
             attribute_descriptions=attribute_descriptions,
         )
 
@@ -127,12 +124,12 @@ class PromptManager:
     def get_vague_intent_response_prompt(self, query: str, products: str, product_count: int) -> Tuple[str, str]:
         return self.get_prompt("vague_intent_response", query=query, products=products, product_count=product_count)
 
-    def get_clear_intent_response_prompt(self, query: str, products: str, reranking_result: str) -> Tuple[str, str]:
+    def get_clear_intent_response_prompt(self, query: str, products: str, filters: str) -> Tuple[str, str]:
         return self.get_prompt(
             "clear_intent_response",
             query=query,
             products=products,
-            reranking_result=reranking_result,
+            filters=filters,
         )
 
     def get_dynamic_agent_prompt(self, query: str) -> Tuple[str, str]:

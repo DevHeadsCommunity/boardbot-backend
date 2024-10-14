@@ -1,9 +1,10 @@
 import asyncio
 import logging
-from typing import List, Dict, Any
 from config import Config
 from prompts import PromptManager
+from typing import List, Dict, Any
 from services import OpenAIService, TavilyService
+from services.weaviate_service import WeaviateService
 from feature_extraction import AgenticFeatureExtractor, ConfigSchema
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -18,24 +19,33 @@ class FeatureExtractionService:
         prompt_manager: PromptManager,
         openai_service: OpenAIService,
         tavily_service: TavilyService,
+        weaviate_service: WeaviateService,
     ):
         self.config = config
         self.prompt_manager = prompt_manager
         self.openai_service = openai_service
         self.tavily_service = tavily_service
+        self.weaviate_service = weaviate_service
 
     async def extract_features(self, raw_data: str, product_id: str, config_schema: ConfigSchema) -> Dict[str, Any]:
         services = {
             "openai_service": self.openai_service,
             "tavily_service": self.tavily_service,
+            "weaviate_service": self.weaviate_service,
         }
 
         agent = AgenticFeatureExtractor(services, self.prompt_manager, config=config_schema)
         try:
             result = await agent.extract_data(raw_data, product_id)
+            extracted_data = result["extracted_data"]
+
+            # Ensure required fields are present
+            if "name" not in extracted_data:
+                extracted_data["name"] = f"Unnamed Product {product_id}"
+
             return {
                 "id": product_id,
-                "extracted_data": result["extracted_data"],
+                "extracted_data": extracted_data,
                 "usage_data": result["usage"],
                 "missing_feature_count_history": result.get("missing_feature_count_history", []),
                 "low_confidence_feature_count_history": result.get("low_confidence_feature_count_history", []),
@@ -56,15 +66,17 @@ class FeatureExtractionService:
 
 
 class BatchFeatureExtractionService:
+
     def __init__(
         self,
         config: Config,
         prompt_manager: PromptManager,
         openai_service: OpenAIService,
         tavily_service: TavilyService,
+        weaviate_service: WeaviateService,
     ):
         self.feature_extraction_service = FeatureExtractionService(
-            config, prompt_manager, openai_service, tavily_service
+            prompt_manager, openai_service, tavily_service, weaviate_service, config
         )
 
     async def process_batch(self, batch: List[Dict[str, str]], config_schema: ConfigSchema) -> List[Dict[str, Any]]:

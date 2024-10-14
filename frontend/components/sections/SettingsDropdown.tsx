@@ -21,7 +21,8 @@ interface SettingsDropdownProps {
 const SettingsDropdown: React.FC<SettingsDropdownProps> = memo(function SettingsDropdown({ data, actions }) {
   const handleSettingsChange = useCallback(
     (type: keyof AppContextData, value: string) => {
-      actions.submit.updateSetting(data.model, data.architecture, data.historyManagement);
+      const updatedData = { ...data, [type]: value };
+      actions.submit.updateSetting(updatedData.model, updatedData.architecture, updatedData.historyManagement);
     },
     [data, actions]
   );

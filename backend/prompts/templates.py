@@ -70,79 +70,148 @@ class QueryProcessorPrompt(BaseChatPrompt):
         system_template = (
             PROCESSING_BASE
             + """
-        Your task is to process and expand queries related to computer hardware, particularly single-board computers, embedded systems, and development kits. Extract relevant product attributes, generate expanded queries, and identify additional query context.
+        Your task is to process queries about computer hardware, focusing on embedded systems, development kits, and related products. Extract relevant product attributes to create search filters.
 
-        Perform the following tasks:
-        1. Carefully extract relevant product attributes mentioned or implied in the query. Use these to create filters.
-        2. Only use attribute names from the provided list for filters. Do not invent new attributes or use attributes not in the list.
-        3. Generate {num_expansions} expanded queries that could help find relevant products. These should be based on the original query and the extracted attributes.
-        4. Identify any additional query context, such as the number of products requested or any sorting preferences.
+        **Guidelines:**
+        1. **Use only attribute names from the provided list for filters.**
+        2. **Include only attributes explicitly mentioned in the query. Do not include attributes that are implied or inferred.**
+        3. **Map user terminology directly to standardized attribute values using the examples provided in the attribute list.**
+        4. **If the user's term doesn't exactly match a standardized value, choose the closest matching standardized value only if the mapping is clear. If mapping is unclear, omit the attribute.**
+        5. **Use standardized values from the attribute list examples where applicable (e.g., "INTEL" for processor_manufacturer, "X86-64" for processor_architecture).**
+        6. **Distinguish between 'manufacturer' and 'processor_manufacturer':**
+            - **If a company is mentioned as producing the product, map it to 'manufacturer'.**
+            - **If a company is mentioned as producing the processor or chipset, map it to 'processor_manufacturer'.**
+        7. **For processor architecture, use specific terms like "ARM Cortex-A53" or "X86-64" as stated in the query. Do not generalize or infer.**
+        8. **Be specific when the query is specific (e.g., "8.0GB DDR4"), and general when the query is general (e.g., "DDR4").**
+        9. **For multi-value attributes, provide a list of standardized values (e.g., ["WI-FI 6", "BLUETOOTH 5+"] for wireless).**
+        10. **For range values, use the format "min_value-max_value" with units included (e.g., "0.256GB-64.0GB" for memory).**
+        11. **Convert units when necessary to match standardized units (e.g., MB to GB).**
+        12. **Do not include filters for implied features unless they are explicitly stated in the query.**
+        13. **For memory, combine size and type into a single string when both are specified (e.g., "8.0GB DDR4").**
+        14. **Include units for measurements (e.g., "W" for TDP, "V" for voltage, "°C" for temperature).**
+        15. **Identify the number of products requested, defaulting to 5 if not specified.**
+        16. **When mapping form factors, use standardized values and map common terms accordingly:**
+            - **"Computer on Module" → "COM"**
+            - **"COM Express" → "COM EXPRESS"**
+            - **"Single Board Computer" or "SBC" → "SBC"**
+        17. **If a term does not match any standardized value and mapping is unclear, omit the attribute. Do not guess or infer.**
+        18. **Do not include comments in the JSON response.**
 
-        Respond in JSON format as follows:
+        Respond in this JSON format:
         {{
             "filters": {{
-                // Include only relevant attributes from the provided list
-                // If an attribute is not mentioned or cannot be inferred, do not include it
-                // Use exact values or ranges as appropriate
+                // Include only relevant attributes
+                // Omit attributes not mentioned or implied
             }},
-            "expanded_queries": [
-                // List of {num_expansions} expanded queries
-            ],
             "query_context": {{
-                "num_products_requested": 5,
+                "num_products_requested": <number>,
                 "sort_preference": null
             }}
         }}
 
-        Guidelines:
-        - Use only attribute names from the provided list for filters. Omit attributes not mentioned or implied in the query.
-        - Be specific with filter values. Use exact values where mentioned.
-        - For processor_core_count, use numeric values (e.g., "2", "4", "8").
-        - For memory and onboard_storage, use the specific values mentioned (e.g., "8 GB DDR3L", "64 GB eMMC").
-        - For processor_architecture, use specific terms like "ARM" or "x86".
-        - For operating_system_bsp, include specific OS names mentioned (e.g., ["Linux", "Windows"]).
-        - Include "form_factor" as "Single Board Computer" when SBCs are explicitly mentioned.
-        - For processor_manufacturer, use specific names like "INTEL", "AMD", or "FREESCALE" when mentioned.
-        - Use ranges for operating temperatures when mentioned (e.g., "operating_temperature_min": "-20", "operating_temperature_max": "60").
-        - Generate consistent expanded queries closely related to the original query without introducing new variations.
-        - Set num_products_requested to the number specified in the query, or default to 5 if not mentioned.
-        - Do not include explanatory comments in the final JSON response.
-        - If a query mentions attributes not in the provided list, do not include them in the filters. Instead, use relevant attributes from the list to approximate the intent.
+        Examples:
 
-        Example query and response:
-        Query: "Find Single Board Computers with x86 architecture and Linux support"
-
+        Query: "List COM Express modules with Intel Core i7 CPUs and at least 16GB DDR4 RAM"
         Response:
         {{
             "filters": {{
-                "form_factor": "Single Board Computer",
-                "processor_architecture": "x86",
-                "operating_system_bsp": ["Linux"]
+                "form_factor": "COM EXPRESS",
+                "processor_manufacturer": "INTEL",
+                "processor_architecture": "X86-64",
+                "memory": "16.0GB-64.0GB DDR4"
             }},
-            "expanded_queries": [
-                "Find Single Board Computers with x86 architecture and Linux support",
-                "x86 SBCs with Linux compatibility",
-                "Linux-supported single board computers with x86 processors",
-                "x86 architecture embedded systems running Linux"
-            ],
             "query_context": {{
                 "num_products_requested": 5,
                 "sort_preference": null
             }}
         }}
 
-        Strive for precision and relevance in your filters and expanded queries. Your goal is to capture all relevant information from the query while adhering strictly to the provided attribute list.
+        Query: "Show 3 Microsemi development kits supporting 9V to 36V input voltage with Wi-Fi 6 and Bluetooth 5+"
+        Response:
+        {{
+            "filters": {{
+                "manufacturer": "MICROSEMI",
+                "form_factor": "DEVELOPMENT BOARD",
+                "input_voltage": "9V-36V",
+                "wireless": ["WI-FI 6", "BLUETOOTH 5+"]
+            }},
+            "query_context": {{
+                "num_products_requested": 3,
+                "sort_preference": null
+            }}
+        }}
+
+        Query: "List products with ARM Cortex-A53 processors manufactured by Broadcom with 4GB LPDDR4 memory"
+        Response:
+        {{
+            "filters": {{
+                "processor_manufacturer": "BROADCOM",
+                "processor_architecture": "ARM Cortex-A53",
+                "memory": "4.0GB LPDDR4"
+            }},
+            "query_context": {{
+                "num_products_requested": 5,
+                "sort_preference": null
+            }}
+        }}
+
+
+        Query: "Show FPGA-based products for embedded development with 64GB eMMC storage and operating temperature range from -40°C to 85°C"
+        Response:
+        {{
+            "filters": {{
+                "processor_architecture": "FPGA",
+                "form_factor": "DEVELOPMENT BOARD",
+                "onboard_storage": "64.0GB EMMC",
+                "operating_temperature_min": "-40°C",
+                "operating_temperature_max": "85°C"
+            }},
+            "query_context": {{
+                "num_products_requested": 5,
+                "sort_preference": null
+            }}
+        }}
+
+        Query: "List Single Board Computers, manufactured by Broadcom Corporation, featuring ARM processor architecture, with RAM more than 256MB"
+        Response:
+        {{
+            "filters": {{
+                "manufacturer": "BROADCOM",
+                "form_factor": "SBC",
+                "processor_architecture": "ARM",
+                "memory": "0.256GB-64.0GB"
+            }},
+            "query_context": {{
+                "num_products_requested": 5,
+                "sort_preference": null
+            }}
+        }}
+
+        Query: "Show products with Broadcom processors, ARM architecture, and at least 1GB of RAM"
+        Response:
+        {{
+            "filters": {{
+                "processor_manufacturer": "BROADCOM",
+                "processor_architecture": "ARM",
+                "memory": "1.0GB-64.0GB"
+            }},
+            "query_context": {{
+                "num_products_requested": 5,
+                "sort_preference": null
+            }}
+        }}
+
         """
         )
         human_template = """
-        Attribute list:
+        Attribute list with examples:
         {attribute_descriptions}
 
         User Query: {query}
 
         Response:
         """
-        super().__init__(system_template, human_template, ["query", "num_expansions", "attribute_descriptions"])
+        super().__init__(system_template, human_template, ["query", "attribute_descriptions"])
 
 
 class ProductRerankingPrompt(BaseChatPrompt):
@@ -211,39 +280,70 @@ class SemanticSearchQueryPrompt(BaseChatPrompt):
         system_template = (
             PROCESSING_BASE
             + """
-        Your task is to generate a semantic search query based on the user's vague product-related question.
-        Also, determine the number of products that should be returned based on the user's query and extract any specific filters mentioned.
-
-        Respond in JSON format as follows:
-        {{
-            "query": "The generated semantic search query, that can allow for making a vector search that retrieves the specific products the user expects.
-            "product_count": 5,  // Number of products to return, default to 5 if not specified
-            "filters": {{
-                // Include only relevant attributes from the provided list
-                // If an attribute is not mentioned or cannot be inferred, do not include it
-                // Use exact values or ranges as appropriate
-            }}
-        }}
+        Your task is to generate a semantic search query based on the user's product-related question and extract relevant product attributes to create search filters.
 
         Guidelines:
-        - The query should be more focused and relevant to the main intent, avoiding unnecessary details.
-        - Include relevant technical terms and specifications only if they are crucial to the user's request.
-        - If the user specifies a number of products they want to see, use that number for product_count.
-        - If no number is specified, use 5 as the default product_count.
-        - Extract filters only if they are explicitly mentioned or strongly implied in the user's query.
-        - Use only attribute names from the provided list for filters. Do not invent new attributes.
-        - If a query mentions attributes not in the provided list, do not include them in the filters. Instead, use relevant attributes from the list to approximate the intent.
+        1. Generate a focused semantic search query that captures the main intent of the user's question.
+        2. Use only attribute names from the provided list for filters.
+        3. Include attributes explicitly mentioned or strongly implied in the query.
+        4. Use standardized values from the attribute list examples where applicable (e.g., "INTEL" for processor_manufacturer, "X86-64" for processor_architecture).
+        5. Distinguish between manufacturer (e.g., "ADVANTECH", "CONGATEC") and processor_manufacturer (e.g., "INTEL", "AMD") attributes.
+        6. For processor architecture, use specific terms like "ARM" or "X86-64" rather than brand names.
+        7. Be specific when the query is specific (e.g., "8.0GB DDR4"), and general when the query is general (e.g., just "DDR4").
+        8. For multi-value attributes, use comma-separated values (e.g., "WI-FI 6, BLUETOOTH 5+" for wireless).
+        9. For range values, use the format "min-max" (e.g., "9.0V-36.0V" for input_voltage).
+        10. Do not include filters for implied features unless explicitly stated in the query.
+        11. For memory, combine size and type into a single string, when both are specified. (e.g., "8.0GB DDR4").
+        12. Include units for measurements (e.g., "W" for TDP, "V" for voltage, "°C" for temperature).
+        13. Identify the number of products requested, defaulting to 5 if not specified.
 
+        Respond in this JSON format:
+        {{
+            "query": "The generated semantic search query",
+            "filters": {{
+                // Include only relevant attributes
+                // Omit attributes not mentioned or implied
+            }},
+            "product_count": <number>  // Number of products to return, default to 5 if not specified
+        }}
 
-        Attribute list for filters:
-        {attribute_descriptions}
+        Examples:
+
+        User Query: "Find COM Express modules with Intel Core i7 CPUs and at least 16GB DDR4 RAM"
+        Response:
+        {{
+            "query": "COM Express modules Intel Core i7 16GB DDR4 RAM",
+            "filters": {{
+                "form_factor": "COM EXPRESS",
+                "processor_manufacturer": "INTEL",
+                "processor_architecture": "X86-64",
+                "memory": "16.0GB-64.0GB DDR4"
+            }},
+            "product_count": 5
+        }}
+
+        User Query: "Show 3 Microsemi development kits supporting 9V to 36V input voltage with Wi-Fi 6 and Bluetooth 5+"
+        Response:
+        {{
+            "query": "Microsemi development kits 9V to 36V input voltage Wi-Fi 6 Bluetooth 5+",
+            "filters": {{
+                "manufacturer": "MICROSEMI",
+                "form_factor": "DEVELOPMENT BOARD",
+                "input_voltage": "9V-36V",
+                "wireless": ["WI-FI 6", "BLUETOOTH 5+"]
+            }},
+            "product_count": 3
+        }}
         """
         )
 
         human_template = """
+        Attribute list for filters:
+        {attribute_descriptions}
+
         User Query: {query}
 
-        Generated Search Query:
+        Generated Search Query and Filters:
         """
         super().__init__(system_template, human_template, ["query", "attribute_descriptions"])
 
@@ -366,12 +466,12 @@ class ClearIntentResponsePrompt(BaseChatPrompt):
         system_template = (
             USER_FACING_BASE
             + """
-        Your task is to generate an engaging and conversational response to a clear intent product query based on the provided reranking results and relevant products.
+        Your task is to generate an engaging and conversational response to a clear intent product query based on the provided search results and filters.
 
         Instructions:
-        1. Analyze the user's query and the reranking results.
+        1. Analyze the user's query, the search results, and the filters used.
         2. Generate a response that addresses the user's requirements in a natural, conversational tone.
-        3. Include ALL products provided in the reranking results, sorted by their relevance score.
+        3. Include ALL products provided in the search results, sorted by their relevance to the query and filters.
         4. Discuss the products that best match the criteria and those that partially match in a flowing, engaging manner.
         5. Avoid explicitly categorizing products as "perfect matches" or "partial matches". Instead, weave this information into the conversation naturally.
 
@@ -382,7 +482,7 @@ class ClearIntentResponsePrompt(BaseChatPrompt):
                 {{
                     "product_id": "Product ID"
                 }},
-                // ... include all products from the reranking results
+                // ... include all products from the search results
             ],
             "reasoning": "A natural explanation of the product selection and how they relate to the user's needs",
             "follow_up_question": "A conversational follow-up question to further assist the user"
@@ -391,21 +491,22 @@ class ClearIntentResponsePrompt(BaseChatPrompt):
         Guidelines:
         - Write in a friendly, approachable tone as if you're having a conversation with the user.
         - Keep the "message" concise and focused, ideally not exceeding a few sentences.
-        - Highlight the most relevant products first, mentioning key features that align with the user's needs.
-        - Include ALL products from the reranking results, even if some only partially match the criteria.
+        - Highlight the most relevant products first, mentioning key features that align with the user's needs and the applied filters.
+        - Include ALL products from the search results, even if some only partially match the criteria.
         - Ensure the response is engaging and human-like, avoiding robotic or overly formal language.
         - If no products perfectly match all criteria, acknowledge this in a positive way and focus on the closest matches.
         - Frame the follow-up question as a curious inquiry to learn more about the user's needs or preferences.
+        - If fewer products are returned than requested, acknowledge this and explain potential reasons (e.g., specific requirements limiting the options).
         """
         )
         human_template = """
         User Query: {query}
-        Reranking Result: {reranking_result}
-        Relevant Products: {products}
+        Applied Filters: {filters}
+        Search Results: {products}
 
         Response:
         """
-        super().__init__(system_template, human_template, ["query", "reranking_result", "products"])
+        super().__init__(system_template, human_template, ["query", "filters", "products"])
 
 
 class DynamicAgentPrompt(BaseChatPrompt):
@@ -586,3 +687,256 @@ class LowConfidenceFeatureRefinementPrompt(BaseChatPrompt):
             human_template,
             ["context", "extracted_features", "features_to_refine"],
         )
+
+
+test_prompts = [
+    {
+        "prompt": "List Single Board Computers with a processor frequency of 1.5 GHz or higher and manufactured by Broadcom",
+        "variations": [
+            "List Single Board Computers with a processor frequency of 1.5 GHz or higher and manufactured by Broadcom",
+            "Show Broadcom Single Board Computers with processors running at least 1.5 GHz",
+            "Display SBCs made by Broadcom with CPU speeds of 1.5 GHz or above",
+            "Enumerate Broadcom-manufactured Single Board Computers featuring 1.5+ GHz processors",
+            "Find SBCs from Broadcom with processor frequencies of 1.5 GHz and higher",
+        ],
+    },
+    {
+        "prompt": "What are the available Computers on Module (COM) with DDR4 memory support and comes with an Intel processor?",
+        "variations": [
+            "What are the available Computers on Module (COM) with DDR4 memory support and comes with an Intel processor?",
+            "List COMs featuring Intel processors and DDR4 memory compatibility",
+            "Show Computers on Module with Intel CPUs and DDR4 RAM support",
+            "Display available COMs that have Intel processors and DDR4 memory",
+            "Enumerate Intel-based Computers on Module supporting DDR4 memory",
+        ],
+    },
+    {
+        "prompt": "Show Devkits that include FPGA and are manufactured by Microsemi Corporation.",
+        "variations": [
+            "Show Devkits that include FPGA and are manufactured by Microsemi Corporation.",
+            "List Microsemi Corporation development boards featuring FPGAs",
+            "Display FPGA-equipped devkits produced by Microsemi Corporation",
+            "Enumerate Microsemi-made development kits that incorporate FPGAs",
+            "Find Microsemi Corporation devkits with integrated FPGA technology",
+        ],
+    },
+    {
+        "prompt": "Find all SBCs that support PCIe Gen3 interface and have more than 8 cores",
+        "variations": [
+            "Find all SBCs that support PCIe Gen3 interface and have more than 8 cores",
+            "List Single Board Computers with PCIe Gen3 support and over 8 processor cores",
+            "Show SBCs featuring PCIe Gen3 compatibility and exceeding 8 CPU cores",
+            "Display all Single Board Computers with PCIe Gen3 interface and 9+ cores",
+            "Enumerate SBCs offering PCIe Gen3 and more than 8 processor cores",
+        ],
+    },
+    {
+        "prompt": "Provide a list of products with ARM Cortex processors that are available in a COM Express Basic form factor.",
+        "variations": [
+            "Provide a list of products with ARM Cortex processors that are available in a COM Express Basic form factor.",
+            "Show COM Express Basic modules featuring ARM Cortex processors",
+            "List products using ARM Cortex CPUs in COM Express Basic form factor",
+            "Display ARM Cortex-based devices available in COM Express Basic format",
+            "Enumerate COM Express Basic offerings equipped with ARM Cortex processors",
+        ],
+    },
+    {
+        "prompt": "Identify all hardware components manufactured by Broadcom Corporation that include ARM processors.",
+        "variations": [
+            "Identify all hardware components manufactured by Broadcom Corporation that include ARM processors.",
+            "List Broadcom Corporation products featuring ARM processor architecture",
+            "Show hardware components from Broadcom with ARM-based CPUs",
+            "Display all ARM processor-equipped devices produced by Broadcom Corporation",
+            "Enumerate Broadcom-made hardware incorporating ARM processor architecture",
+        ],
+    },
+    {
+        "prompt": "Which Advantech Computer on Modules support USB 3.0 interface?",
+        "variations": [
+            "Which Advantech Computer on Modules support USB 3.0 interface?",
+            "List Advantech COMs that offer USB 3.0 compatibility",
+            "Show Computer on Modules from Advantech with USB 3.0 support",
+            "Display Advantech-manufactured COMs featuring USB 3.0 interfaces",
+            "Enumerate Advantech Computer on Modules equipped with USB 3.0 ports",
+        ],
+    },
+    {
+        "prompt": "List all Single Board Computers with a memory capacity of 128GB or more with more than 2 USB ports.",
+        "variations": [
+            "List all Single Board Computers with a memory capacity of 128GB or more with more than 2 USB ports.",
+            "Show SBCs featuring 128GB+ memory and 3 or more USB interfaces",
+            "Display Single Board Computers with at least 128GB RAM and over 2 USB ports",
+            "Enumerate SBCs that have 128GB or higher memory capacity and 3+ USB connections",
+            "Find Single Board Computers with 128GB+ memory and more than two USB interfaces",
+        ],
+    },
+    {
+        "prompt": "What are the available NXP powered Computer on Module products that include SATA 3.0 interface?",
+        "variations": [
+            "What are the available NXP powered Computer on Module products that include SATA 3.0 interface?",
+            "List COMs with NXP processors featuring SATA 3.0 support",
+            "Show NXP-based Computer on Modules that offer SATA 3.0 connectivity",
+            "Display Computer on Module products using NXP chips and including SATA 3.0 interfaces",
+            "Enumerate NXP-powered COMs equipped with SATA 3.0 ports",
+        ],
+    },
+    {
+        "prompt": "Find Single Board Computers with a form factor smaller than 100mm x 100mm and RAM more 256 MB",
+        "variations": [
+            "Find Single Board Computers with a form factor smaller than 100mm x 100mm and RAM more 256 MB",
+            "List SBCs smaller than 100x100mm with over 256MB of memory",
+            "Show compact Single Board Computers (sub-100x100mm) featuring more than 256MB RAM",
+            "Display SBCs with form factors under 100mm x 100mm and memory exceeding 256MB",
+            "Enumerate Single Board Computers smaller than 100x100mm that have 256MB+ RAM",
+        ],
+    },
+    {
+        "prompt": "List all devices that support voltage ranges from 1.2V to 3.3V.",
+        "variations": [
+            "List all devices that support voltage ranges from 1.2V to 3.3V.",
+            "Show hardware components with input voltage support between 1.2V and 3.3V",
+            "Display devices operating within 1.2V to 3.3V input voltage range",
+            "Enumerate products compatible with 1.2V-3.3V power input",
+            "Find all components functioning with input voltages from 1.2V up to 3.3V",
+        ],
+    },
+    {
+        "prompt": "Show products that include an Intel Xeon Processor D and support Embedded Software API.",
+        "variations": [
+            "Show products that include an Intel Xeon Processor D and support Embedded Software API.",
+            "List devices featuring Intel Xeon D CPUs with Embedded Software API compatibility",
+            "Display hardware with Intel Xeon Processor D that supports Embedded Software API",
+            "Enumerate products using Intel Xeon D chips and offering Embedded Software API",
+            "Find items combining Intel Xeon Processor D with Embedded Software API support",
+        ],
+    },
+    {
+        "prompt": "Which products offer a high-performance FPGA feature and are suitable for embedded development?",
+        "variations": [
+            "Which products offer a high-performance FPGA feature and are suitable for embedded development?",
+            "List high-performance FPGA products designed for embedded systems development",
+            "Show devices with powerful FPGAs tailored for embedded development",
+            "Display products combining high-performance FPGAs with embedded development capabilities",
+            "Enumerate FPGA-based hardware suitable for high-performance embedded development",
+        ],
+    },
+    {
+        "prompt": "Provide a list of Single Board Computers that can operate at a frequency up to 2.7 GHz with MiniITX form factor.",
+        "variations": [
+            "Provide a list of Single Board Computers that can operate at a frequency up to 2.7 GHz with MiniITX form factor.",
+            "Show Mini-ITX SBCs capable of running at frequencies up to 2.7 GHz",
+            "List Single Board Computers in Mini-ITX form factor with max 2.7 GHz processor speed",
+            "Display Mini-ITX format SBCs that can reach 2.7 GHz operating frequency",
+            "Enumerate Mini-ITX Single Board Computers with processors up to 2.7 GHz",
+        ],
+    },
+    {
+        "prompt": "What components are available with embedded nonvolatile flash memory and at least 4GB of RAM?",
+        "variations": [
+            "What components are available with embedded nonvolatile flash memory and at least 4GB of RAM?",
+            "List hardware featuring built-in nonvolatile flash memory and 4GB or more RAM",
+            "Show products that include embedded nonvolatile flash memory and a minimum of 4GB RAM",
+            "Display components offering integrated nonvolatile flash memory capabilities with 4GB+ memory",
+            "Enumerate devices equipped with on-board nonvolatile flash memory and at least 4GB of RAM",
+        ],
+    },
+    {
+        "prompt": 'Identify all products with a "Customizable System-on-Chip (cSoC)" type with ARM Cortex processor.',
+        "variations": [
+            'Identify all products with a "Customizable System-on-Chip (cSoC)" type with ARM Cortex processor.',
+            "List ARM Cortex-based Customizable System-on-Chip (cSoC) offerings",
+            "Show cSoC products featuring ARM Cortex processors",
+            "Display all ARM Cortex-powered Customizable System-on-Chip solutions",
+            "Enumerate Customizable SoC devices with ARM Cortex CPU architecture",
+        ],
+    },
+    {
+        "prompt": "Top 5 Single Board Computers products that support dual Gigabit Ethernet and SATA.",
+        "variations": [
+            "Top 5 Single Board Computers products that support dual Gigabit Ethernet and SATA.",
+            "List best 5 SBCs featuring both dual Gigabit Ethernet and SATA interfaces",
+            "Show top 5 Single Board Computers with dual GbE and SATA support",
+            "Display 5 premium SBCs offering dual Gigabit Ethernet and SATA connectivity",
+            "Enumerate 5 leading Single Board Computers equipped with dual GbE and SATA",
+        ],
+    },
+    {
+        "prompt": "Which products offer up to 16 cores and 2.3 GHz frequency in their processors?",
+        "variations": [
+            "Which products offer up to 16 cores and 2.3 GHz frequency in their processors?",
+            "List devices featuring processors with up to 16 cores and 2.3 GHz clock speed",
+            "Show products with CPUs offering maximum 16 cores and 2.3 GHz frequency",
+            "Display items with processors supporting up to 16 cores and 2.3 GHz clock rate",
+            "Enumerate hardware using processors that have up to 16 cores and 2.3 GHz speed",
+        ],
+    },
+    {
+        "prompt": "Find Kontron products that include both ECC and non-ECC memory options.",
+        "variations": [
+            "Find Kontron products that include both ECC and non-ECC memory options.",
+            "List Kontron devices supporting both ECC and non-ECC RAM",
+            "Show Kontron hardware with ECC and non-ECC memory compatibility",
+            "Display Kontron products that provide ECC and non-ECC memory choices",
+            "Enumerate Kontron offerings featuring both ECC and non-ECC memory support",
+        ],
+    },
+    {
+        "prompt": "List all hardware platforms with on-chip frame memory and supports a TFT-LCD controller.",
+        "variations": [
+            "List all hardware platforms with on-chip frame memory and supports a TFT-LCD controller.",
+            "Show devices featuring on-chip frame memory and TFT-LCD controller support",
+            "Display hardware solutions with integrated frame memory and TFT-LCD controller",
+            "Enumerate platforms that include on-chip frame memory and TFT-LCD controller capabilities",
+            "Find products combining on-chip frame memory with TFT-LCD controller functionality",
+        ],
+    },
+    {
+        "prompt": "Provide a list of Single Board Computers manufactured by Advantech that include USB 3.0 support.",
+        "variations": [
+            "Provide a list of Single Board Computers manufactured by Advantech that include USB 3.0 support.",
+            "Show Advantech-made SBCs featuring USB 3.0 interfaces",
+            "List Advantech Single Board Computers with USB 3.0 compatibility",
+            "Display Advantech-manufactured SBCs equipped with USB 3.0 ports",
+            "Enumerate Advantech Single Board Computers offering USB 3.0 support",
+        ],
+    },
+    {
+        "prompt": "Which devices support Intel Hyper-Threading Technology with mATX form factor?",
+        "variations": [
+            "Which devices support Intel Hyper-Threading Technology with mATX form factor?",
+            "List mATX form factor products featuring Intel Hyper-Threading Technology",
+            "Show hardware in mATX format that includes Intel Hyper-Threading support",
+            "Display mATX devices compatible with Intel Hyper-Threading Technology",
+            "Enumerate mATX form factor items offering Intel Hyper-Threading capabilities",
+        ],
+    },
+    {
+        "prompt": "Identify products that include programmable analog components and embedded nonvolatile memory.",
+        "variations": [
+            "Identify products that include programmable analog components and embedded nonvolatile memory.",
+            "List devices featuring both programmable analog elements and embedded nonvolatile memory",
+            "Show hardware solutions combining programmable analog capabilities with embedded nonvolatile memory",
+            "Display products that offer programmable analog components alongside embedded nonvolatile memory",
+            "Enumerate items integrating programmable analog features and embedded nonvolatile memory",
+        ],
+    },
+    {
+        "prompt": "What are the available hardware platforms with built-in Intel Turbo Boost Technology and Hyper-Threading Technology?",
+        "variations": [
+            "What are the available hardware platforms with built-in Intel Turbo Boost Technology and Hyper-Threading Technology?",
+            "List devices featuring both Intel Turbo Boost and Hyper-Threading Technologies",
+            "Show hardware solutions that incorporate Intel Turbo Boost and Hyper-Threading capabilities",
+            "Display products offering built-in support for Intel Turbo Boost and Hyper-Threading",
+            "Enumerate platforms equipped with Intel Turbo Boost and Hyper-Threading Technologies",
+        ],
+    },
+    {
+        "prompt": "Show all SBCs supporting Verilog and C with detailed specifications for FPGA integration.",
+        "variations": [
+            "List Single Board Computers compatible with Verilog and C for FPGA development",
+            "Display SBCs that support both Verilog and C languages for FPGA integration",
+            "Enumerate Single Board Computers offering Verilog and C compatibility for FPGA projects",
+            "Find SBCs with FPGA integration capabilities supporting Verilog and C programming",
+        ],
+    },
+]

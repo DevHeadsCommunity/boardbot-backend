@@ -1,6 +1,6 @@
 import json
 import logging
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from typing import Optional, List
 from feature_extraction import ConfigSchema
 from services.weaviate_service import WeaviateService
@@ -136,11 +136,17 @@ async def add_raw_product(
         product = extracted_data["extracted_data"]
         product["product_id"] = input_data.product_id
 
+        # Ensure all required fields are present
+        required_fields = ["name", "product_id"]  # Add other required fields here
+        for field in required_fields:
+            if field not in product:
+                product[field] = f"Default {field.capitalize()} for {input_data.product_id}"
+
         new_product = NewProduct(**product)
         id = await weaviate_service.add_product(new_product.dict())
         return {"id": id}
     except Exception as e:
-        logger.error(f"Error adding raw product: {str(e)}")
+        logger.error(f"Error adding raw product: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -169,10 +175,20 @@ async def add_products_batch_raw(
 
             product = extracted_data["extracted_data"]
             product["product_id"] = extracted_data["id"]
-            new_product = NewProduct(**product)
 
-            id = await weaviate_service.add_product(new_product.dict())
-            product_ids.append({"id": id})
+            # Ensure all required fields are present
+            required_fields = ["name", "product_id"]  # Add other required fields here
+            for field in required_fields:
+                if field not in product:
+                    product[field] = f"Default {field.capitalize()} for {extracted_data['id']}"
+
+            try:
+                new_product = NewProduct(**product)
+                id = await weaviate_service.add_product(new_product.dict())
+                product_ids.append({"id": id})
+            except ValidationError as ve:
+                logger.error(f"Validation error for product {extracted_data['id']}: {str(ve)}")
+                continue
 
         return {"products": product_ids}
     except Exception as e:
