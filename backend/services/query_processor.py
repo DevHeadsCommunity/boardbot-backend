@@ -23,26 +23,53 @@ class QueryProcessor:
         self,
         query: str,
         chat_history: List[Dict[str, str]],
-        num_expansions: int = 3,
         model: str = "gpt-4o",
         temperature: float = 0,
     ) -> Dict[str, Any]:
         system_message, user_message = self.prompt_manager.get_query_processor_prompt(
-            query, num_expansions, attribute_descriptions=attribute_descriptions
+            query, attribute_descriptions=attribute_descriptions
         )
 
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
             user_message, system_message, formatted_chat_history=chat_history, temperature=temperature, model=model
         )
         processed_response = self._clean_response(response)
+        logger.info(f"\n\nQuery_processor response from OpenAI: {processed_response}\n\n")
 
         # Validate filters
-        processed_response["filters"] = self._validate_filters(processed_response.get("filters", {}))
 
-        # Add the original query to the expanded queries
-        processed_response["expanded_queries"].insert(0, query)
+        processed_response["filters"] = self.post_process_filters(processed_response.get("filters", {}))
+        logger.info(f"\n\nValidated filters: {processed_response['filters']}\n\n")
 
         return processed_response, input_tokens, output_tokens
+
+    def post_process_filters(self, filters: Dict[str, Any]) -> Dict[str, Any]:
+        filters = self._validate_filters(filters)
+
+        # Sort filters based on a predefined order
+        ordered_attributes = [
+            "name",
+            "manufacturer",
+            "form_factor",
+            "evaluation_or_commercialization",
+            "processor_architecture",
+            "processor_core_count",
+            "processor_manufacturer",
+            "processor_tdp",
+            "memory",
+            "onboard_storage",
+            "input_voltage",
+            "io_count",
+            "wireless",
+            "operating_system_bsp",
+            "operating_temperature_min",
+            "operating_temperature_max",
+            "certifications",
+            "price",
+            "stock_availability",
+            "lead_time",
+        ]
+        return {k: filters[k] for k in ordered_attributes if k in filters}
 
     def _validate_filters(self, filters: Dict[str, Any]) -> Dict[str, Any]:
         valid_filters = {}

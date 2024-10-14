@@ -6,17 +6,19 @@ import { deserializeTestState, serializeTestState, testMachine } from "./testMac
 
 const APP_STATE_VERSION = "1.1";
 
-const serializeAppState = (context: any) => ({
-  version: APP_STATE_VERSION,
-  appState: {
-    model: context.model,
-    architecture: context.architecture,
-    historyManagement: context.historyManagement,
-  },
-  chatState: serializeChatState(context.chatRef),
-  testState: serializeTestState(context.testRef),
-  productState: serializeProductState(context.prodRef),
-});
+const serializeAppState = (context: any) => {
+  return {
+    version: APP_STATE_VERSION,
+    appState: {
+      model: context.context.model,
+      architecture: context.context.architecture,
+      historyManagement: context.context.historyManagement,
+    },
+    chatState: serializeChatState(context.context.chatRef),
+    testState: serializeTestState(context.context.testRef),
+    productState: serializeProductState(context.context.prodRef),
+  };
+};
 
 const deserializeAppState = (savedState: any, spawn: any) => {
   if (savedState.version !== APP_STATE_VERSION) {

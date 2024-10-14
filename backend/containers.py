@@ -127,6 +127,8 @@ class Container(containers.DeclarativeContainer):
 
     feature_extraction_service = providers.Singleton(
         FeatureExtractionService,
+        config=config_obj,
+        weaviate_service=weaviate_service,
         prompt_manager=prompt_manager,
         openai_service=openai_service,
         tavily_service=tavily_service,
@@ -134,6 +136,8 @@ class Container(containers.DeclarativeContainer):
 
     batch_feature_extraction_service = providers.Singleton(
         BatchFeatureExtractionService,
+        config=config_obj,
+        weaviate_service=weaviate_service,
         prompt_manager=prompt_manager,
         openai_service=openai_service,
         tavily_service=tavily_service,

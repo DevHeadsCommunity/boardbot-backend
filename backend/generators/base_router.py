@@ -147,6 +147,7 @@ class BaseRouter:
     ) -> Dict[str, Any]:
         response = await self.vague_intent_agent.run(message, chat_history)
 
+        base_metadata["filters"] = response["filters"]
         base_metadata["input_token_usage"].update(response["input_tokens"])
         base_metadata["output_token_usage"].update(response["output_tokens"])
         base_metadata["time_taken"].update(response["time_taken"])
@@ -160,13 +161,13 @@ class BaseRouter:
     ) -> Dict[str, Any]:
         response = await self.clear_intent_agent.run(message, chat_history)
 
-        base_metadata["reranking_result"] = response["reranking_result"]
+        base_metadata["filters"] = response["filters"]
         base_metadata["input_token_usage"].update(response["input_tokens"])
         base_metadata["output_token_usage"].update(response["output_tokens"])
         base_metadata["time_taken"].update(response["time_taken"])
 
         return self.response_formatter.format_response(
-            "clear_intent_product", response["output"], base_metadata, response["final_results"]
+            "clear_intent_product", response["output"], base_metadata, response["search_results"]
         )
 
     async def handle_do_not_respond(self, base_metadata: Dict[str, Any]) -> Dict[str, Any]:

@@ -87,6 +87,7 @@ class OpenAIService:
         **kwargs,
     ) -> Tuple[str, int, int]:
         messages = self._prepare_messages(user_message, system_message, formatted_chat_history)
+        logger.info(f"\n\n\nMessages: {messages}\n\n\n")
         return await self.create_chat_completion(messages, **kwargs)
 
     def _prepare_messages(

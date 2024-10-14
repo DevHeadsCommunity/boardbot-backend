@@ -57,9 +57,7 @@ class WeaviateService:
 
     async def _load_product_data(self):
         try:
-            processed_data = self.data_processor.load_and_preprocess_data(
-                "data/processed_feature_extraction_results.csv"
-            )
+            processed_data = self.data_processor.load_and_preprocess_data("data/cleaned_data.csv")
 
             for i in range(0, len(processed_data), 20):
                 batch = processed_data[i : i + 20]

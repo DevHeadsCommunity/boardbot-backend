@@ -29,10 +29,12 @@ export type TransformedData = {
   tags?: string[];
   timestamp: Date;
   variationResponses?: {
+    type: string;
     response: string;
     products: Product[];
     reasoning: string;
     followUpQuestion: string;
+    metadata: Record<string, unknown>;
   }[];
 };
 
@@ -99,7 +101,7 @@ const transformTestResult = (testResult: AccuracyTestResult | ConsistencyTestRes
       architectureChoice: accuracyResult.response.architectureChoice,
       historyManagementChoice: accuracyResult.response.historyManagementChoice,
       responseType: accuracyResult.response.message.type,
-      response: accuracyResult.response.message.response,
+      response: accuracyResult.response.message.message,
       products: accuracyResult.response.message.products,
       reasoning: accuracyResult.response.message.reasoning,
       followUpQuestion: accuracyResult.response.message.followUpQuestion,
@@ -118,7 +120,7 @@ const transformTestResult = (testResult: AccuracyTestResult | ConsistencyTestRes
       architectureChoice: consistencyResult.mainPromptResponse.architectureChoice,
       historyManagementChoice: consistencyResult.mainPromptResponse.historyManagementChoice,
       responseType: consistencyResult.mainPromptResponse.message.type,
-      response: consistencyResult.mainPromptResponse.message.response,
+      response: consistencyResult.mainPromptResponse.message.message,
       products: consistencyResult.mainPromptResponse.message.products,
       reasoning: consistencyResult.mainPromptResponse.message.reasoning,
       followUpQuestion: consistencyResult.mainPromptResponse.message.followUpQuestion,
@@ -127,10 +129,12 @@ const transformTestResult = (testResult: AccuracyTestResult | ConsistencyTestRes
       orderConsistency: consistencyResult.orderConsistency,
       timestamp: consistencyResult.mainPromptResponse.timestamp || new Date(),
       variationResponses: consistencyResult.variationResponses.map((vr) => ({
-        response: vr.message.response,
+        type: vr.message.type,
+        response: vr.message.message,
         products: vr.message.products,
         reasoning: vr.message.reasoning,
         followUpQuestion: vr.message.followUpQuestion,
+        metadata: vr.message.metadata,
       })),
     };
   }
@@ -193,7 +197,32 @@ const getAllColumns = (): TableColumn[] => [
   {
     header: "Products",
     accessor: "products",
-    cell: (value: Product[]) => JSON.stringify(value),
+    cell: (value: Product[]) =>
+      JSON.stringify(
+        value.map((product) => ({
+          productId: product.productId,
+          name: product.name,
+          manufacturer: product.manufacturer,
+          formFactor: product.formFactor,
+          // Add new fields
+          evaluationOrCommercialization: product.evaluationOrCommercialization,
+          processorArchitecture: product.processorArchitecture,
+          processorCoreCount: product.processorCoreCount,
+          processorManufacturer: product.processorManufacturer,
+          processorTdp: product.processorTdp,
+          memory: product.memory,
+          onboardStorage: product.onboardStorage,
+          inputVoltage: product.inputVoltage,
+          ioCount: product.ioCount,
+          wireless: product.wireless,
+          operatingSystemBsp: product.operatingSystemBsp,
+          operatingTemperatureMax: product.operatingTemperatureMax,
+          operatingTemperatureMin: product.operatingTemperatureMin,
+          certifications: product.certifications,
+          price: product.price,
+          stockAvailability: product.stockAvailability,
+        }))
+      ),
   },
   { header: "Reasoning", accessor: "reasoning", sortable: true },
   { header: "Follow-up Question", accessor: "followUpQuestion", sortable: true },

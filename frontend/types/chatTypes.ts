@@ -51,7 +51,7 @@ export const ResponseMessageSchema = z.object({
   architectureChoice: ArchitectureSchema,
   historyManagementChoice: HistoryManagementSchema,
   isUserMessage: z.literal(false),
-  timestamp: z.date().optional(),
+  timestamp: z.union([z.date(), z.string()]).transform((val) => new Date(val)),
 });
 
 export type ResponseMessage = z.infer<typeof ResponseMessageSchema>;
@@ -113,11 +113,6 @@ export const responseMessageFromJson = (json: unknown): ResponseMessage => {
     if ("id" in camelCaseData && !("messageId" in camelCaseData)) {
       camelCaseData.messageId = camelCaseData.id;
       delete camelCaseData.id;
-    }
-
-    // Parse the timestamp if it exists and is a string
-    if (typeof camelCaseData.timestamp === "string") {
-      camelCaseData.timestamp = new Date(camelCaseData.timestamp);
     }
 
     // Set isUserMessage to false if it's not present
