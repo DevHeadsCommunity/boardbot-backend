@@ -1,5 +1,6 @@
-import { Architecture, HistoryManagement, Model, Test, TestCase } from "@/types";
+import { AccuracyTestResultSchema, Architecture, ConsistencyTestResultSchema, HistoryManagement, Model, Test, TestCase } from "@/types";
 import { ActorRefFrom, assign, ContextFrom, emit, setup } from "xstate";
+import { z } from "zod";
 import { accuracyTestRunnerMachine } from "./accuracyTestRunnerMachine";
 import { consistencyTestRunnerMachine } from "./consistencyTestRunnerMachine";
 
@@ -67,6 +68,7 @@ export const testMachine = setup({
                 const newTest = {
                   testId: event.data.id,
                   name: event.data.name,
+                  testType: event.data.testType,
                   createdAt: event.data.createdAt,
                   testRunnerRef: spawn(testRunnerMachine, {
                     input: {
@@ -167,19 +169,18 @@ export const deserializeTestState = (savedState: any, spawn: any): ContextFrom<t
       ...test,
       testRunnerRef: spawn(test.testType === "accuracy" ? accuracyTestRunnerMachine : consistencyTestRunnerMachine, {
         id: test.testId,
-        input: deserializeTestRunnerState(test.testRunnerState),
+        input: deserializeTestRunnerState(test.testRunnerState, test.testType),
       }),
     })),
   };
 };
 
-export const deserializeTestRunnerState = (savedState: any): ContextFrom<typeof accuracyTestRunnerMachine | typeof consistencyTestRunnerMachine> => {
-  return {
+export const deserializeTestRunnerState = (savedState: any, testType: string): ContextFrom<typeof accuracyTestRunnerMachine | typeof consistencyTestRunnerMachine> => {
+  const baseState = {
     webSocketRef: undefined,
     name: savedState.name,
     sessionId: savedState.sessionId,
     testCases: savedState.testCases,
-    testResults: savedState.testResults,
     currentTestIndex: savedState.currentTestIndex,
     batchSize: savedState.batchSize,
     testTimeout: savedState.testTimeout,
@@ -188,4 +189,20 @@ export const deserializeTestRunnerState = (savedState: any): ContextFrom<typeof 
     architecture: savedState.architecture,
     historyManagement: savedState.historyManagement,
   };
+
+  if (testType === "accuracy") {
+    return {
+      ...baseState,
+      testResults: savedState.testResults ? z.array(AccuracyTestResultSchema).parse(savedState.testResults) : [],
+    };
+  } else if (testType === "consistency") {
+    return {
+      ...baseState,
+      testResults: savedState.testResults ? z.array(ConsistencyTestResultSchema).parse(savedState.testResults) : [],
+      pendingResponses: savedState.pendingResponses || 0,
+      currentResponses: savedState.currentResponses || [],
+    };
+  } else {
+    throw new Error(`Unknown test type: ${testType}`);
+  }
 };

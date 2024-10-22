@@ -21,6 +21,7 @@ export type TestCase = z.infer<typeof TestCaseSchema>;
 export const TestSchema = z.object({
   testId: z.string(),
   name: z.string(),
+  testType: TestTypeSchema,
   createdAt: z.string(),
   testRunnerRef: z.any(), // We can't directly validate XState ActorRefs with Zod
   startTimestamp: z.number().optional(),

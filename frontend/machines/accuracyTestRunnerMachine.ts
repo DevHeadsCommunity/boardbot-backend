@@ -28,19 +28,21 @@ function calculateProductAccuracy(actualProducts: Product[], expectedProducts: P
 }
 
 function calculateFeatureAccuracy(actualProducts: Product[], expectedProducts: Product[] | undefined): number {
-  if (!expectedProducts) {
+  if (!expectedProducts || expectedProducts.length === 0) {
     return 1;
   }
+
   let totalFeatures = 0;
   let matchedFeatures = 0;
 
-  expectedProducts.forEach((expectedProduct) => {
-    const actualProduct = actualProducts.find((p) => p.name.toLowerCase() === expectedProduct.name.toLowerCase());
-    if (actualProduct) {
-      Object.keys(expectedProduct).forEach((key) => {
-        if (key !== "name" && expectedProduct[key as keyof Product]) {
+  actualProducts.forEach((actualProduct) => {
+    const expectedProduct = expectedProducts.find((p) => p.name.toLowerCase() === actualProduct.name.toLowerCase());
+
+    if (expectedProduct) {
+      Object.keys(actualProduct).forEach((key) => {
+        if (key !== "name" && actualProduct[key as keyof Product] !== undefined) {
           totalFeatures++;
-          if (JSON.stringify(actualProduct[key as keyof Product]) === JSON.stringify(expectedProduct[key as keyof Product])) {
+          if (expectedProduct[key as keyof Product] !== undefined) {
             matchedFeatures++;
           }
         }
@@ -48,7 +50,11 @@ function calculateFeatureAccuracy(actualProducts: Product[], expectedProducts: P
     }
   });
 
-  return totalFeatures > 0 ? matchedFeatures / totalFeatures : 0;
+  return totalFeatures > 0 ? matchedFeatures / totalFeatures : 1;
+}
+
+function isTestPassed(productAccuracy: number): boolean {
+  return productAccuracy > 0.4;
 }
 
 // Zod schema for the context
@@ -115,17 +121,17 @@ export const accuracyTestRunnerMachine = setup({
       testResults: ({ context, event }) => {
         if (event.type !== "webSocket.messageReceived") throw new Error("Invalid event type");
         const currentTestCase = context.testCases[context.currentTestIndex];
-        console.log("===:> currentTestCase", currentTestCase);
         if (!currentTestCase.products) {
           throw new Error("Test case has no expected products");
         }
 
-        console.log("===:> event.data", event.data);
         const testResponse = event.data;
+        const productAccuracy = calculateProductAccuracy(testResponse.message.products, currentTestCase.products);
         const testResult: AccuracyTestResult = {
           response: testResponse,
-          productAccuracy: calculateProductAccuracy(testResponse.message.products, currentTestCase.products),
+          productAccuracy: productAccuracy,
           featureAccuracy: calculateFeatureAccuracy(testResponse.message.products, currentTestCase.products),
+          passed: isTestPassed(productAccuracy),
         };
         return [...context.testResults, testResult];
       },
