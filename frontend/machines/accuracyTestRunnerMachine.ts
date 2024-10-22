@@ -28,19 +28,21 @@ function calculateProductAccuracy(actualProducts: Product[], expectedProducts: P
 }
 
 function calculateFeatureAccuracy(actualProducts: Product[], expectedProducts: Product[] | undefined): number {
-  if (!expectedProducts) {
+  if (!expectedProducts || expectedProducts.length === 0) {
     return 1;
   }
+
   let totalFeatures = 0;
   let matchedFeatures = 0;
 
-  expectedProducts.forEach((expectedProduct) => {
-    const actualProduct = actualProducts.find((p) => p.name.toLowerCase() === expectedProduct.name.toLowerCase());
-    if (actualProduct) {
-      Object.keys(expectedProduct).forEach((key) => {
-        if (key !== "name" && expectedProduct[key as keyof Product]) {
+  actualProducts.forEach((actualProduct) => {
+    const expectedProduct = expectedProducts.find((p) => p.name.toLowerCase() === actualProduct.name.toLowerCase());
+
+    if (expectedProduct) {
+      Object.keys(actualProduct).forEach((key) => {
+        if (key !== "name" && actualProduct[key as keyof Product] !== undefined) {
           totalFeatures++;
-          if (actualProduct[key as keyof Product] !== undefined) {
+          if (expectedProduct[key as keyof Product] !== undefined) {
             matchedFeatures++;
           }
         }
@@ -48,7 +50,7 @@ function calculateFeatureAccuracy(actualProducts: Product[], expectedProducts: P
     }
   });
 
-  return totalFeatures > 0 ? matchedFeatures / totalFeatures : 0;
+  return totalFeatures > 0 ? matchedFeatures / totalFeatures : 1;
 }
 
 function isTestPassed(productAccuracy: number): boolean {
