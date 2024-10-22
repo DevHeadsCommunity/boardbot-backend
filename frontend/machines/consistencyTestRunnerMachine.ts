@@ -80,7 +80,7 @@ const ConsistencyTestRunnerContextSchema = z.object({
   name: z.string(),
   sessionId: z.string(),
   testCases: z.array(TestCaseSchema),
-  testResults: z.array(ConsistencyTestResultSchema),
+  testResults: z.array(ConsistencyTestResultSchema).nullable().default([]),
   currentTestIndex: z.number(),
   batchSize: z.number(),
   testTimeout: z.number(),
@@ -89,7 +89,7 @@ const ConsistencyTestRunnerContextSchema = z.object({
   architecture: ArchitectureSchema,
   historyManagement: HistoryManagementSchema,
   pendingResponses: z.number(),
-  currentResponses: z.array(ResponseMessageSchema), // This should be a ResponseMessage schema
+  currentResponses: z.array(ResponseMessageSchema),
 });
 
 type ConsistencyTestRunnerContext = z.infer<typeof ConsistencyTestRunnerContextSchema>;
@@ -213,8 +213,8 @@ export const consistencyTestRunnerMachine = setup({
     testIsComplete: ({ context }) => context.currentTestIndex >= context.testCases.length,
   },
 }).createMachine({
-  context: ({ input }) =>
-    ConsistencyTestRunnerContextSchema.parse({
+  context: ({ input }) => {
+    const parsedContext = ConsistencyTestRunnerContextSchema.parse({
       webSocketRef: undefined,
       name: input.name,
       sessionId: input.sessionId,
@@ -229,7 +229,10 @@ export const consistencyTestRunnerMachine = setup({
       historyManagement: input.historyManagement,
       pendingResponses: input.pendingResponses || 0,
       currentResponses: input.currentResponses || [],
-    }),
+    });
+
+    return parsedContext;
+  },
   id: "consistencyTestRunnerActor",
   initial: "idle",
   states: {

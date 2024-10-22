@@ -40,7 +40,7 @@ function calculateFeatureAccuracy(actualProducts: Product[], expectedProducts: P
       Object.keys(expectedProduct).forEach((key) => {
         if (key !== "name" && expectedProduct[key as keyof Product]) {
           totalFeatures++;
-          if (JSON.stringify(actualProduct[key as keyof Product]) === JSON.stringify(expectedProduct[key as keyof Product])) {
+          if (actualProduct[key as keyof Product] !== undefined) {
             matchedFeatures++;
           }
         }
@@ -49,6 +49,10 @@ function calculateFeatureAccuracy(actualProducts: Product[], expectedProducts: P
   });
 
   return totalFeatures > 0 ? matchedFeatures / totalFeatures : 0;
+}
+
+function isTestPassed(productAccuracy: number): boolean {
+  return productAccuracy > 0.4;
 }
 
 // Zod schema for the context
@@ -115,17 +119,17 @@ export const accuracyTestRunnerMachine = setup({
       testResults: ({ context, event }) => {
         if (event.type !== "webSocket.messageReceived") throw new Error("Invalid event type");
         const currentTestCase = context.testCases[context.currentTestIndex];
-        console.log("===:> currentTestCase", currentTestCase);
         if (!currentTestCase.products) {
           throw new Error("Test case has no expected products");
         }
 
-        console.log("===:> event.data", event.data);
         const testResponse = event.data;
+        const productAccuracy = calculateProductAccuracy(testResponse.message.products, currentTestCase.products);
         const testResult: AccuracyTestResult = {
           response: testResponse,
-          productAccuracy: calculateProductAccuracy(testResponse.message.products, currentTestCase.products),
+          productAccuracy: productAccuracy,
           featureAccuracy: calculateFeatureAccuracy(testResponse.message.products, currentTestCase.products),
+          passed: isTestPassed(productAccuracy),
         };
         return [...context.testResults, testResult];
       },

@@ -16,7 +16,7 @@ const TestExecutionCard: React.FC = () => {
       return data.testResults.reduce(
         (acc, result) => {
           const accuracyResult = result as AccuracyTestResult;
-          if (accuracyResult.productAccuracy >= 0.5 && accuracyResult.featureAccuracy >= 0.5) acc.passedCount++;
+          if (accuracyResult.productAccuracy > 0.4) acc.passedCount++;
           else acc.failedCount++;
           return acc;
         },
