@@ -7,6 +7,7 @@ export interface TableColumn {
   accessor: string;
   cell?: (value: any) => React.ReactNode;
   sortable?: boolean;
+  showIf?: (row: any) => boolean;
 }
 
 interface SortableTableProps {
@@ -66,11 +67,15 @@ const SortableTable: React.FC<SortableTableProps> = ({ columns, data, onRowClick
     }
   };
 
+  const visibleColumns = useMemo(() => {
+    return columns.filter((column) => !column.showIf || data.some((row) => column.showIf(row)));
+  }, [columns, data]);
+
   return (
     <Table className="w-full">
       <TableHeader>
         <TableRow>
-          {columns.map((column) => (
+          {visibleColumns.map((column) => (
             <TableHead
               key={column.accessor}
               className={`align-middle text-[16px] font-semibold capitalize text-gray-700 duration-300 ${column.sortable ? "cursor-pointer" : ""}`}
@@ -99,7 +104,7 @@ const SortableTable: React.FC<SortableTableProps> = ({ columns, data, onRowClick
       <TableBody>
         {sortedData.map((item, index) => (
           <TableRow key={index} onClick={() => onRowClick?.(item)} className="cursor-pointer transition-colors duration-150 hover:bg-gray-50">
-            {columns.map((column) => (
+            {visibleColumns.map((column) => (
               <TableCell key={column.accessor} className="text-[14px] font-normal">
                 {displayItem(item[column.accessor], column)}
               </TableCell>

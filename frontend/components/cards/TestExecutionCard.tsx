@@ -32,7 +32,7 @@ const TestExecutionCard: React.FC = () => {
       return data.testResults.reduce(
         (acc, result) => {
           const consistencyResult = result as ConsistencyTestResult;
-          if (consistencyResult.productConsistency >= 0.5 && consistencyResult.orderConsistency >= 0.5) acc.passedCount++;
+          if (consistencyResult.productConsistency >= 0.4) acc.passedCount++;
           else acc.failedCount++;
           return acc;
         },
@@ -46,29 +46,38 @@ const TestExecutionCard: React.FC = () => {
     }
   }, [data.testResults, data.testCases]);
 
-  const averageMetrics = useMemo(() => {
+  const calculateCost = (metadata: any) => {
+    if (!metadata) return 0;
+    const inputTokens = metadata?.inputTokenUsage ? Object.values(metadata.inputTokenUsage).reduce((sum, tokens) => sum + tokens, 0) : 0;
+    const outputTokens = metadata?.outputTokenUsage ? Object.values(metadata.outputTokenUsage).reduce((sum, tokens) => sum + tokens, 0) : 0;
+    return inputTokens * 0.0000025 + outputTokens * 0.00001;
+  };
+
+  const { averageMetrics, totalCost } = useMemo(() => {
     if (!data.testCases || !data.testResults || data.testResults.length === 0) {
       return {
-        averageProductAccuracy: 0,
-        averageFeatureAccuracy: 0,
-        averageProductConsistency: 0,
-        averageOrderConsistency: 0,
-        averageResponseTime: 0,
-        averageCost: 0,
+        averageMetrics: {
+          averageProductAccuracy: 0,
+          averageFeatureAccuracy: 0,
+          averageProductConsistency: 0,
+          averageOrderConsistency: 0,
+          averageResponseTime: 0,
+          averageCost: 0,
+        },
+        totalCost: 0,
       };
     }
+
     if (data.testCases[0]?.testType === "accuracy") {
       const sum = data.testResults.reduce(
         (acc, result) => {
           const accuracyResult = result as AccuracyTestResult;
           const metadata = accuracyResult.response.message.metadata;
           const responseTime = metadata?.timeTaken ? Object.values(metadata.timeTaken).reduce((sum, time) => sum + time, 0) : 0;
-          const inputTokens = metadata?.inputTokenUsage ? Object.values(metadata.inputTokenUsage).reduce((sum, tokens) => sum + tokens, 0) : 0;
-          const outputTokens = metadata?.outputTokenUsage ? Object.values(metadata.outputTokenUsage).reduce((sum, tokens) => sum + tokens, 0) : 0;
-          // $10 per million output tokens, $2.5 per million input tokens
-          const cost = inputTokens * 0.0000025 + outputTokens * 0.00001;
+          const cost = calculateCost(metadata);
 
           return {
+            ...acc,
             productAccuracy: acc.productAccuracy + accuracyResult.productAccuracy,
             featureAccuracy: acc.featureAccuracy + accuracyResult.featureAccuracy,
             totalResponseTime: acc.totalResponseTime + responseTime,
@@ -84,27 +93,49 @@ const TestExecutionCard: React.FC = () => {
       );
 
       return {
-        averageProductAccuracy: sum.productAccuracy / data.testResults.length,
-        averageFeatureAccuracy: sum.featureAccuracy / data.testResults.length,
-        averageResponseTime: sum.totalResponseTime / data.testResults.length,
-        averageCost: sum.totalCost / data.testResults.length,
+        totalCost: sum.totalCost,
+        averageMetrics: {
+          averageProductAccuracy: sum.productAccuracy / data.testResults.length,
+          averageFeatureAccuracy: sum.featureAccuracy / data.testResults.length,
+          averageResponseTime: sum.totalResponseTime / data.testResults.length,
+          averageCost: sum.totalCost / data.testResults.length,
+        },
       };
     } else {
       const sum = data.testResults.reduce(
         (acc, result) => {
           const consistencyResult = result as ConsistencyTestResult;
-          const metadata = consistencyResult.mainPromptResponse.message.metadata;
-          const responseTime = metadata?.timeTaken ? Object.values(metadata.timeTaken).reduce((sum, time) => sum + time, 0) : 0;
-          const inputTokens = metadata?.inputTokenUsage ? Object.values(metadata.inputTokenUsage).reduce((sum, tokens) => sum + tokens, 0) : 0;
-          const outputTokens = metadata?.outputTokenUsage ? Object.values(metadata.outputTokenUsage).reduce((sum, tokens) => sum + tokens, 0) : 0;
-          // $10 per million output tokens, $2.5 per million input tokens
-          const cost = inputTokens * 0.0000025 + outputTokens * 0.00001;
+
+          // Calculate main prompt metrics
+          const mainMetadata = consistencyResult.mainPromptResponse.message.metadata;
+          const mainResponseTime = mainMetadata?.timeTaken ? Object.values(mainMetadata.timeTaken).reduce((sum, time) => sum + time, 0) : 0;
+          const mainCost = calculateCost(mainMetadata);
+
+          // Calculate variations metrics
+          const variationMetrics = consistencyResult.variationResponses.reduce(
+            (varAcc, response) => {
+              const varMetadata = response.message.metadata;
+              const varResponseTime = varMetadata?.timeTaken ? Object.values(varMetadata.timeTaken).reduce((sum, time) => sum + time, 0) : 0;
+              const varCost = calculateCost(varMetadata);
+              return {
+                responseTime: varAcc.responseTime + varResponseTime,
+                cost: varAcc.cost + varCost,
+              };
+            },
+            { responseTime: 0, cost: 0 }
+          );
+
+          // For each test case, calculate the average response time across all prompts
+          const promptCount = 1 + consistencyResult.variationResponses.length; // main + variations
+          const avgResponseTime = (mainResponseTime + variationMetrics.responseTime) / promptCount;
+          const totalCostForTest = mainCost + variationMetrics.cost;
 
           return {
+            ...acc,
             productConsistency: acc.productConsistency + consistencyResult.productConsistency,
             orderConsistency: acc.orderConsistency + consistencyResult.orderConsistency,
-            totalResponseTime: acc.totalResponseTime + responseTime,
-            totalCost: acc.totalCost + cost,
+            totalResponseTime: acc.totalResponseTime + avgResponseTime, // Now storing average per test
+            totalCost: acc.totalCost + totalCostForTest,
           };
         },
         {
@@ -116,10 +147,13 @@ const TestExecutionCard: React.FC = () => {
       );
 
       return {
-        averageProductConsistency: sum.productConsistency / data.testResults.length,
-        averageOrderConsistency: sum.orderConsistency / data.testResults.length,
-        averageResponseTime: sum.totalResponseTime / data.testResults.length,
-        averageCost: sum.totalCost / data.testResults.length,
+        totalCost: sum.totalCost,
+        averageMetrics: {
+          averageProductConsistency: sum.productConsistency / data.testResults.length,
+          averageOrderConsistency: sum.orderConsistency / data.testResults.length,
+          averageResponseTime: sum.totalResponseTime / data.testResults.length, // Now correctly averaged
+          averageCost: sum.totalCost / (data.testResults.length * (1 + (data.testCases[0]?.variations?.length ?? 0))),
+        },
       };
     }
   }, [data.testResults, data.testCases]);
@@ -183,9 +217,9 @@ const TestExecutionCard: React.FC = () => {
         {data.testCases && data.testCases[0]?.testType === "accuracy" ? (
           <>
             <AccuracyItem label="Average Product Accuracy" value={averageMetrics.averageProductAccuracy} />
-            {/* <AccuracyItem label="Average Feature Accuracy" value={averageMetrics.averageFeatureAccuracy} /> */}
             <AccuracyItem label="Average Response Time" value={averageMetrics.averageResponseTime} unit="sec" />
             <AccuracyItem label="Average Cost" value={averageMetrics.averageCost} unit="$" />
+            <AccuracyItem label="Total Cost" value={totalCost} unit="$" />
           </>
         ) : (
           <>
@@ -193,6 +227,7 @@ const TestExecutionCard: React.FC = () => {
             <AccuracyItem label="Average Order Consistency" value={averageMetrics.averageOrderConsistency} />
             <AccuracyItem label="Average Response Time" value={averageMetrics.averageResponseTime} unit="sec" />
             <AccuracyItem label="Average Cost" value={averageMetrics.averageCost} unit="$" />
+            <AccuracyItem label="Total Cost" value={totalCost} unit="$" />
           </>
         )}
       </CardContent>

@@ -51,8 +51,9 @@ const TestResultCard: React.FC = () => {
     });
   }, [data.testResults, data.testCases]);
 
-  const columns = useMemo(() => getColumns(data.testCases?.[0]?.testType), [data.testCases]);
-  const allColumns = useMemo(() => getAllColumns(), []);
+  const columns = useMemo(() => getColumns(), [transformedData]);
+
+  const allColumns = useMemo(() => getAllColumns(data.testCases?.[0]?.testType), [data.testCases]);
 
   const onSelectTestResult = (testResult: TransformedData) => {
     setSelectedTestResult(testResult);
@@ -140,7 +141,7 @@ const transformTestResult = (testResult: AccuracyTestResult | ConsistencyTestRes
   }
 };
 
-const getColumns = (testType?: "accuracy" | "consistency"): TableColumn[] => {
+const getColumns = (): TableColumn[] => {
   const baseColumns: TableColumn[] = [
     { header: "Message ID", accessor: "messageId", sortable: true },
     { header: "Test Type", accessor: "testType", sortable: true },
@@ -154,89 +155,112 @@ const getColumns = (testType?: "accuracy" | "consistency"): TableColumn[] => {
     },
   ];
 
-  const accuracyColumns: TableColumn[] = [
+  const scoreColumns: TableColumn[] = [
     {
       header: "Product Accuracy",
       accessor: "productAccuracy",
       sortable: true,
       cell: (value: number | undefined) => (value !== undefined ? `${(value * 100).toFixed(2)}%` : "-"),
+      showIf: (row: TransformedData) => row.testType === "accuracy",
     },
-    {
-      header: "Feature Accuracy",
-      accessor: "featureAccuracy",
-      sortable: true,
-      cell: (value: number | undefined) => (value !== undefined ? `${(value * 100).toFixed(2)}%` : "-"),
-    },
-  ];
-
-  const consistencyColumns: TableColumn[] = [
     {
       header: "Product Consistency",
       accessor: "productConsistency",
       sortable: true,
       cell: (value: number | undefined) => (value !== undefined ? `${(value * 100).toFixed(2)}%` : "-"),
+      showIf: (row: TransformedData) => row.testType === "consistency",
     },
     {
       header: "Order Consistency",
       accessor: "orderConsistency",
       sortable: true,
       cell: (value: number | undefined) => (value !== undefined ? `${(value * 100).toFixed(2)}%` : "-"),
+      showIf: (row: TransformedData) => row.testType === "consistency",
     },
   ];
 
-  return [...baseColumns, ...(testType === "accuracy" ? accuracyColumns : consistencyColumns)];
+  return [...baseColumns, ...scoreColumns];
 };
 
-const getAllColumns = (): TableColumn[] => [
-  ...getColumns(),
-  { header: "Session ID", accessor: "sessionId", sortable: true },
-  { header: "Input", accessor: "input", sortable: true },
-  { header: "History Management", accessor: "historyManagementChoice", sortable: true },
-  { header: "Response Type", accessor: "responseType", sortable: true },
-  { header: "Response", accessor: "response", sortable: true },
-  {
-    header: "Products",
-    accessor: "products",
-    cell: (value: Product[]) =>
-      JSON.stringify(
-        value.map((product) => ({
-          productId: product.productId,
-          name: product.name,
-          manufacturer: product.manufacturer,
-          formFactor: product.formFactor,
-          // Add new fields
-          evaluationOrCommercialization: product.evaluationOrCommercialization,
-          processorArchitecture: product.processorArchitecture,
-          processorCoreCount: product.processorCoreCount,
-          processorManufacturer: product.processorManufacturer,
-          processorTdp: product.processorTdp,
-          memory: product.memory,
-          onboardStorage: product.onboardStorage,
-          inputVoltage: product.inputVoltage,
-          ioCount: product.ioCount,
-          wireless: product.wireless,
-          operatingSystemBsp: product.operatingSystemBsp,
-          operatingTemperatureMax: product.operatingTemperatureMax,
-          operatingTemperatureMin: product.operatingTemperatureMin,
-          certifications: product.certifications,
-          price: product.price,
-          stockAvailability: product.stockAvailability,
-        }))
-      ),
-  },
-  { header: "Reasoning", accessor: "reasoning", sortable: true },
-  { header: "Follow-up Question", accessor: "followUpQuestion", sortable: true },
-  {
-    header: "Metadata",
-    accessor: "metadata",
-    cell: (value: Record<string, unknown>) => JSON.stringify(value),
-  },
-  {
-    header: "Tags",
-    accessor: "tags",
-    cell: (value: string[] | undefined) => (value ? value.join(", ") : ""),
-  },
-];
+const getAllColumns = (testType?: "accuracy" | "consistency"): TableColumn[] => {
+  const baseColumns = [
+    ...getColumns(),
+    { header: "Session ID", accessor: "sessionId", sortable: true },
+    { header: "Input", accessor: "input", sortable: true },
+    { header: "History Management", accessor: "historyManagementChoice", sortable: true },
+    { header: "Response Type", accessor: "responseType", sortable: true },
+    { header: "Response", accessor: "response", sortable: true },
+    {
+      header: "Products",
+      accessor: "products",
+      cell: (value: Product[]) =>
+        JSON.stringify(
+          value.map((product) => ({
+            productId: product.productId,
+            name: product.name,
+            manufacturer: product.manufacturer,
+            formFactor: product.formFactor,
+            // Add new fields
+            evaluationOrCommercialization: product.evaluationOrCommercialization,
+            processorArchitecture: product.processorArchitecture,
+            processorCoreCount: product.processorCoreCount,
+            processorManufacturer: product.processorManufacturer,
+            processorTdp: product.processorTdp,
+            memory: product.memory,
+            onboardStorage: product.onboardStorage,
+            inputVoltage: product.inputVoltage,
+            ioCount: product.ioCount,
+            wireless: product.wireless,
+            operatingSystemBsp: product.operatingSystemBsp,
+            operatingTemperatureMax: product.operatingTemperatureMax,
+            operatingTemperatureMin: product.operatingTemperatureMin,
+            certifications: product.certifications,
+            price: product.price,
+            stockAvailability: product.stockAvailability,
+          }))
+        ),
+    },
+    { header: "Reasoning", accessor: "reasoning", sortable: true },
+    { header: "Follow-up Question", accessor: "followUpQuestion", sortable: true },
+    {
+      header: "Metadata",
+      accessor: "metadata",
+      cell: (value: Record<string, unknown>) => JSON.stringify(value),
+    },
+    {
+      header: "Tags",
+      accessor: "tags",
+      cell: (value: string[] | undefined) => (value ? value.join(", ") : ""),
+    },
+  ];
+
+  // Add score columns based on test type
+  if (testType === "accuracy") {
+    baseColumns.push({
+      header: "Product Accuracy",
+      accessor: "productAccuracy",
+      sortable: true,
+      cell: (value: number | undefined) => (value !== undefined ? `${(value * 100).toFixed(2)}%` : "-"),
+    });
+  } else if (testType === "consistency") {
+    baseColumns.push(
+      {
+        header: "Product Consistency",
+        accessor: "productConsistency",
+        sortable: true,
+        cell: (value: number | undefined) => (value !== undefined ? `${(value * 100).toFixed(2)}%` : "-"),
+      },
+      {
+        header: "Order Consistency",
+        accessor: "orderConsistency",
+        sortable: true,
+        cell: (value: number | undefined) => (value !== undefined ? `${(value * 100).toFixed(2)}%` : "-"),
+      }
+    );
+  }
+
+  return baseColumns;
+};
 
 const downloadCSV = (columns: TableColumn[], data: TransformedData[]) => {
   const headers = columns.map((col) => col.header);

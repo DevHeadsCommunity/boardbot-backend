@@ -62,7 +62,6 @@ const Metrics: React.FC<{ data: TransformedData }> = ({ data }) => (
       {data.testType === "accuracy" ? (
         <>
           <MetricItem label="Product Accuracy" value={`${(data.productAccuracy! * 100).toFixed(2)}%`} />
-          <MetricItem label="Feature Accuracy" value={`${(data.featureAccuracy! * 100).toFixed(2)}%`} />
         </>
       ) : (
         <>
@@ -81,26 +80,53 @@ const TestInput: React.FC<{ testCase: TestCase | undefined }> = ({ testCase }) =
   </Card>
 );
 
-const AccuracyResultDetails: React.FC<{ data: TransformedData; testCase: TestCase | undefined }> = ({ data, testCase }) => (
-  <>
-    <Card className="bg-muted p-4">
-      <h3 className="mb-2 text-lg font-semibold">Expected Products</h3>
-      <ChatMessageContent message={JSON.stringify(testCase?.products, null, 2)} />
-    </Card>
-    <Card className="bg-muted p-4">
-      <h3 className="mb-2 text-lg font-semibold">Actual Products</h3>
-      <ChatMessageContent message={JSON.stringify(data.products, null, 2)} />
-    </Card>
-    <Card className="bg-muted p-4">
-      <h3 className="mb-2 text-lg font-semibold">Response</h3>
-      <ChatMessageContent message={data.response} />
-    </Card>
-    <Card className="bg-muted p-4">
-      <h3 className="mb-2 text-lg font-semibold">Reasoning</h3>
-      <pre className="whitespace-pre-wrap break-words rounded bg-muted-foreground/10 p-2">{data.reasoning}</pre>
-    </Card>
-  </>
-);
+const AccuracyResultDetails: React.FC<{ data: TransformedData; testCase: TestCase | undefined }> = ({ data, testCase }) => {
+  const copyToClipboard = () => {
+    const jsonData = JSON.stringify(
+      {
+        prompt: testCase?.prompt || "",
+        filters: data.metadata?.filters,
+        expectedProducts: testCase?.products,
+        actualProducts: data.products,
+      },
+      null,
+      2
+    );
+    navigator.clipboard.writeText(jsonData);
+  };
+
+  return (
+    <>
+      <div className="flex justify-end">
+        <CopyButton onClick={copyToClipboard} />
+      </div>
+      <Card className="bg-muted p-4">
+        <div className="grid gap-6 md:grid-cols-2">
+          <div>
+            <h4 className="mb-2 text-lg font-semibold">Filters</h4>
+            <FilterList filters={data.metadata?.filters} />
+          </div>
+        </div>
+      </Card>
+      <Card className="bg-muted p-4">
+        <h3 className="mb-2 text-lg font-semibold">Expected Products</h3>
+        <ChatMessageContent message={JSON.stringify(testCase?.products, null, 2)} />
+      </Card>
+      <Card className="bg-muted p-4">
+        <h3 className="mb-2 text-lg font-semibold">Actual Products</h3>
+        <ChatMessageContent message={JSON.stringify(data.products, null, 2)} />
+      </Card>
+      <Card className="bg-muted p-4">
+        <h3 className="mb-2 text-lg font-semibold">Response</h3>
+        <ChatMessageContent message={data.response} />
+      </Card>
+      <Card className="bg-muted p-4">
+        <h3 className="mb-2 text-lg font-semibold">Reasoning</h3>
+        <pre className="whitespace-pre-wrap break-words rounded bg-muted-foreground/10 p-2">{data.reasoning}</pre>
+      </Card>
+    </>
+  );
+};
 
 const ConsistencyResultDetails: React.FC<{ data: TransformedData; testCase: TestCase | undefined }> = ({ data, testCase }) => {
   const copyToClipboard = (prompt: string, filters: Record<string, string> | undefined, products: string[]) => {

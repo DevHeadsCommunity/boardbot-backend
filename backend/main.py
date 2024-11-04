@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 # CORS configuration
 origins = [
     "http://localhost:3000",
-    "http://192.168.166.104:3000",
+    "http://192.168.147.104:3000",
     "https://api.boardbot.ai",
     "https://boardbot.ai",
 ]

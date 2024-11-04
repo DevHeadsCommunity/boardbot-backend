@@ -1,6 +1,10 @@
+import json
+import logging
 from typing import Dict, Any, List
 from .base import USER_FACING_BASE, PROCESSING_BASE
 from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
+
+logger = logging.getLogger(__name__)
 
 
 class BaseChatPrompt:
@@ -689,254 +693,312 @@ class LowConfidenceFeatureRefinementPrompt(BaseChatPrompt):
         )
 
 
-test_prompts = [
-    {
-        "prompt": "List Single Board Computers with a processor frequency of 1.5 GHz or higher and manufactured by Broadcom",
-        "variations": [
-            "List Single Board Computers with a processor frequency of 1.5 GHz or higher and manufactured by Broadcom",
-            "Show Broadcom Single Board Computers with processors running at least 1.5 GHz",
-            "Display SBCs made by Broadcom with CPU speeds of 1.5 GHz or above",
-            "Enumerate Broadcom-manufactured Single Board Computers featuring 1.5+ GHz processors",
-            "Find SBCs from Broadcom with processor frequencies of 1.5 GHz and higher",
-        ],
-    },
-    {
-        "prompt": "What are the available Computers on Module (COM) with DDR4 memory support and comes with an Intel processor?",
-        "variations": [
-            "What are the available Computers on Module (COM) with DDR4 memory support and comes with an Intel processor?",
-            "List COMs featuring Intel processors and DDR4 memory compatibility",
-            "Show Computers on Module with Intel CPUs and DDR4 RAM support",
-            "Display available COMs that have Intel processors and DDR4 memory",
-            "Enumerate Intel-based Computers on Module supporting DDR4 memory",
-        ],
-    },
-    {
-        "prompt": "Show Devkits that include FPGA and are manufactured by Microsemi Corporation.",
-        "variations": [
-            "Show Devkits that include FPGA and are manufactured by Microsemi Corporation.",
-            "List Microsemi Corporation development boards featuring FPGAs",
-            "Display FPGA-equipped devkits produced by Microsemi Corporation",
-            "Enumerate Microsemi-made development kits that incorporate FPGAs",
-            "Find Microsemi Corporation devkits with integrated FPGA technology",
-        ],
-    },
-    {
-        "prompt": "Find all SBCs that support PCIe Gen3 interface and have more than 8 cores",
-        "variations": [
-            "Find all SBCs that support PCIe Gen3 interface and have more than 8 cores",
-            "List Single Board Computers with PCIe Gen3 support and over 8 processor cores",
-            "Show SBCs featuring PCIe Gen3 compatibility and exceeding 8 CPU cores",
-            "Display all Single Board Computers with PCIe Gen3 interface and 9+ cores",
-            "Enumerate SBCs offering PCIe Gen3 and more than 8 processor cores",
-        ],
-    },
-    {
-        "prompt": "Provide a list of products with ARM Cortex processors that are available in a COM Express Basic form factor.",
-        "variations": [
-            "Provide a list of products with ARM Cortex processors that are available in a COM Express Basic form factor.",
-            "Show COM Express Basic modules featuring ARM Cortex processors",
-            "List products using ARM Cortex CPUs in COM Express Basic form factor",
-            "Display ARM Cortex-based devices available in COM Express Basic format",
-            "Enumerate COM Express Basic offerings equipped with ARM Cortex processors",
-        ],
-    },
-    {
-        "prompt": "Identify all hardware components manufactured by Broadcom Corporation that include ARM processors.",
-        "variations": [
-            "Identify all hardware components manufactured by Broadcom Corporation that include ARM processors.",
-            "List Broadcom Corporation products featuring ARM processor architecture",
-            "Show hardware components from Broadcom with ARM-based CPUs",
-            "Display all ARM processor-equipped devices produced by Broadcom Corporation",
-            "Enumerate Broadcom-made hardware incorporating ARM processor architecture",
-        ],
-    },
-    {
-        "prompt": "Which Advantech Computer on Modules support USB 3.0 interface?",
-        "variations": [
-            "Which Advantech Computer on Modules support USB 3.0 interface?",
-            "List Advantech COMs that offer USB 3.0 compatibility",
-            "Show Computer on Modules from Advantech with USB 3.0 support",
-            "Display Advantech-manufactured COMs featuring USB 3.0 interfaces",
-            "Enumerate Advantech Computer on Modules equipped with USB 3.0 ports",
-        ],
-    },
-    {
-        "prompt": "List all Single Board Computers with a memory capacity of 128GB or more with more than 2 USB ports.",
-        "variations": [
-            "List all Single Board Computers with a memory capacity of 128GB or more with more than 2 USB ports.",
-            "Show SBCs featuring 128GB+ memory and 3 or more USB interfaces",
-            "Display Single Board Computers with at least 128GB RAM and over 2 USB ports",
-            "Enumerate SBCs that have 128GB or higher memory capacity and 3+ USB connections",
-            "Find Single Board Computers with 128GB+ memory and more than two USB interfaces",
-        ],
-    },
-    {
-        "prompt": "What are the available NXP powered Computer on Module products that include SATA 3.0 interface?",
-        "variations": [
-            "What are the available NXP powered Computer on Module products that include SATA 3.0 interface?",
-            "List COMs with NXP processors featuring SATA 3.0 support",
-            "Show NXP-based Computer on Modules that offer SATA 3.0 connectivity",
-            "Display Computer on Module products using NXP chips and including SATA 3.0 interfaces",
-            "Enumerate NXP-powered COMs equipped with SATA 3.0 ports",
-        ],
-    },
-    {
-        "prompt": "Find Single Board Computers with a form factor smaller than 100mm x 100mm and RAM more 256 MB",
-        "variations": [
-            "Find Single Board Computers with a form factor smaller than 100mm x 100mm and RAM more 256 MB",
-            "List SBCs smaller than 100x100mm with over 256MB of memory",
-            "Show compact Single Board Computers (sub-100x100mm) featuring more than 256MB RAM",
-            "Display SBCs with form factors under 100mm x 100mm and memory exceeding 256MB",
-            "Enumerate Single Board Computers smaller than 100x100mm that have 256MB+ RAM",
-        ],
-    },
-    {
-        "prompt": "List all devices that support voltage ranges from 1.2V to 3.3V.",
-        "variations": [
-            "List all devices that support voltage ranges from 1.2V to 3.3V.",
-            "Show hardware components with input voltage support between 1.2V and 3.3V",
-            "Display devices operating within 1.2V to 3.3V input voltage range",
-            "Enumerate products compatible with 1.2V-3.3V power input",
-            "Find all components functioning with input voltages from 1.2V up to 3.3V",
-        ],
-    },
-    {
-        "prompt": "Show products that include an Intel Xeon Processor D and support Embedded Software API.",
-        "variations": [
-            "Show products that include an Intel Xeon Processor D and support Embedded Software API.",
-            "List devices featuring Intel Xeon D CPUs with Embedded Software API compatibility",
-            "Display hardware with Intel Xeon Processor D that supports Embedded Software API",
-            "Enumerate products using Intel Xeon D chips and offering Embedded Software API",
-            "Find items combining Intel Xeon Processor D with Embedded Software API support",
-        ],
-    },
-    {
-        "prompt": "Which products offer a high-performance FPGA feature and are suitable for embedded development?",
-        "variations": [
-            "Which products offer a high-performance FPGA feature and are suitable for embedded development?",
-            "List high-performance FPGA products designed for embedded systems development",
-            "Show devices with powerful FPGAs tailored for embedded development",
-            "Display products combining high-performance FPGAs with embedded development capabilities",
-            "Enumerate FPGA-based hardware suitable for high-performance embedded development",
-        ],
-    },
-    {
-        "prompt": "Provide a list of Single Board Computers that can operate at a frequency up to 2.7 GHz with MiniITX form factor.",
-        "variations": [
-            "Provide a list of Single Board Computers that can operate at a frequency up to 2.7 GHz with MiniITX form factor.",
-            "Show Mini-ITX SBCs capable of running at frequencies up to 2.7 GHz",
-            "List Single Board Computers in Mini-ITX form factor with max 2.7 GHz processor speed",
-            "Display Mini-ITX format SBCs that can reach 2.7 GHz operating frequency",
-            "Enumerate Mini-ITX Single Board Computers with processors up to 2.7 GHz",
-        ],
-    },
-    {
-        "prompt": "What components are available with embedded nonvolatile flash memory and at least 4GB of RAM?",
-        "variations": [
-            "What components are available with embedded nonvolatile flash memory and at least 4GB of RAM?",
-            "List hardware featuring built-in nonvolatile flash memory and 4GB or more RAM",
-            "Show products that include embedded nonvolatile flash memory and a minimum of 4GB RAM",
-            "Display components offering integrated nonvolatile flash memory capabilities with 4GB+ memory",
-            "Enumerate devices equipped with on-board nonvolatile flash memory and at least 4GB of RAM",
-        ],
-    },
-    {
-        "prompt": 'Identify all products with a "Customizable System-on-Chip (cSoC)" type with ARM Cortex processor.',
-        "variations": [
-            'Identify all products with a "Customizable System-on-Chip (cSoC)" type with ARM Cortex processor.',
-            "List ARM Cortex-based Customizable System-on-Chip (cSoC) offerings",
-            "Show cSoC products featuring ARM Cortex processors",
-            "Display all ARM Cortex-powered Customizable System-on-Chip solutions",
-            "Enumerate Customizable SoC devices with ARM Cortex CPU architecture",
-        ],
-    },
-    {
-        "prompt": "Top 5 Single Board Computers products that support dual Gigabit Ethernet and SATA.",
-        "variations": [
-            "Top 5 Single Board Computers products that support dual Gigabit Ethernet and SATA.",
-            "List best 5 SBCs featuring both dual Gigabit Ethernet and SATA interfaces",
-            "Show top 5 Single Board Computers with dual GbE and SATA support",
-            "Display 5 premium SBCs offering dual Gigabit Ethernet and SATA connectivity",
-            "Enumerate 5 leading Single Board Computers equipped with dual GbE and SATA",
-        ],
-    },
-    {
-        "prompt": "Which products offer up to 16 cores and 2.3 GHz frequency in their processors?",
-        "variations": [
-            "Which products offer up to 16 cores and 2.3 GHz frequency in their processors?",
-            "List devices featuring processors with up to 16 cores and 2.3 GHz clock speed",
-            "Show products with CPUs offering maximum 16 cores and 2.3 GHz frequency",
-            "Display items with processors supporting up to 16 cores and 2.3 GHz clock rate",
-            "Enumerate hardware using processors that have up to 16 cores and 2.3 GHz speed",
-        ],
-    },
-    {
-        "prompt": "Find Kontron products that include both ECC and non-ECC memory options.",
-        "variations": [
-            "Find Kontron products that include both ECC and non-ECC memory options.",
-            "List Kontron devices supporting both ECC and non-ECC RAM",
-            "Show Kontron hardware with ECC and non-ECC memory compatibility",
-            "Display Kontron products that provide ECC and non-ECC memory choices",
-            "Enumerate Kontron offerings featuring both ECC and non-ECC memory support",
-        ],
-    },
-    {
-        "prompt": "List all hardware platforms with on-chip frame memory and supports a TFT-LCD controller.",
-        "variations": [
-            "List all hardware platforms with on-chip frame memory and supports a TFT-LCD controller.",
-            "Show devices featuring on-chip frame memory and TFT-LCD controller support",
-            "Display hardware solutions with integrated frame memory and TFT-LCD controller",
-            "Enumerate platforms that include on-chip frame memory and TFT-LCD controller capabilities",
-            "Find products combining on-chip frame memory with TFT-LCD controller functionality",
-        ],
-    },
-    {
-        "prompt": "Provide a list of Single Board Computers manufactured by Advantech that include USB 3.0 support.",
-        "variations": [
-            "Provide a list of Single Board Computers manufactured by Advantech that include USB 3.0 support.",
-            "Show Advantech-made SBCs featuring USB 3.0 interfaces",
-            "List Advantech Single Board Computers with USB 3.0 compatibility",
-            "Display Advantech-manufactured SBCs equipped with USB 3.0 ports",
-            "Enumerate Advantech Single Board Computers offering USB 3.0 support",
-        ],
-    },
-    {
-        "prompt": "Which devices support Intel Hyper-Threading Technology with mATX form factor?",
-        "variations": [
-            "Which devices support Intel Hyper-Threading Technology with mATX form factor?",
-            "List mATX form factor products featuring Intel Hyper-Threading Technology",
-            "Show hardware in mATX format that includes Intel Hyper-Threading support",
-            "Display mATX devices compatible with Intel Hyper-Threading Technology",
-            "Enumerate mATX form factor items offering Intel Hyper-Threading capabilities",
-        ],
-    },
-    {
-        "prompt": "Identify products that include programmable analog components and embedded nonvolatile memory.",
-        "variations": [
-            "Identify products that include programmable analog components and embedded nonvolatile memory.",
-            "List devices featuring both programmable analog elements and embedded nonvolatile memory",
-            "Show hardware solutions combining programmable analog capabilities with embedded nonvolatile memory",
-            "Display products that offer programmable analog components alongside embedded nonvolatile memory",
-            "Enumerate items integrating programmable analog features and embedded nonvolatile memory",
-        ],
-    },
-    {
-        "prompt": "What are the available hardware platforms with built-in Intel Turbo Boost Technology and Hyper-Threading Technology?",
-        "variations": [
-            "What are the available hardware platforms with built-in Intel Turbo Boost Technology and Hyper-Threading Technology?",
-            "List devices featuring both Intel Turbo Boost and Hyper-Threading Technologies",
-            "Show hardware solutions that incorporate Intel Turbo Boost and Hyper-Threading capabilities",
-            "Display products offering built-in support for Intel Turbo Boost and Hyper-Threading",
-            "Enumerate platforms equipped with Intel Turbo Boost and Hyper-Threading Technologies",
-        ],
-    },
-    {
-        "prompt": "Show all SBCs supporting Verilog and C with detailed specifications for FPGA integration.",
-        "variations": [
-            "List Single Board Computers compatible with Verilog and C for FPGA development",
-            "Display SBCs that support both Verilog and C languages for FPGA integration",
-            "Enumerate Single Board Computers offering Verilog and C compatibility for FPGA projects",
-            "Find SBCs with FPGA integration capabilities supporting Verilog and C programming",
-        ],
-    },
-]
+class DynamicAnalysisPrompt(BaseChatPrompt):
+    def __init__(self):
+        system_template = (
+            PROCESSING_BASE
+            + """
+        Your task is to analyze queries about computer hardware and either:
+        1. Extract specific product requirements and filters
+        2. Generate a product search for general product queries
+        3. Generate a direct response only for non-product queries
+
+        General Guidelines:
+        1. ANY mention of product categories (boards, modules, kits, etc.) should trigger a product search
+        2. Only use direct responses for completely non-product queries (greetings, general questions)
+        3. When in doubt, prefer returning products over a direct response
+
+
+        Guidelines for Direct Response:
+        1. For queries without clear product requirements, generate a direct response in a conversational tone.
+        2. Frame follow-up questions to better understand user requirements.
+
+        Guidelines for Filter Extraction:
+        1. Use ONLY attribute names from the provided list for filters
+        2. Include ONLY explicitly mentioned attributes - do not infer
+        3. Use standardized values (e.g., "INTEL" for processor_manufacturer)
+        4. Distinguish between manufacturer and processor_manufacturer:
+           - manufacturer: company making the product
+           - processor_manufacturer: company making the CPU
+        5. For processor architecture, use exact terms (e.g., "ARM Cortex-A53", "X86-64")
+        6. For memory, combine size and type when both specified (e.g., "8.0GB DDR4")
+        7. For ranges, use format "min_value-max_value" with units
+        8. Include units for measurements (W for TDP, V for voltage, °C for temperature)
+        9. For multi-value attributes, use arrays (e.g., ["WI-FI 6", "BLUETOOTH 5+"])
+        10. Map form factors consistently:
+            - "Computer on Module" → "COM"
+            - "COM Express" → "COM EXPRESS"
+            - "Single Board Computer" → "SBC"
+
+        Respond in this JSON format:
+
+        For specific product queries:
+        {{
+            "filters": {{
+                // Only include explicitly mentioned attributes
+                // Use exact attribute names and standardized values
+            }},
+            "query_context": {{
+                "num_products_requested": <number>, // Default to 5 if not specified
+                "sort_preference": null
+            }}
+        }}
+
+        For general product queries:
+        {{
+            "query_context": {{
+                "num_products_requested": 5, // Default to 5 if not specified
+                "sort_preference": null
+            }}
+        }}
+
+        For non-product queries:
+        {{
+            "direct_response": {{
+                "message": "Your conversational response",
+                "follow_up_question": "A relevant follow-up question"
+            }}
+        }}
+
+
+        Examples for Filter Extraction:
+
+        Query: "Find COM Express modules with Intel Core i7 CPUs and at least 16GB DDR4 RAM"
+        Response:
+        {{
+            "filters": {{
+                "form_factor": "COM EXPRESS",
+                "processor_manufacturer": "INTEL",
+                "processor_architecture": "X86-64",
+                "memory": "16.0GB-64.0GB DDR4"
+            }},
+            "query_context": {{
+                "num_products_requested": 5,
+                "sort_preference": null
+            }}
+        }}
+
+        Query: "Show FPGA-based products for embedded development with 64GB eMMC storage and operating temperature range from -40°C to 85°C"
+        Response:
+        {{
+            "filters": {{
+                "processor_architecture": "FPGA",
+                "form_factor": "DEVELOPMENT BOARD",
+                "onboard_storage": "64.0GB EMMC",
+                "operating_temperature_min": "-40°C",
+                "operating_temperature_max": "85°C"
+            }},
+            "query_context": {{
+                "num_products_requested": 5,
+                "sort_preference": null
+            }}
+        }}
+
+        Query: "List Single Board Computers, manufactured by Broadcom Corporation, featuring ARM processor architecture, with RAM more than 256MB"
+        Response:
+        {{
+            "filters": {{
+                "manufacturer": "BROADCOM",
+                "form_factor": "SBC",
+                "processor_architecture": "ARM",
+                "memory": "0.256GB-64.0GB"
+            }},
+            "query_context": {{
+                "num_products_requested": 5,
+                "sort_preference": null
+            }}
+        }}
+
+        Query: "Show products with Broadcom processors, ARM architecture, and at least 1GB of RAM"
+        Response:
+        {{
+            "filters": {{
+                "processor_manufacturer": "BROADCOM",
+                "processor_architecture": "ARM",
+                "memory": "1.0GB-64.0GB"
+            }},
+            "query_context": {{
+                "num_products_requested": 5,
+                "sort_preference": null
+            }}
+        }}
+
+        Examples for general product queries:
+
+        Query: "Tell me about development boards"
+        Response:
+        {{
+            "query_context": {{
+                "num_products_requested": 5,
+                "sort_preference": null
+            }}
+        }}
+
+        Examples for Non-Product Queries:
+
+        Query: "How are you doing today?"
+        Response:
+        {{
+            "direct_response": {{
+                "message": "I'm functioning well and ready to assist you with any questions about computer hardware, particularly embedded systems and development kits.",
+                "follow_up_question": "What kind of hardware solutions are you interested in learning more about?"
+            }}
+        }}
+        """
+        )
+
+        human_template = """
+        Attribute list for filters:
+        {attribute_descriptions}
+
+        User Query: {query}
+        Chat History: {chat_history}
+
+        Response:
+        """
+        super().__init__(system_template, human_template, ["query", "chat_history", "attribute_descriptions"])
+
+
+class DynamicResponsePrompt(BaseChatPrompt):
+    def __init__(self):
+        self.base_guidelines = """
+        Your task is to generate concise, informative responses about hardware products.
+
+        Core Response Requirements:
+        - Maximum 2-3 sentences for the main message
+        - Focus on addressing the query's core intent
+        - Keep technical details focused on relevant specifications
+        - Maintain natural, conversational tone
+        - CRITICAL: You must include EVERY SINGLE product provided in the Product Results in your response's products list, maintaining their exact order
+        - Each product in the results must be included in your response, even if it doesn't perfectly match the search criteria
+        - Never filter, exclude, or omit any products from your response
+        - When products have identical names but different product_ids, include all of them
+
+        Response Structure:
+        1. Opening statement addressing query intent and total number of products found
+        2. Brief technical insights focusing on the best matches
+        3. Acknowledge partial matches if present
+        4. Include a follow-up question about user requirements
+
+        Technical Details Guidelines:
+        - Only mention specs relevant to the query
+        - Use standardized units and terminology
+        - Prioritize user-specified requirements
+        - When discussing multiple similar products, focus on key differentiators
+        """
+
+        self.search_guidelines = {
+            "filtered": {
+                "focus": "Exact technical requirement matches",
+                "key_points": [
+                    "Start with total number of products found",
+                    "Lead with products that match specified requirements",
+                    "Acknowledge products that partially match requirements",
+                    "Include ALL products in the response, even those with minimal relevance",
+                ],
+                "example": """{{
+                    "message": "Found 5 boards in total, with 2 fully matching your Intel CPU and DDR4 requirements, and 3 offering alternative configurations that might interest you.",
+                    "products": [
+                        // MUST include ALL products from Product Results in the same order
+                        {{"product_id": "product1"}},
+                        {{"product_id": "product2"}},
+                        {{"product_id": "product3"}},
+                        {{"product_id": "product4"}},
+                        {{"product_id": "product5"}}
+                    ],
+                    "reasoning": "Listed all available products, with product1 and product2 being exact matches for your requirements, while the others offer different specifications that might be suitable alternatives.",
+                    "follow_up_question": "Would you like more details about specific features of any of these boards?"
+                }}""",
+            },
+            "semantic": {
+                "focus": "Category and capability overview",
+                "key_points": [
+                    "Start with total number of products found",
+                    "Highlight range of capabilities across all products",
+                    "Emphasize distinct features across selection",
+                    "Include ALL products in the response",
+                ],
+                "example": """{{
+                    "message": "Found 5 development boards in total, ranging from compact ARM solutions to full-featured x86 platforms, offering diverse connectivity options.",
+                    "products": [
+                        // MUST include ALL products from Product Results in the same order
+                        {{"product_id": "product1"}},
+                        {{"product_id": "product2"}},
+                        {{"product_id": "product3"}},
+                        {{"product_id": "product4"}},
+                        {{"product_id": "product5"}}
+                    ],
+                    "reasoning": "Listed all available products, showcasing the full range of architectures and capabilities in our catalog.",
+                    "follow_up_question": "Which processor architecture interests you most?"
+                }}""",
+            },
+            "hybrid": {
+                "focus": "Balanced exact and similar matches",
+                "key_points": [
+                    "Start with total number of products found",
+                    "Present exact matches first",
+                    "Include relevant alternatives",
+                    "Include ALL products in the response",
+                ],
+                "example": """{{
+                    "message": "Found 5 boards in total: 2 exactly matching your specifications, plus 3 alternatives with complementary features.",
+                    "products": [
+                        // MUST include ALL products from Product Results in the same order
+                        {{"product_id": "product1"}},
+                        {{"product_id": "product2"}},
+                        {{"product_id": "product3"}},
+                        {{"product_id": "product4"}},
+                        {{"product_id": "product5"}}
+                    ],
+                    "reasoning": "Listed all available products, combining exact requirement matches with relevant alternatives that offer additional features.",
+                    "follow_up_question": "Would you like to explore the additional features of the alternative options?"
+                }}""",
+            },
+        }
+
+        # Define templates
+        human_template = """
+        User Query: {query}
+        Applied Filters: {filters}
+        Product Results: {products}
+
+        Response:
+        """
+
+        # Initialize with default template
+        super().__init__(
+            self._build_system_template("semantic"), human_template, ["query", "filters", "products", "search_method"]
+        )
+
+    def _build_system_template(self, search_method: str) -> str:
+        """Build the system template for a specific search method."""
+        method = self.search_guidelines.get(search_method, self.search_guidelines["semantic"])
+
+        template = f"""{USER_FACING_BASE}
+        {self.base_guidelines}
+
+        Current Search Context: {method['focus']}
+
+        Response Priorities:
+        {self._format_list(method['key_points'])}
+
+        Expected Response Format:
+        {method['example']}
+
+        Remember:
+        - Keep responses focused and concise
+        - Maintain technical accuracy
+        - Use conversational but professional tone
+        - Address core user needs first
+        """
+        return template
+
+    def _format_list(self, items: List[str]) -> str:
+        """Format a list of items as bullet points."""
+        return "\n".join(f"- {item}" for item in items)
+
+    def format(self, **kwargs: Any) -> List[Dict[str, str]]:
+        """Override format to use the appropriate template based on search method."""
+        search_method = kwargs.get("search_method", "semantic")
+        self.template.messages[0].prompt.template = self._build_system_template(search_method)
+        return super().format(**kwargs)
