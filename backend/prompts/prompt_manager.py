@@ -2,6 +2,8 @@ import json
 import logging
 from typing import Any, Dict, List, Tuple
 from .templates import (
+    DynamicAnalysisPrompt,
+    DynamicResponsePrompt,
     RouteClassificationPrompt,
     QueryProcessorPrompt,
     ProductRerankingPrompt,
@@ -33,6 +35,8 @@ class PromptManager:
             "vague_intent_response": VagueIntentResponsePrompt(),
             "clear_intent_response": ClearIntentResponsePrompt(),
             "dynamic_agent": DynamicAgentPrompt(),
+            "dynamic_analysis": DynamicAnalysisPrompt(),
+            "dynamic_response": DynamicResponsePrompt(),
             "simple_data_extraction": SimpleDataExtractionPrompt(),
             "data_extraction": DataExtractionPrompt(),
             "missing_feature_extraction": MissingFeatureExtractionPrompt(),
@@ -164,4 +168,19 @@ class PromptManager:
             "data_extraction",
             raw_data=raw_data,
             attribute_descriptions=json.dumps(attribute_descriptions, indent=2),
+        )
+
+    def get_dynamic_analysis_prompt(self, query: str, chat_history: List[Dict[str, str]]) -> Tuple[str, str]:
+        return self.get_prompt(
+            "dynamic_analysis",
+            query=query,
+            chat_history=chat_history,
+            attribute_descriptions=json.dumps(attribute_descriptions, indent=2),
+        )
+
+    def get_dynamic_response_prompt(
+        self, query: str, products: str, filters: str, search_method: str
+    ) -> Tuple[str, str]:
+        return self.get_prompt(
+            "dynamic_response", query=query, products=products, filters=filters, search_method=search_method
         )

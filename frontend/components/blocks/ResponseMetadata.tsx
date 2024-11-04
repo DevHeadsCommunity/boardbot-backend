@@ -26,10 +26,10 @@ const ResponseMetadata: React.FC<ResponseMetadataProps> = memo(function Response
     return `$${cost.toFixed(2)}`;
   };
 
-  const steps = Object.keys(metadata.timeTaken);
-  const inputTotal = Object.values(metadata.inputTokenUsage).reduce((sum, value) => sum + value, 0);
-  const outputTotal = Object.values(metadata.outputTokenUsage).reduce((sum, value) => sum + value, 0);
-  const timeTotal = Object.values(metadata.timeTaken).reduce((sum, value) => sum + value, 0);
+  const steps = Object.keys(metadata?.timeTaken || {});
+  const inputTotal = Object.values(metadata?.inputTokenUsage || {}).reduce((sum, value) => sum + value, 0);
+  const outputTotal = Object.values(metadata?.outputTokenUsage || {}).reduce((sum, value) => sum + value, 0);
+  const timeTotal = Object.values(metadata?.timeTaken || {}).reduce((sum, value) => sum + value, 0);
 
   const inputCost = calculateTokenCost(inputTotal, model, false);
   const outputCost = calculateTokenCost(outputTotal, model, true);
@@ -49,9 +49,9 @@ const ResponseMetadata: React.FC<ResponseMetadataProps> = memo(function Response
         {steps.map((step) => (
           <TableRow key={step}>
             <TableCell className="font-bold">{step}</TableCell>
-            <TableCell>{metadata.inputTokenUsage[step]?.toFixed(0) || "-"}</TableCell>
-            <TableCell>{metadata.outputTokenUsage[step]?.toFixed(0) || "-"}</TableCell>
-            <TableCell>{metadata.timeTaken[step]?.toFixed(2) || "-"}</TableCell>
+            <TableCell>{metadata?.inputTokenUsage[step]?.toFixed(0) || "-"}</TableCell>
+            <TableCell>{metadata?.outputTokenUsage[step]?.toFixed(0) || "-"}</TableCell>
+            <TableCell>{metadata?.timeTaken[step]?.toFixed(2) || "-"}</TableCell>
           </TableRow>
         ))}
         <TableRow>
