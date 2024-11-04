@@ -263,10 +263,13 @@ const getAllColumns = (testType?: "accuracy" | "consistency"): TableColumn[] => 
 };
 
 const downloadCSV = (columns: TableColumn[], data: TransformedData[]) => {
+  const csvRows: string[] = [];
   const headers = columns.map((col) => col.header);
-  const csvContent = [
-    headers.join(","),
-    ...data.map((row) =>
+  csvRows.push(headers.join(","));
+
+  data.forEach((row) => {
+    // Add main prompt response
+    csvRows.push(
       columns
         .map((col) => {
           let cellData = row[col.accessor as keyof TransformedData];
@@ -280,9 +283,54 @@ const downloadCSV = (columns: TableColumn[], data: TransformedData[]) => {
           return `"${String(cellData ?? "").replace(/"/g, '""')}"`;
         })
         .join(",")
-    ),
-  ].join("\n");
+    );
 
+    // Add variation responses for consistency tests
+    if (row.testType === "consistency" && row.variationResponses) {
+      row.variationResponses.forEach((variation, index) => {
+        csvRows.push(
+          columns
+            .map((col) => {
+              let cellData: any;
+              switch (col.accessor) {
+                case "messageId":
+                  cellData = `${row.messageId}_variation_${index + 1}`;
+                  break;
+                case "response":
+                  cellData = variation.response;
+                  break;
+                case "products":
+                  cellData = variation.products;
+                  break;
+                case "reasoning":
+                  cellData = variation.reasoning;
+                  break;
+                case "followUpQuestion":
+                  cellData = variation.followUpQuestion;
+                  break;
+                case "metadata":
+                  cellData = variation.metadata;
+                  break;
+                default:
+                  cellData = row[col.accessor as keyof TransformedData];
+              }
+
+              if (col.cell) {
+                cellData = col.cell(cellData);
+              } else if (cellData instanceof Date) {
+                cellData = cellData.toISOString();
+              } else if (typeof cellData === "object") {
+                cellData = JSON.stringify(cellData);
+              }
+              return `"${String(cellData ?? "").replace(/"/g, '""')}"`;
+            })
+            .join(",")
+        );
+      });
+    }
+  });
+
+  const csvContent = csvRows.join("\n");
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const link = document.createElement("a");
   if (link.download !== undefined) {
