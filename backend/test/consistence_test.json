@@ -7,7 +7,8 @@
       "Display SBCs made by Broadcom with CPU speeds of 1.5 GHz or above",
       "Enumerate Broadcom-manufactured Single Board Computers featuring 1.5+ GHz processors",
       "Find SBCs from Broadcom with processor frequencies of 1.5 GHz and higher"
-    ]
+    ],
+    "description": "Tests consistency in recognizing specific manufacturer and processor speed requirements"
   },
   {
     "prompt": "What are the available Computers on Module (COM) with DDR4 memory support and comes with an Intel processor?",
@@ -17,7 +18,8 @@
       "Show Computers on Module with Intel CPUs and DDR4 RAM support",
       "Display available COMs that have Intel processors and DDR4 memory",
       "Enumerate Intel-based Computers on Module supporting DDR4 memory"
-    ]
+    ],
+    "description": "Tests consistency in identifying form factor specifications and memory technology combinations"
   },
   {
     "prompt": "Show Devkits that include FPGA and are manufactured by Microsemi Corporation.",
@@ -27,7 +29,8 @@
       "Display FPGA-equipped devkits produced by Microsemi Corporation",
       "Enumerate Microsemi-made development kits that incorporate FPGAs",
       "Find Microsemi Corporation devkits with integrated FPGA technology"
-    ]
+    ],
+    "description": "Tests consistency in recognizing specialized hardware components and specific manufacturers"
   },
   {
     "prompt": "Find all SBCs that support PCIe Gen3 interface and have more than 8 cores",
@@ -37,7 +40,8 @@
       "Show SBCs featuring PCIe Gen3 compatibility and exceeding 8 CPU cores",
       "Display all Single Board Computers with PCIe Gen3 interface and 9+ cores",
       "Enumerate SBCs offering PCIe Gen3 and more than 8 processor cores"
-    ]
+    ],
+    "description": "Tests consistency in handling interface standards and multi-core processor specifications"
   },
   {
     "prompt": "Provide a list of products with ARM Cortex processors that are available in a COM Express Basic form factor.",
@@ -47,7 +51,8 @@
       "List products using ARM Cortex CPUs in COM Express Basic form factor",
       "Display ARM Cortex-based devices available in COM Express Basic format",
       "Enumerate COM Express Basic offerings equipped with ARM Cortex processors"
-    ]
+    ],
+    "description": "Tests consistency in recognizing processor architecture and form factor combinations"
   },
   {
     "prompt": "Identify all hardware components manufactured by Broadcom Corporation that include ARM processors.",
@@ -57,7 +62,8 @@
       "Show hardware components from Broadcom that use ARM-based CPUs",
       "Enumerate Broadcom-made devices incorporating ARM processors",
       "Display all ARM processor-equipped hardware produced by Broadcom Corporation"
-    ]
+    ],
+    "description": "Tests consistency in identifying manufacturer-specific processor architectures"
   },
   {
     "prompt": "Which Advantech Computer on Modules support USB 3.0 interface?",
@@ -67,7 +73,8 @@
       "Show Computer on Modules from Advantech with USB 3.0 support",
       "Display Advantech-manufactured COMs featuring USB 3.0 interfaces",
       "Enumerate Advantech Computer on Modules equipped with USB 3.0 ports"
-    ]
+    ],
+    "description": "Tests consistency in recognizing manufacturer-specific interface standards"
   },
   {
     "prompt": "List all Single Board Computers with a memory capacity of 128GB or more with more than 2 USB ports.",
@@ -77,7 +84,8 @@
       "Display Single Board Computers with at least 128GB RAM and over 2 USB ports",
       "Enumerate SBCs that have 128GB or higher memory capacity and 3+ USB connections",
       "Find Single Board Computers with 128GB+ memory and more than two USB interfaces"
-    ]
+    ],
+    "description": "Tests consistency in handling memory capacity and multiple interface requirements"
   },
   {
     "prompt": "What are the available NXP powered Computer on Module products that include SATA 3.0 interface?",
@@ -87,7 +95,8 @@
       "Show NXP-based Computer on Modules that offer SATA 3.0 connectivity",
       "Display Computer on Module products using NXP chips and including SATA 3.0 interfaces",
       "Enumerate NXP-powered COMs equipped with SATA 3.0 ports"
-    ]
+    ],
+    "description": "Tests consistency in identifying processor manufacturer and interface standard combinations"
   },
   {
     "prompt": "Find Single Board Computers with a form factor smaller than 100mm x 100mm and RAM more 256 MB",
@@ -97,7 +106,8 @@
       "Show compact Single Board Computers (sub-100x100mm) featuring more than 256MB RAM",
       "Display SBCs with form factors under 100mm x 100mm and memory exceeding 256MB",
       "Enumerate Single Board Computers smaller than 100x100mm that have 256MB+ RAM"
-    ]
+    ],
+    "description": "Tests consistency in handling physical dimensions and memory capacity specifications"
   },
   {
     "prompt": "Show products that include an Intel Xeon Processor D and support Embedded Software API.",
@@ -107,7 +117,8 @@
       "Enumerate products using Intel Xeon Processor D and offering Embedded Software API support",
       "Display hardware with Intel Xeon D chips that are compatible with Embedded Software API",
       "Provide a list of Intel Xeon D-based products supporting Embedded Software API"
-    ]
+    ],
+    "description": "Tests consistency in recognizing specific processor models and software compatibility"
   },
   {
     "prompt": "Which products offer a high-performance FPGA feature and are suitable for embedded development?",
@@ -117,7 +128,8 @@
       "Show devices with powerful FPGAs tailored for embedded development",
       "Display products combining high-performance FPGAs with embedded development capabilities",
       "Enumerate FPGA-based hardware suitable for high-performance embedded development"
-    ]
+    ],
+    "description": "Tests consistency in identifying FPGA capabilities and development environment requirements"
   },
   {
     "prompt": "Provide a list of Single Board Computers that can operate at a frequency up to 2.7 GHz with MiniITX form factor.",
@@ -127,7 +139,8 @@
       "List Single Board Computers in Mini-ITX form factor with max 2.7 GHz processor speed",
       "Display Mini-ITX format SBCs that can reach 2.7 GHz operating frequency",
       "Enumerate Mini-ITX Single Board Computers with processors up to 2.7 GHz"
-    ]
+    ],
+    "description": "Tests consistency in handling processor speed and form factor specifications"
   },
   {
     "prompt": "Identify all products with a \"Customizable System-on-Chip (cSoC)\" type with ARM Cortex processor.",
@@ -137,7 +150,8 @@
       "Show cSoC products featuring ARM Cortex processors",
       "Display all ARM Cortex-powered Customizable System-on-Chip solutions",
       "Enumerate Customizable SoC devices with ARM Cortex CPU architecture"
-    ]
+    ],
+    "description": "Tests consistency in recognizing specialized processor architectures and customizable features"
   },
   {
     "prompt": "Top 5 Single Board Computers products that support dual Gigabit Ethernet and SATA.",
@@ -147,7 +161,8 @@
       "Show top 5 Single Board Computers with dual GbE and SATA support",
       "Display 5 premium SBCs offering dual Gigabit Ethernet and SATA connectivity",
       "Enumerate 5 leading Single Board Computers equipped with dual GbE and SATA"
-    ]
+    ],
+    "description": "Tests consistency in ranking products with multiple interface requirements"
   },
   {
     "prompt": "Which products offer up to 16 cores and 2.3 GHz frequency in their processors?",
@@ -157,7 +172,8 @@
       "Show products with CPUs offering maximum 16 cores and 2.3 GHz frequency",
       "Display items with processors supporting up to 16 cores and 2.3 GHz clock rate",
       "Enumerate hardware using processors that have up to 16 cores and 2.3 GHz speed"
-    ]
+    ],
+    "description": "Tests consistency in handling processor core count and frequency specifications"
   },
   {
     "prompt": "Find Kontron products that include both ECC and non-ECC memory options.",
@@ -167,7 +183,8 @@
       "Show Kontron hardware with ECC and non-ECC memory compatibility",
       "Display Kontron products that provide ECC and non-ECC memory choices",
       "Enumerate Kontron offerings featuring both ECC and non-ECC memory support"
-    ]
+    ],
+    "description": "Tests consistency in identifying manufacturer-specific memory technology options"
   },
   {
     "prompt": "List all hardware platforms with on-chip frame memory and supports a TFT-LCD controller.",
@@ -177,7 +194,8 @@
       "Display hardware solutions with integrated frame memory and TFT-LCD controller",
       "Enumerate platforms that include on-chip frame memory and TFT-LCD controller capabilities",
       "Find products combining on-chip frame memory with TFT-LCD controller functionality"
-    ]
+    ],
+    "description": "Tests consistency in recognizing integrated display controller and memory features"
   },
   {
     "prompt": "Provide a list of Single Board Computers manufactured by Advantech that include USB 3.0 support.",
@@ -187,7 +205,8 @@
       "List Advantech Single Board Computers with USB 3.0 compatibility",
       "Display Advantech-manufactured SBCs equipped with USB 3.0 ports",
       "Enumerate Advantech Single Board Computers offering USB 3.0 support"
-    ]
+    ],
+    "description": "Tests consistency in recognizing manufacturer-specific interface standards"
   },
   {
     "prompt": "Which devices support Intel Hyper-Threading Technology with mATX form factor?",
@@ -197,7 +216,8 @@
       "Show hardware in mATX format that includes Intel Hyper-Threading support",
       "Display mATX devices compatible with Intel Hyper-Threading Technology",
       "Enumerate mATX form factor items offering Intel Hyper-Threading capabilities"
-    ]
+    ],
+    "description": "Tests consistency in recognizing multiple processor technology features"
   },
   {
     "prompt": "Identify products that include programmable analog components and embedded nonvolatile memory.",
@@ -207,7 +227,8 @@
       "Show hardware solutions combining programmable analog capabilities with embedded nonvolatile memory",
       "Display products that offer programmable analog components alongside embedded nonvolatile memory",
       "Enumerate items integrating programmable analog features and embedded nonvolatile memory"
-    ]
+    ],
+    "description": "Tests consistency in identifying specialized analog components and memory features"
   },
   {
     "prompt": "What are the available hardware platforms with Intel Turbo Boost Technology and Hyper-Threading Technology?",
@@ -217,7 +238,8 @@
       "Show hardware solutions that incorporate Intel Turbo Boost and Hyper-Threading capabilities",
       "Display products offering built-in support for Intel Turbo Boost and Hyper-Threading",
       "Enumerate platforms equipped with Intel Turbo Boost and Hyper-Threading Technologies"
-    ]
+    ],
+    "description": "Tests consistency in recognizing multiple processor technology features"
   },
   {
     "prompt": "Show all SBCs supporting Verilog and C with detailed specifications for FPGA integration.",
@@ -226,6 +248,7 @@
       "Display SBCs that support both Verilog and C languages for FPGA integration",
       "Enumerate Single Board Computers offering Verilog and C compatibility for FPGA projects",
       "Find SBCs with FPGA integration capabilities supporting Verilog and C programming"
-    ]
+    ],
+    "description": "Tests consistency in handling programming language support and FPGA integration requirements"
   }
 ]

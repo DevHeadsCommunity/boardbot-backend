@@ -1,8 +1,26 @@
-import { AccuracyTestResultSchema, Architecture, ConsistencyTestResultSchema, HistoryManagement, Model, Test, TestCase } from "@/types";
+import {
+  AccuracyTestResultSchema,
+  Architecture,
+  ConsistencyTestResultSchema,
+  ContextRetentionTestResultSchema,
+  ConversationalFlowTestResultSchema,
+  DefensibilityTestResultSchema,
+  FeatureInferenceTestResultSchema,
+  HistoryManagement,
+  Model,
+  RobustnessTestResultSchema,
+  Test,
+  TestCase,
+} from "@/types";
 import { ActorRefFrom, assign, ContextFrom, emit, setup } from "xstate";
 import { z } from "zod";
 import { accuracyTestRunnerMachine } from "./accuracyTestRunnerMachine";
 import { consistencyTestRunnerMachine } from "./consistencyTestRunnerMachine";
+import { contextRetentionTestRunnerMachine } from "./contextRetentionTestRunnerMachine";
+import { conversationalFlowTestRunnerMachine } from "./conversationalFlowTestRunnerMachine";
+import { defensibilityTestRunnerMachine } from "./defensibilityTestRunnerMachine";
+import { featureInferenceTestRunnerMachine } from "./featureInferenceTestRunnerMachine";
+import { robustnessTestRunnerMachine } from "./robustnessTestRunnerMachine";
 
 export const testMachine = setup({
   types: {
@@ -38,7 +56,6 @@ export const testMachine = setup({
   }),
   id: "testActor",
   initial: "idle",
-  // initial: ({input}) => input?.currentState ? input.currentState : "idle", // This is not working, but we need to find a way to restore the state
   on: {
     "app.updateState": {
       actions: assign({
@@ -64,8 +81,34 @@ export const testMachine = setup({
           actions: [
             assign({
               tests: ({ context, event, spawn }) => {
-                const testRunnerMachine = event.data.testType === "accuracy" ? accuracyTestRunnerMachine : consistencyTestRunnerMachine;
-                const newTest = {
+                let testRunnerMachine;
+                switch (event.data.testType) {
+                  case "accuracy":
+                    testRunnerMachine = accuracyTestRunnerMachine;
+                    break;
+                  case "consistency":
+                    testRunnerMachine = consistencyTestRunnerMachine;
+                    break;
+                  case "feature_inference":
+                    testRunnerMachine = featureInferenceTestRunnerMachine;
+                    break;
+                  case "context_retention":
+                    testRunnerMachine = contextRetentionTestRunnerMachine;
+                    break;
+                  case "robustness":
+                    testRunnerMachine = robustnessTestRunnerMachine;
+                    break;
+                  case "conversational_flow":
+                    testRunnerMachine = conversationalFlowTestRunnerMachine;
+                    break;
+                  case "defensibility":
+                    testRunnerMachine = defensibilityTestRunnerMachine;
+                    break;
+                  default:
+                    throw new Error(`Unknown test type: ${event.data.testType}`);
+                }
+
+                const newTest: Test = {
                   testId: event.data.id,
                   name: event.data.name,
                   testType: event.data.testType,
@@ -80,7 +123,8 @@ export const testMachine = setup({
                       historyManagement: context.historyManagement,
                     },
                   }),
-                } as Test;
+                };
+
                 return [...context.tests, newTest];
               },
             }),
@@ -135,7 +179,7 @@ export const serializeTestState = (testRef: ActorRefFrom<typeof testMachine>) =>
     selectedTest: snapshot.context.selectedTest,
     tests: snapshot.context.tests.map((test) => ({
       ...test,
-      testRunnerState: serializeTestRunnerState(test.testRunnerRef),
+      testRunnerState: serializeTestRunnerState(test.testRunnerRef, test.testType),
     })),
     model: snapshot.context.model,
     architecture: snapshot.context.architecture,
@@ -144,7 +188,18 @@ export const serializeTestState = (testRef: ActorRefFrom<typeof testMachine>) =>
   };
 };
 
-export const serializeTestRunnerState = (testRunnerRef: ActorRefFrom<typeof accuracyTestRunnerMachine | typeof consistencyTestRunnerMachine>) => {
+export const serializeTestRunnerState = (
+  testRunnerRef: ActorRefFrom<
+    | typeof accuracyTestRunnerMachine
+    | typeof consistencyTestRunnerMachine
+    | typeof featureInferenceTestRunnerMachine
+    | typeof contextRetentionTestRunnerMachine
+    | typeof robustnessTestRunnerMachine
+    | typeof conversationalFlowTestRunnerMachine
+    | typeof defensibilityTestRunnerMachine
+  >,
+  testType: string
+) => {
   const snapshot = testRunnerRef.getSnapshot();
   return {
     name: snapshot.context.name,
@@ -152,8 +207,6 @@ export const serializeTestRunnerState = (testRunnerRef: ActorRefFrom<typeof accu
     testCases: snapshot.context.testCases,
     testResults: snapshot.context.testResults,
     currentTestIndex: snapshot.context.currentTestIndex,
-    batchSize: snapshot.context.batchSize,
-    testTimeout: snapshot.context.testTimeout,
     progress: snapshot.context.progress,
     model: snapshot.context.model,
     architecture: snapshot.context.architecture,
@@ -165,44 +218,100 @@ export const serializeTestRunnerState = (testRunnerRef: ActorRefFrom<typeof accu
 export const deserializeTestState = (savedState: any, spawn: any): ContextFrom<typeof testMachine> => {
   return {
     ...savedState,
-    tests: savedState.tests.map((test: any) => ({
-      ...test,
-      testRunnerRef: spawn(test.testType === "accuracy" ? accuracyTestRunnerMachine : consistencyTestRunnerMachine, {
-        id: test.testId,
-        input: deserializeTestRunnerState(test.testRunnerState, test.testType),
-      }),
-    })),
+    tests: savedState.tests.map((test: any) => {
+      let testRunnerMachine;
+      switch (test.testType) {
+        case "accuracy":
+          testRunnerMachine = accuracyTestRunnerMachine;
+          break;
+        case "consistency":
+          testRunnerMachine = consistencyTestRunnerMachine;
+          break;
+        case "feature_inference":
+          testRunnerMachine = featureInferenceTestRunnerMachine;
+          break;
+        case "context_retention":
+          testRunnerMachine = contextRetentionTestRunnerMachine;
+          break;
+        case "robustness":
+          testRunnerMachine = robustnessTestRunnerMachine;
+          break;
+        case "conversational_flow":
+          testRunnerMachine = conversationalFlowTestRunnerMachine;
+          break;
+        case "defensibility":
+          testRunnerMachine = defensibilityTestRunnerMachine;
+          break;
+        default:
+          throw new Error(`Unknown test type: ${test.testType}`);
+      }
+
+      return {
+        ...test,
+        testRunnerRef: spawn(testRunnerMachine, {
+          id: test.testId,
+          input: deserializeTestRunnerState(test.testRunnerState, test.testType),
+        }),
+      };
+    }),
   };
 };
 
-export const deserializeTestRunnerState = (savedState: any, testType: string): ContextFrom<typeof accuracyTestRunnerMachine | typeof consistencyTestRunnerMachine> => {
+export const deserializeTestRunnerState = (savedState: any, testType: string): any => {
   const baseState = {
     webSocketRef: undefined,
     name: savedState.name,
     sessionId: savedState.sessionId,
     testCases: savedState.testCases,
     currentTestIndex: savedState.currentTestIndex,
-    batchSize: savedState.batchSize,
-    testTimeout: savedState.testTimeout,
     progress: savedState.progress,
     model: savedState.model,
     architecture: savedState.architecture,
     historyManagement: savedState.historyManagement,
   };
 
-  if (testType === "accuracy") {
-    return {
-      ...baseState,
-      testResults: savedState.testResults ? z.array(AccuracyTestResultSchema).parse(savedState.testResults) : [],
-    };
-  } else if (testType === "consistency") {
-    return {
-      ...baseState,
-      testResults: savedState.testResults ? z.array(ConsistencyTestResultSchema).parse(savedState.testResults) : [],
-      pendingResponses: savedState.pendingResponses || 0,
-      currentResponses: savedState.currentResponses || [],
-    };
-  } else {
-    throw new Error(`Unknown test type: ${testType}`);
+  switch (testType) {
+    case "accuracy":
+      return {
+        ...baseState,
+        testResults: savedState.testResults ? z.array(AccuracyTestResultSchema).parse(savedState.testResults) : [],
+      };
+    case "consistency":
+      return {
+        ...baseState,
+        testResults: savedState.testResults ? z.array(ConsistencyTestResultSchema).parse(savedState.testResults) : [],
+        pendingResponses: savedState.pendingResponses || 0,
+        currentResponses: savedState.currentResponses || [],
+      };
+    case "feature_inference":
+      return {
+        ...baseState,
+        testResults: savedState.testResults ? z.array(FeatureInferenceTestResultSchema).parse(savedState.testResults) : [],
+      };
+    case "context_retention":
+      return {
+        ...baseState,
+        testResults: savedState.testResults ? z.array(ContextRetentionTestResultSchema).parse(savedState.testResults) : [],
+        conversation: savedState.conversation || [],
+      };
+    case "robustness":
+      return {
+        ...baseState,
+        testResults: savedState.testResults ? z.array(RobustnessTestResultSchema).parse(savedState.testResults) : [],
+      };
+    case "conversational_flow":
+      return {
+        ...baseState,
+        testResults: savedState.testResults ? z.array(ConversationalFlowTestResultSchema).parse(savedState.testResults) : [],
+        conversation: savedState.conversation || [],
+      };
+    case "defensibility":
+      return {
+        ...baseState,
+        testResults: savedState.testResults ? z.array(DefensibilityTestResultSchema).parse(savedState.testResults) : [],
+        conversation: savedState.conversation || [],
+      };
+    default:
+      throw new Error(`Unknown test type: ${testType}`);
   }
 };

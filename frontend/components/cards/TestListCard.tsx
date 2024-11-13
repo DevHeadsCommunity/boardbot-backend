@@ -4,13 +4,13 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTestContext } from "@/hooks/useTestContext";
-import { Test } from "@/types";
+import { Test, TEST_TYPES } from "@/types";
 import React, { useMemo, useState } from "react";
 
 const TestListCard: React.FC = () => {
   const { data, actions } = useTestContext();
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState<"all" | "accuracy" | "consistency">("all");
+  const [filterType, setFilterType] = useState<string>("all");
 
   const columns: TableColumn[] = [
     { header: "Name", accessor: "name" },
@@ -21,16 +21,26 @@ const TestListCard: React.FC = () => {
 
   const getTestStatus = (test: Test): "pending" | "running" | "completed" | "error" => {
     const snapshot = test.testRunnerRef.getSnapshot();
-    if (snapshot.matches("idle")) return "pending";
-    if (snapshot.matches("running")) return "running";
-    if (snapshot.matches("disconnecting")) return "completed";
-    return "error";
+
+    if (!snapshot || typeof snapshot.matches !== "function") {
+      return "pending";
+    }
+
+    try {
+      if (snapshot.matches("idle")) return "pending";
+      if (snapshot.matches("running")) return "running";
+      if (snapshot.matches("disconnecting") || snapshot.matches("idle")) return "completed";
+      return "error";
+    } catch (error) {
+      console.error("Error checking test status:", error);
+      return "error";
+    }
   };
 
   const transformedTests = useMemo(() => {
     return data.tests.map((test) => ({
       ...test,
-      testType: test.testRunnerRef.getSnapshot().context.testCases[0]?.testType || "unknown",
+      testType: test.testType,
       createdAt: new Date(test.createdAt).toLocaleString(),
       status: getTestStatus(test),
     }));
@@ -55,28 +65,21 @@ const TestListCard: React.FC = () => {
       </div>
       <div className="flex gap-4">
         <Input placeholder="Search tests..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="max-w-sm" />
-        <Select value={filterType} onValueChange={(value: "all" | "accuracy" | "consistency") => setFilterType(value)}>
+        <Select value={filterType} onValueChange={(value: string) => setFilterType(value)}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by type" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All</SelectItem>
-            <SelectItem value="accuracy">Accuracy</SelectItem>
-            <SelectItem value="consistency">Consistency</SelectItem>
+            {TEST_TYPES.map((type) => (
+              <SelectItem key={type} value={type}>
+                {type.replace("_", " ").replace(/^\w/, (c) => c.toUpperCase())}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
-      <SortableTable
-        columns={columns}
-        data={filteredTests}
-        onRowClick={handleSelectTest}
-        // renderCell={(column: { accessor: string | number | symbol }, rowData: { [x: string]: any; status: "pending" | "running" | "completed" | "error" }) => {
-        //   if (column.accessor === "status") {
-        //     return <StatusBadge status={rowData.status} />;
-        //   }
-        //   return rowData[column.accessor as keyof typeof rowData];
-        // }}
-      />
+      <SortableTable columns={columns} data={filteredTests} onRowClick={handleSelectTest} />
     </Card>
   );
 };

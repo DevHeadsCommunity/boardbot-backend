@@ -1,286 +1,343 @@
 [
   {
-    "prompt": "Give me available devices manufactured by Advantech, and of form factor ETX",
+    "prompt": "Find all products with USB 3.0 interface and support for Windows 10 operating system",
+    "description": "Tests recognition of industry-standard interfaces and OS compatibility, including common technical terminology variations",
+    "variations": [
+      "List devices with USB 3.0 ports that run Windows 10 OS",
+      "Show hardware offering USB 3 connectivity and Windows Ten compatibility",
+      "What products include USB 3.0 interfaces and work with Win 10?",
+      "Display items featuring USB 3.0 and support for Windows 10 operating sistem"
+    ],
+    "products": [
+      {
+        "name": "PCM"
+      },
+      {
+        "name": "INTELLIGENT INSPECTION"
+      },
+      {
+        "name": "MIOUUA"
+      },
+      {
+        "name": "IBFI"
+      },
+      {
+        "name": "CONGATC"
+      }
+    ]
+  },
+  {
+    "prompt": "Find COM Express modules with Intel processors and DDR4 memory support",
+    "description": "Tests understanding of form factor specifications, processor manufacturers, and memory types",
+    "variations": [
+      "List COM Express boards using Intel CPUs and compatible with DDR4 RAM",
+      "Show Computers on Module that have Intel processors and support DDR4 memory",
+      "What COM Express products have Intel processers and work with DDR4?",
+      "Display COM Express units with Intel CPUs and DDR-4 memory support"
+    ],
+    "products": [
+      {
+        "name": "COM-EXPRESS COMPACT"
+      },
+      {
+        "name": "EXPRESSADP"
+      },
+      {
+        "name": "COM-EXPRESS R TYPE"
+      },
+      {
+        "name": "SOM"
+      }
+    ]
+  },
+  {
+    "prompt": "Show me fanless embedded systems that support Windows 10 and have a minimum operating temperature of -20°C or lower",
+    "description": "Tests recognition of cooling specifications, environmental requirements, and OS compatibility",
+    "variations": [
+      "List fanless embeded systems compatible with Win 10 and operable at -20 degrees Celsius or below",
+      "What passive-cooled devices run Windows 10 and work in temperatures of -20°C or colder?",
+      "Display fanless systems supporting Windows Ten with minimum operating temps of -20 Celsius or less",
+      "Find embedded computers without fans, Windows 10 compatible, and functional at -20°C or lower"
+    ],
+    "products": [
+      {
+        "name": "ARK-1123H"
+      },
+      {
+        "name": "INTELLIGENT INSPECTION"
+      },
+      {
+        "name": "ARK INTEL CELERON N FANLESS EMBEDDED BOX PC"
+      }
+    ]
+  },
+  {
+    "prompt": "List SoMs (System on Modules) with Wi-Fi capability and at least 32GB of onboard storage",
+    "description": "Tests recognition of wireless connectivity features and storage capacity specifications",
+    "variations": [
+      "Show System-on-Modules featuring WiFi and minimum 32 gigabytes built-in storage",
+      "What SoMs offer wireless connectivity and 32GB or more onboard memory?",
+      "Display System on Modules with Wi-Fi support and no less than 32GB integrated storage",
+      "Find SoM options including Wi-Fi and at least 32GB on-board storage capacity"
+    ],
+    "products": [
+      {
+        "name": "DIGI CONNECTCORE MP"
+      },
+      {
+        "name": "JETSON ORIN NX"
+      }
+    ]
+  },
+  {
+    "prompt": "Find products that have both Ethernet and serial ports, and are designed for DIN rail mounting",
+    "description": "Tests recognition of multiple interface types and mounting specifications",
+    "variations": [
+      "List devices with Ethernet & serial interfaces, made for DIN-rail installation",
+      "Show items featuring Ethernet and RS-232 ports, compatible with DIN rail mounts",
+      "What products include Ethernet and serial connections, suited for DIN rail attachment?",
+      "Display hardware with Ethernet/serial ports designed to be DIN rail mounted"
+    ],
+    "products": [
+      {
+        "name": "HAIIC MICA USB"
+      },
+      {
+        "name": "UNO"
+      },
+      {
+        "name": "REVPI CONNECT"
+      }
+    ]
+  },
+  {
+    "prompt": "Show me industrial computers with at least 8 processor cores and support for ECC memory",
+    "description": "Tests recognition of processor specifications and advanced memory features",
+    "variations": [
+      "List industrial PCs with 8+ CPU cores that work with Error-Correcting Code memory",
+      "What industrial machines have a minimum of eight cores and ECC RAM support?",
+      "Display industrial systems featuring 8 or more processor cores and ECC memory compatibility",
+      "Find industrial computers with no less than 8 cores and Error Correction Code memory support"
+    ],
+    "products": [
+      {
+        "name": "AIMB-275"
+      },
+      {
+        "name": "ASMB"
+      }
+    ]
+  },
+  {
+    "prompt": "Which devices support Windows IoT and have a maximum operating temperature of 70°C or higher?",
+    "description": "Tests recognition of specialized OS support and high-temperature operation capabilities",
+    "variations": [
+      "List products compatible with Windows IOT and operable up to at least 70 degrees Celsius",
+      "Show devices running Windows Internet of Things with max temps of 70°C or above",
+      "What hardware works with Windows IoT and functions at 70 Celsius or hotter?",
+      "Find items supporting Windows IoT OS and maximum operating temperatures of 70°C+"
+    ],
+    "products": [
+      {
+        "name": "INTELLIGENT INSPECTION"
+      },
+      {
+        "name": "UBIQUITOUS TOUCH"
+      }
+    ]
+  },
+  {
+    "prompt": "List devices that support both Linux and Android operating systems and have eMMC storage",
+    "description": "Tests recognition of multi-OS support and specific storage type requirements",
+    "variations": [
+      "Show products compatible with Linux and Andriod OS, featuring eMMC memory",
+      "What devices run both Linux and Android and include embedded MultiMediaCard storage?",
+      "Find hardware supporting Linux & Android operating systems with eMMC",
+      "Display items that work with Linux/Android OSes and have eMMC storage options"
+    ],
+    "products": [
+      {
+        "name": "EMETXEI"
+      },
+      {
+        "name": "EMETXEIC"
+      }
+    ]
+  },
+  {
+    "prompt": "What options are available for modules with Bluetooth connectivity and LPDDR4 memory?",
+    "description": "Tests recognition of wireless standards and specific memory type requirements",
+    "variations": [
+      "Show modules featuring Bluetooth and Low-Power DDR4 RAM",
+      "List devices with Bluetooth capability and LPDDR4 memory type",
+      "What products offer Bluetooth conectivity and LP-DDR4 memory?",
+      "Find modules supporting Bluetooth and equipped with LPDDR-4 RAM"
+    ],
+    "products": [
+      {
+        "name": "CONGASA"
+      },
+      {
+        "name": "ROM RTX"
+      }
+    ]
+  },
+  {
+    "prompt": "Find products that support CAN bus interfaces and have an input voltage range that includes 24V",
+    "description": "Tests recognition of industrial communication protocols and power supply specifications",
+    "variations": [
+      "List devices with CAN bus support and power input covering 24 volts",
+      "Show items featuring Controller Area Network interfaces and 24V-compatible power input",
+      "What hardware includes CAN bus connectivity and accepts 24V input voltage?",
+      "Display products supporting CAN protocol and operable with 24-volt power supply"
+    ],
+    "products": [
+      {
+        "name": "SNMPB"
+      },
+      {
+        "name": "BL BPC E"
+      }
+    ]
+  },
+  {
+    "prompt": "Which devices have DisplayPort output and are powered by AMD processors?",
+    "description": "Tests recognition of display interface standards and specific processor manufacturers",
+    "variations": [
+      "Show products with Display Port interface using AMD CPUs",
+      "List hardware featuring DisplayPort and AMD processor",
+      "What items offer DispleyPort output and run on AMD chips?",
+      "Find devices with AMD processors that include a DisplayPort connection"
+    ],
+    "products": [
+      {
+        "name": "SOM AMD RYZEN EMBEDDED V"
+      },
+      {
+        "name": "PC CPU MODULES"
+      }
+    ]
+  },
+  {
+    "prompt": "What options are available for fanless systems with Intel Core i7 processors and at least 16GB of RAM?",
+    "description": "Tests recognition of specific processor models, cooling requirements, and memory capacity",
+    "variations": [
+      "List passive-cooled devices using Intel i7 CPUs and minimum 16 gigabytes memory",
+      "Show fanless products with Core i7 chips and 16GB or more RAM",
+      "What fanless hardware features Intel i7 processors and at least 16GB of memory?",
+      "Find systems without fans, powered by Intel Core i7, with 16GB+ random access memory"
+    ],
+    "products": [
+      {
+        "name": "EMETXEIC"
+      },
+      {
+        "name": "EMETXEI"
+      }
+    ]
+  },
+  {
+    "prompt": "Which products offer both M.2 and mSATA storage options and are compliant with MIL-STD-810 standards?",
+    "description": "Tests recognition of multiple storage interfaces and military certification requirements",
+    "variations": [
+      "List devices with M.2 & mSATA storage interfaces meeting MIL-STD 810 requirements",
+      "Show items featuring M.2 and mini-SATA storage, certified to MIL-STD-810",
+      "What products include M.2/mSATA storage options and conform to MIL-STD 810 specs?",
+      "Find items offering both M.2 and mSATA storage compliant with Military Standard 810"
+    ],
+    "products": [
+      {
+        "name": "AGS"
+      },
+      {
+        "name": "BENGAL"
+      }
+    ]
+  },
+  {
+    "prompt": "Find all products manufactured by Advantech with ETX form factor",
+    "description": "Tests recognition of specific manufacturers and legacy form factors",
+    "variations": [
+      "List Advantech-made products with ETX form-factor",
+      "Show me ETX devices produced by Advantec",
+      "What Advantech hardware comes in the ETX format?",
+      "Find Advantech-manufactured items with Embedded Technology eXtended form factor"
+    ],
     "products": [
       {
         "name": "COM MODULES"
       },
       {
         "name": "SOM A"
-      },
-      {
-        "name": "AMD LX LVDS VT"
-      },
-      {
-        "name": "SOM B"
-      },
-      {
-        "name": "SOM B"
       }
     ]
   },
   {
-    "prompt": "List Advantech-made products with ETX form-factor",
+    "prompt": "Show products that support Wi-Fi 5 and run on Ubuntu operating system",
+    "description": "Tests recognition of wireless standards and specific OS requirements",
+    "variations": [
+      "List devices supporting Wi-Fi 5 and running on Ubuntu OS",
+      "Show me products with Wi-Fi 5 and Ubuntu OS",
+      "What hardware supports Wi-Fi 5 and runs on Ubuntu?",
+      "Find items with Wi-Fi 5 and Ubuntu OS compatibility"
+    ],
     "products": [
       {
-        "name": "COM MODULES"
+        "name": "RASPBERRY-PI COMPUTE"
       },
       {
-        "name": "SOM A"
-      },
-      {
-        "name": "AMD LX LVDS VT"
-      },
-      {
-        "name": "SOM B"
-      },
-      {
-        "name": "SOM B"
+        "name": "ARMADA SOM A"
       }
     ]
   },
   {
-    "prompt": "Show me ETX devices produced by Advantec",
+    "prompt": "List devices with ARM architecture and at least 4GB of memory",
+    "description": "Tests recognition of processor architecture and memory capacity specifications",
+    "variations": [
+      "Show me products with ARM architechture and 4 gigabytes or more RAM",
+      "What devices use ARM chips and have minimum 4GB memory?",
+      "List items with ARM-based processors and at least 4GB of RAM",
+      "Find gadgets with ARM architecture and 4000MB or higher memory"
+    ],
     "products": [
       {
-        "name": "COM MODULES"
+        "name": "RASPBERRY-PI COMPUTE"
       },
       {
-        "name": "SOM A"
+        "name": "ARMADA SOM A"
       },
       {
-        "name": "AMD LX LVDS VT"
-      },
-      {
-        "name": "SOM B"
-      },
-      {
-        "name": "SOM B"
+        "name": "MYCCX"
       }
     ]
   },
   {
-    "prompt": "What Advantech hardware comes in the ETX format?",
+    "prompt": "Show me embedded systems with dual Ethernet ports and support for extended temperature ranges",
+    "description": "Tests recognition of networking interfaces and environmental operating specifications",
+    "variations": [
+      "List embedded devices featuring two Ethernet interfaces and wide temp range capability",
+      "What embedded products have dual LAN ports and operate in extreme temperatures?",
+      "Display embedded systems with 2 Ethernet connections supporting extended temp ranges",
+      "Find embedded hardware offering twin Ethernet ports and broad temperature tolerance"
+    ],
     "products": [
       {
-        "name": "COM MODULES"
+        "name": "COM-EXPRESS BASIC"
       },
       {
-        "name": "SOM A"
-      },
-      {
-        "name": "AMD LX LVDS VT"
-      },
-      {
-        "name": "SOM B"
-      },
-      {
-        "name": "SOM B"
-      }
-    ]
-  },
-  {
-    "prompt": "Find Advantech-manufactured items with Embedded Technology eXtended form factor",
-    "products": [
-      {
-        "name": "COM MODULES"
-      },
-      {
-        "name": "SOM A"
-      },
-      {
-        "name": "AMD LX LVDS VT"
-      },
-      {
-        "name": "SOM B"
-      },
-      {
-        "name": "SOM B"
-      }
-    ]
-  },
-  {
-    "prompt": "Show me products that support Wi-Fi 5 and run on Ubuntu operating system",
-    "products": [
-      {
-        "name": "UBIQUITOUS TOUCH"
-      },
-      {
-        "name": "VENICE GW SINGLE BOARD"
-      },
-      {
-        "name": "PCMFSAE"
-      },
-      {
-        "name": "PC CPU MODULES"
-      },
-      {
-        "name": "ARK"
-      }
-    ]
-  },
-  {
-    "prompt": "List devices with WiFi 5 compatibility and Ubuntu OS support",
-    "products": [
-      {
-        "name": "UBIQUITOUS TOUCH"
-      },
-      {
-        "name": "VENICE GW SINGLE BOARD"
-      },
-      {
-        "name": "PCMFSAE"
-      },
-      {
-        "name": "PC CPU MODULES"
-      },
-      {
-        "name": "ARK"
-      }
-    ]
-  },
-  {
-    "prompt": "What hardware offers 802.11ac and works with Ubuntu Linux?",
-    "products": [
-      {
-        "name": "UBIQUITOUS TOUCH"
-      },
-      {
-        "name": "VENICE GW SINGLE BOARD"
-      },
-      {
-        "name": "PCMFSAE"
-      },
-      {
-        "name": "PC CPU MODULES"
-      },
-      {
-        "name": "ARK"
-      }
-    ]
-  },
-  {
-    "prompt": "Find items featuring Wi-Fi 5 and capable of running Ubunto operating system",
-    "products": [
-      {
-        "name": "UBIQUITOUS TOUCH"
-      },
-      {
-        "name": "VENICE GW SINGLE BOARD"
-      },
-      {
-        "name": "PCMFSAE"
-      },
-      {
-        "name": "PC CPU MODULES"
-      },
-      {
-        "name": "ARK"
-      }
-    ]
-  },
-  {
-    "prompt": "Display products supporting both WiFi 5 and the Ubuntu platform",
-    "products": [
-      {
-        "name": "UBIQUITOUS TOUCH"
-      },
-      {
-        "name": "VENICE GW SINGLE BOARD"
-      },
-      {
-        "name": "PCMFSAE"
-      },
-      {
-        "name": "PC CPU MODULES"
-      },
-      {
-        "name": "ARK"
+        "name": "SANDCAT"
       }
     ]
   },
   {
     "prompt": "List all products with a minimum operating temperature of -40°C and SATA storage interface",
-    "products": [
-      {
-        "name": "CONGATS"
-      },
-      {
-        "name": "EMETXEIMUE"
-      },
-      {
-        "name": "SOM AMD RYZEN EMBEDDED V"
-      },
-      {
-        "name": "COM-EXPRESS R TYPE"
-      },
-      {
-        "name": "EXPRESSBD"
-      }
-    ]
-  },
-  {
-    "prompt": "Show devices that operate at -40 degrees Celsius or lower and have SATA storage",
-    "products": [
-      {
-        "name": "CONGATS"
-      },
-      {
-        "name": "EMETXEIMUE"
-      },
-      {
-        "name": "SOM AMD RYZEN EMBEDDED V"
-      },
-      {
-        "name": "COM-EXPRESS R TYPE"
-      },
-      {
-        "name": "EXPRESSBD"
-      }
-    ]
-  },
-  {
-    "prompt": "What hardware functions in -40°C environments and includes a SATA interface?",
-    "products": [
-      {
-        "name": "CONGATS"
-      },
-      {
-        "name": "EMETXEIMUE"
-      },
-      {
-        "name": "SOM AMD RYZEN EMBEDDED V"
-      },
-      {
-        "name": "COM-EXPRESS R TYPE"
-      },
-      {
-        "name": "EXPRESSBD"
-      }
-    ]
-  },
-  {
-    "prompt": "Find products with SATA storage that can withstand temperatures of negative 40 Celsius or colder",
-    "products": [
-      {
-        "name": "CONGATS"
-      },
-      {
-        "name": "EMETXEIMUE"
-      },
-      {
-        "name": "SOM AMD RYZEN EMBEDDED V"
-      },
-      {
-        "name": "COM-EXPRESS R TYPE"
-      },
-      {
-        "name": "EXPRESSBD"
-      }
-    ]
-  },
-  {
-    "prompt": "Display items featuring SATA connectivity and operable at minimum -40 degrees C",
+    "description": "Tests recognition of extreme temperature requirements and storage interface specifications",
+    "variations": [
+      "Show devices that operate at -40 degrees Celsius or lower and have SATA storage",
+      "What hardware functions in -40°C environments and includes a SATA interface?",
+      "Find products with SATA storage that can withstand temperatures of negative 40 Celsius or colder",
+      "Display items featuring SATA connectivity and operable at minimum -40 degrees C"
+    ],
     "products": [
       {
         "name": "CONGATS"
@@ -301,6 +358,13 @@
   },
   {
     "prompt": "Find all products with USB 3.0 interface and support for Windows 10 operating system",
+    "description": "Tests recognition of USB interface standards and specific OS compatibility",
+    "variations": [
+      "List devices with USB 3.0 ports that run Windows 10 OS",
+      "Show hardware offering USB 3 connectivity and Windows Ten compatibility",
+      "What products include USB 3.0 interfaces and work with Win 10?",
+      "Display items featuring USB 3.0 and support for Windows 10 operating sistem"
+    ],
     "products": [
       {
         "name": "PCM"
@@ -320,1307 +384,14 @@
     ]
   },
   {
-    "prompt": "List devices with USB 3.0 ports that run Windows 10 OS",
-    "products": [
-      {
-        "name": "PCM"
-      },
-      {
-        "name": "INTELLIGENT INSPECTION"
-      },
-      {
-        "name": "MIOUUA"
-      },
-      {
-        "name": "IBFI"
-      },
-      {
-        "name": "CONGATC"
-      }
-    ]
-  },
-  {
-    "prompt": "Show hardware offering USB 3 connectivity and Windows Ten compatibility",
-    "products": [
-      {
-        "name": "PCM"
-      },
-      {
-        "name": "INTELLIGENT INSPECTION"
-      },
-      {
-        "name": "MIOUUA"
-      },
-      {
-        "name": "IBFI"
-      },
-      {
-        "name": "CONGATC"
-      }
-    ]
-  },
-  {
-    "prompt": "What products include USB 3.0 interfaces and work with Win 10?",
-    "products": [
-      {
-        "name": "PCM"
-      },
-      {
-        "name": "INTELLIGENT INSPECTION"
-      },
-      {
-        "name": "MIOUUA"
-      },
-      {
-        "name": "IBFI"
-      },
-      {
-        "name": "CONGATC"
-      }
-    ]
-  },
-  {
-    "prompt": "Display items featuring USB 3.0 and support for Windows 10 operating sistem",
-    "products": [
-      {
-        "name": "PCM"
-      },
-      {
-        "name": "INTELLIGENT INSPECTION"
-      },
-      {
-        "name": "MIOUUA"
-      },
-      {
-        "name": "IBFI"
-      },
-      {
-        "name": "CONGATC"
-      }
-    ]
-  },
-  {
-    "prompt": "Can you list devices with ARM architecture and at least 4GB of memory?",
-    "products": [
-      {
-        "name": "RASPBERRY-PI COMPUTE"
-      },
-      {
-        "name": "ARMADA SOM A"
-      },
-      {
-        "name": "MYCCX"
-      },
-      {
-        "name": "CPU ULTRA LOW POWER SBCCOM"
-      },
-      {
-        "name": "MYCAMX"
-      }
-    ]
-  },
-  {
-    "prompt": "Show me products with ARM architechture and 4 gigabytes or more RAM",
-    "products": [
-      {
-        "name": "RASPBERRY-PI COMPUTE"
-      },
-      {
-        "name": "ARMADA SOM A"
-      },
-      {
-        "name": "MYCCX"
-      },
-      {
-        "name": "CPU ULTRA LOW POWER SBCCOM"
-      },
-      {
-        "name": "MYCAMX"
-      }
-    ]
-  },
-  {
-    "prompt": "What devices use ARM chips and have minimum 4GB memory?",
-    "products": [
-      {
-        "name": "RASPBERRY-PI COMPUTE"
-      },
-      {
-        "name": "ARMADA SOM A"
-      },
-      {
-        "name": "MYCCX"
-      },
-      {
-        "name": "CPU ULTRA LOW POWER SBCCOM"
-      },
-      {
-        "name": "MYCAMX"
-      }
-    ]
-  },
-  {
-    "prompt": "List items with ARM-based processors and at least 4GB of RAM.",
-    "products": [
-      {
-        "name": "RASPBERRY-PI COMPUTE"
-      },
-      {
-        "name": "ARMADA SOM A"
-      },
-      {
-        "name": "MYCCX"
-      },
-      {
-        "name": "CPU ULTRA LOW POWER SBCCOM"
-      },
-      {
-        "name": "MYCAMX"
-      }
-    ]
-  },
-  {
-    "prompt": "Find gadgets with ARM architecture and 4000MB or higher memory.",
-    "products": [
-      {
-        "name": "RASPBERRY-PI COMPUTE"
-      },
-      {
-        "name": "ARMADA SOM A"
-      },
-      {
-        "name": "MYCCX"
-      },
-      {
-        "name": "CPU ULTRA LOW POWER SBCCOM"
-      },
-      {
-        "name": "MYCAMX"
-      }
-    ]
-  },
-  {
-    "prompt": "Show me fanless embedded systems that support Windows 10 and have a minimum operating temperature of -20°C or lower.",
-    "products": [
-      {
-        "name": "ARK-1123H"
-      },
-      {
-        "name": "INTELLIGENT INSPECTION"
-      },
-      {
-        "name": "ARK INTEL CELERON N FANLESS EMBEDDED BOX PC"
-      },
-      {
-        "name": "WAFERTGLU"
-      },
-      {
-        "name": "ARKP"
-      }
-    ]
-  },
-  {
-    "prompt": "List fanless embeded systems compatible with Win 10 and operable at -20 degrees Celsius or below.",
-    "products": [
-      {
-        "name": "ARK-1123H"
-      },
-      {
-        "name": "INTELLIGENT INSPECTION"
-      },
-      {
-        "name": "ARK INTEL CELERON N FANLESS EMBEDDED BOX PC"
-      },
-      {
-        "name": "WAFERTGLU"
-      },
-      {
-        "name": "ARKP"
-      }
-    ]
-  },
-  {
-    "prompt": "What passive-cooled devices run Windows 10 and work in temperatures of -20°C or colder?",
-    "products": [
-      {
-        "name": "ARK-1123H"
-      },
-      {
-        "name": "INTELLIGENT INSPECTION"
-      },
-      {
-        "name": "ARK INTEL CELERON N FANLESS EMBEDDED BOX PC"
-      },
-      {
-        "name": "WAFERTGLU"
-      },
-      {
-        "name": "ARKP"
-      }
-    ]
-  },
-  {
-    "prompt": "Display fanless systems supporting Windows Ten with minimum operating temps of -20 Celsius or less.",
-    "products": [
-      {
-        "name": "ARK-1123H"
-      },
-      {
-        "name": "INTELLIGENT INSPECTION"
-      },
-      {
-        "name": "ARK INTEL CELERON N FANLESS EMBEDDED BOX PC"
-      },
-      {
-        "name": "WAFERTGLU"
-      },
-      {
-        "name": "ARKP"
-      }
-    ]
-  },
-  {
-    "prompt": "Find embedded computers without fans, Windows 10 compatible, and functional at -20°C or lower.",
-    "products": [
-      {
-        "name": "ARK-1123H"
-      },
-      {
-        "name": "INTELLIGENT INSPECTION"
-      },
-      {
-        "name": "ARK INTEL CELERON N FANLESS EMBEDDED BOX PC"
-      },
-      {
-        "name": "WAFERTGLU"
-      },
-      {
-        "name": "ARKP"
-      }
-    ]
-  },
-  {
-    "prompt": "Which products have USB 3.0 ports and are manufactured by Advantech?",
-    "products": [
-      {
-        "name": "PCM"
-      },
-      {
-        "name": "UNOG"
-      },
-      {
-        "name": "INTELLIGENT INSPECTION"
-      },
-      {
-        "name": "AIMB"
-      },
-      {
-        "name": "COM-EXPRESS R TYPE"
-      }
-    ]
-  },
-  {
-    "prompt": "List Advantech devices with USB 3.0 conectivity.",
-    "products": [
-      {
-        "name": "PCM"
-      },
-      {
-        "name": "UNOG"
-      },
-      {
-        "name": "INTELLIGENT INSPECTION"
-      },
-      {
-        "name": "AIMB"
-      },
-      {
-        "name": "COM-EXPRESS R TYPE"
-      }
-    ]
-  },
-  {
-    "prompt": "Show me Advantech-made items featuring USB 3 ports.",
-    "products": [
-      {
-        "name": "PCM"
-      },
-      {
-        "name": "UNOG"
-      },
-      {
-        "name": "INTELLIGENT INSPECTION"
-      },
-      {
-        "name": "AIMB"
-      },
-      {
-        "name": "COM-EXPRESS R TYPE"
-      }
-    ]
-  },
-  {
-    "prompt": "What Advantech products include USB 3.0 interfaces?",
-    "products": [
-      {
-        "name": "PCM"
-      },
-      {
-        "name": "UNOG"
-      },
-      {
-        "name": "INTELLIGENT INSPECTION"
-      },
-      {
-        "name": "AIMB"
-      },
-      {
-        "name": "COM-EXPRESS R TYPE"
-      }
-    ]
-  },
-  {
-    "prompt": "Find USB 3.0-equipped hardware produced by Advantec.",
-    "products": [
-      {
-        "name": "PCM"
-      },
-      {
-        "name": "UNOG"
-      },
-      {
-        "name": "INTELLIGENT INSPECTION"
-      },
-      {
-        "name": "AIMB"
-      },
-      {
-        "name": "COM-EXPRESS R TYPE"
-      }
-    ]
-  },
-  {
-    "prompt": "Find COM Express modules with Intel processors and DDR4 memory support.",
-    "products": [
-      {
-        "name": "COM-EXPRESS COMPACT"
-      },
-      {
-        "name": "COM-EXPRESS COMPACT"
-      },
-      {
-        "name": "EXPRESSADP"
-      },
-      {
-        "name": "COM-EXPRESS R TYPE"
-      },
-      {
-        "name": "SOM"
-      }
-    ]
-  },
-  {
-    "prompt": "List COM Express boards using Intel CPUs and compatible with DDR4 RAM.",
-    "products": [
-      {
-        "name": "COM-EXPRESS COMPACT"
-      },
-      {
-        "name": "COM-EXPRESS COMPACT"
-      },
-      {
-        "name": "EXPRESSADP"
-      },
-      {
-        "name": "COM-EXPRESS R TYPE"
-      },
-      {
-        "name": "SOM"
-      }
-    ]
-  },
-  {
-    "prompt": "Show COM Express modules featuring Intel chips and DDR4 memory capability.",
-    "products": [
-      {
-        "name": "COM-EXPRESS COMPACT"
-      },
-      {
-        "name": "COM-EXPRESS COMPACT"
-      },
-      {
-        "name": "EXPRESSADP"
-      },
-      {
-        "name": "COM-EXPRESS R TYPE"
-      },
-      {
-        "name": "SOM"
-      }
-    ]
-  },
-  {
-    "prompt": "What COM Express products have Intel processers and work with DDR4?",
-    "products": [
-      {
-        "name": "COM-EXPRESS COMPACT"
-      },
-      {
-        "name": "COM-EXPRESS COMPACT"
-      },
-      {
-        "name": "EXPRESSADP"
-      },
-      {
-        "name": "COM-EXPRESS R TYPE"
-      },
-      {
-        "name": "SOM"
-      }
-    ]
-  },
-  {
-    "prompt": "Display COM Express units with Intel CPUs and DDR-4 memory support.",
-    "products": [
-      {
-        "name": "COM-EXPRESS COMPACT"
-      },
-      {
-        "name": "COM-EXPRESS COMPACT"
-      },
-      {
-        "name": "EXPRESSADP"
-      },
-      {
-        "name": "COM-EXPRESS R TYPE"
-      },
-      {
-        "name": "SOM"
-      }
-    ]
-  },
-  {
-    "prompt": "What options are available for SBCs with SATA storage and operating temperatures up to 85°C?",
-    "products": [
-      {
-        "name": "CPU LOW POWER SBC NXP IMX"
-      },
-      {
-        "name": "CONNECTCORE SBC"
-      },
-      {
-        "name": "SBCAPL V"
-      }
-    ]
-  },
-  {
-    "prompt": "List SBCs with SATA drives and max operating temps of 85 degrees Celsius.",
-    "products": [
-      {
-        "name": "CPU LOW POWER SBC NXP IMX"
-      },
-      {
-        "name": "CONNECTCORE SBC"
-      },
-      {
-        "name": "SBCAPL V"
-      }
-    ]
-  },
-  {
-    "prompt": "Show single-board computers with SATA storage working up to 85°C.",
-    "products": [
-      {
-        "name": "CPU LOW POWER SBC NXP IMX"
-      },
-      {
-        "name": "CONNECTCORE SBC"
-      },
-      {
-        "name": "SBCAPL V"
-      }
-    ]
-  },
-  {
-    "prompt": "Find SBC options featuring SATA and operational at temperatures to 85 Celsius.",
-    "products": [
-      {
-        "name": "CPU LOW POWER SBC NXP IMX"
-      },
-      {
-        "name": "CONNECTCORE SBC"
-      },
-      {
-        "name": "SBCAPL V"
-      }
-    ]
-  },
-  {
-    "prompt": "What SBCs offer SATA storage and function in enviroments up to 85°C?",
-    "products": [
-      {
-        "name": "CPU LOW POWER SBC NXP IMX"
-      },
-      {
-        "name": "CONNECTCORE SBC"
-      },
-      {
-        "name": "SBCAPL V"
-      }
-    ]
-  },
-  {
-    "prompt": "List devices that support both Linux and Android operating systems and have eMMC storage.",
-    "products": [
-      {
-        "name": "EMETXEI"
-      },
-      {
-        "name": "EMETXEIC"
-      }
-    ]
-  },
-  {
-    "prompt": "Show products compatible with Linux and Andriod OS, featuring eMMC memory.",
-    "products": [
-      {
-        "name": "EMETXEI"
-      },
-      {
-        "name": "EMETXEIC"
-      }
-    ]
-  },
-  {
-    "prompt": "What devices run both Linux and Android and include embedded MultiMediaCard storage?",
-    "products": [
-      {
-        "name": "EMETXEI"
-      },
-      {
-        "name": "EMETXEIC"
-      }
-    ]
-  },
-  {
-    "prompt": "Find hardware supporting Linux & Android operating systems with eMMC.",
-    "products": [
-      {
-        "name": "EMETXEI"
-      },
-      {
-        "name": "EMETXEIC"
-      }
-    ]
-  },
-  {
-    "prompt": "Display items that work with Linux/Android OSes and have eMMC storage options.",
-    "products": [
-      {
-        "name": "EMETXEI"
-      },
-      {
-        "name": "EMETXEIC"
-      }
-    ]
-  },
-  {
-    "prompt": "Show me industrial computers with at least 8 processor cores and support for ECC memory.",
-    "products": [
-      {
-        "name": "AIMB-275"
-      },
-      {
-        "name": "ASMB"
-      }
-    ]
-  },
-  {
-    "prompt": "List industrial PCs with 8+ CPU cores that work with Error-Correcting Code memory.",
-    "products": [
-      {
-        "name": "AIMB-275"
-      },
-      {
-        "name": "ASMB"
-      }
-    ]
-  },
-  {
-    "prompt": "What industrial machines have a minimum of eight cores and ECC RAM support?",
-    "products": [
-      {
-        "name": "AIMB-275"
-      },
-      {
-        "name": "ASMB"
-      }
-    ]
-  },
-  {
-    "prompt": "Display industrial systems featuring 8 or more processor cores and ECC memory compatibility.",
-    "products": [
-      {
-        "name": "AIMB-275"
-      },
-      {
-        "name": "ASMB"
-      }
-    ]
-  },
-  {
-    "prompt": "Find industrial computers with no less than 8 cores and Error Correction Code memory support.",
-    "products": [
-      {
-        "name": "AIMB-275"
-      },
-      {
-        "name": "ASMB"
-      }
-    ]
-  },
-  {
-    "prompt": "What are the available options for modules with Bluetooth connectivity and LPDDR4 memory?",
-    "products": [
-      {
-        "name": "CONGASA"
-      },
-      {
-        "name": "LECMTKIGGBWCT"
-      },
-      {
-        "name": "ROM RTX"
-      },
-      {
-        "name": "LECIMX-MP"
-      },
-      {
-        "name": "CONGAMA"
-      }
-    ]
-  },
-  {
-    "prompt": "Show modules featuring Bluetooth and Low-Power DDR4 RAM.",
-    "products": [
-      {
-        "name": "CONGASA"
-      },
-      {
-        "name": "LECMTKIGGBWCT"
-      },
-      {
-        "name": "ROM RTX"
-      },
-      {
-        "name": "LECIMX-MP"
-      },
-      {
-        "name": "CONGAMA"
-      }
-    ]
-  },
-  {
-    "prompt": "List devices with Bluetooth capability and LPDDR4 memory type.",
-    "products": [
-      {
-        "name": "CONGASA"
-      },
-      {
-        "name": "LECMTKIGGBWCT"
-      },
-      {
-        "name": "ROM RTX"
-      },
-      {
-        "name": "LECIMX-MP"
-      },
-      {
-        "name": "CONGAMA"
-      }
-    ]
-  },
-  {
-    "prompt": "What products offer Bluetooth conectivity and LP-DDR4 memory?",
-    "products": [
-      {
-        "name": "CONGASA"
-      },
-      {
-        "name": "LECMTKIGGBWCT"
-      },
-      {
-        "name": "ROM RTX"
-      },
-      {
-        "name": "LECIMX-MP"
-      },
-      {
-        "name": "CONGAMA"
-      }
-    ]
-  },
-  {
-    "prompt": "Find modules supporting Bluetooth and equipped with LPDDR-4 RAM.",
-    "products": [
-      {
-        "name": "CONGASA"
-      },
-      {
-        "name": "LECMTKIGGBWCT"
-      },
-      {
-        "name": "ROM RTX"
-      },
-      {
-        "name": "LECIMX-MP"
-      },
-      {
-        "name": "CONGAMA"
-      }
-    ]
-  },
-  {
-    "prompt": "Find products that have both Ethernet and serial ports, and are designed for DIN rail mounting.",
-    "products": [
-      {
-        "name": "HAIIC MICA USB"
-      },
-      {
-        "name": "ARKCCH"
-      },
-      {
-        "name": "UNO"
-      },
-      {
-        "name": "STRATO PI CM"
-      },
-      {
-        "name": "REVPI CONNECT"
-      }
-    ]
-  },
-  {
-    "prompt": "List devices with Ethernet & serial interfaces, made for DIN-rail installation.",
-    "products": [
-      {
-        "name": "HAIIC MICA USB"
-      },
-      {
-        "name": "ARKCCH"
-      },
-      {
-        "name": "UNO"
-      },
-      {
-        "name": "STRATO PI CM"
-      },
-      {
-        "name": "REVPI CONNECT"
-      }
-    ]
-  },
-  {
-    "prompt": "Show items featuring Ethernet and RS-232 ports, compatible with DIN rail mounts.",
-    "products": [
-      {
-        "name": "HAIIC MICA USB"
-      },
-      {
-        "name": "ARKCCH"
-      },
-      {
-        "name": "UNO"
-      },
-      {
-        "name": "STRATO PI CM"
-      },
-      {
-        "name": "REVPI CONNECT"
-      }
-    ]
-  },
-  {
-    "prompt": "What products include Ethernet and serial connections, suited for DIN rail attachment?",
-    "products": [
-      {
-        "name": "HAIIC MICA USB"
-      },
-      {
-        "name": "ARKCCH"
-      },
-      {
-        "name": "UNO"
-      },
-      {
-        "name": "STRATO PI CM"
-      },
-      {
-        "name": "REVPI CONNECT"
-      }
-    ]
-  },
-  {
-    "prompt": "Display hardware with Ethernet/serial ports designed to be DIN rail mounted.",
-    "products": [
-      {
-        "name": "HAIIC MICA USB"
-      },
-      {
-        "name": "ARKCCH"
-      },
-      {
-        "name": "UNO"
-      },
-      {
-        "name": "STRATO PI CM"
-      },
-      {
-        "name": "REVPI CONNECT"
-      }
-    ]
-  },
-  {
-    "prompt": "Which devices support Windows IoT and have a maximum operating temperature of 70°C or higher?",
-    "products": [
-      {
-        "name": "INTELLIGENT INSPECTION"
-      },
-      {
-        "name": "UBXD"
-      },
-      {
-        "name": "UBIQUITOUS TOUCH"
-      },
-      {
-        "name": "FLEXBX"
-      },
-      {
-        "name": "EAGLE EYES AIM"
-      }
-    ]
-  },
-  {
-    "prompt": "List products compatible with Windows IOT and operable up to at least 70 degrees Celsius.",
-    "products": [
-      {
-        "name": "INTELLIGENT INSPECTION"
-      },
-      {
-        "name": "UBXD"
-      },
-      {
-        "name": "UBIQUITOUS TOUCH"
-      },
-      {
-        "name": "FLEXBX"
-      },
-      {
-        "name": "EAGLE EYES AIM"
-      }
-    ]
-  },
-  {
-    "prompt": "Show devices running Windows Internet of Things with max temps of 70°C or above.",
-    "products": [
-      {
-        "name": "INTELLIGENT INSPECTION"
-      },
-      {
-        "name": "UBXD"
-      },
-      {
-        "name": "UBIQUITOUS TOUCH"
-      },
-      {
-        "name": "FLEXBX"
-      },
-      {
-        "name": "EAGLE EYES AIM"
-      }
-    ]
-  },
-  {
-    "prompt": "What hardware works with Windows IoT and functions at 70 Celsius or hotter?",
-    "products": [
-      {
-        "name": "INTELLIGENT INSPECTION"
-      },
-      {
-        "name": "UBXD"
-      },
-      {
-        "name": "UBIQUITOUS TOUCH"
-      },
-      {
-        "name": "FLEXBX"
-      },
-      {
-        "name": "EAGLE EYES AIM"
-      }
-    ]
-  },
-  {
-    "prompt": "Find items supporting Windows IoT OS and maximum operating temperatures of 70°C+.",
-    "products": [
-      {
-        "name": "INTELLIGENT INSPECTION"
-      },
-      {
-        "name": "UBXD"
-      },
-      {
-        "name": "UBIQUITOUS TOUCH"
-      },
-      {
-        "name": "FLEXBX"
-      },
-      {
-        "name": "EAGLE EYES AIM"
-      }
-    ]
-  },
-  {
-    "prompt": "List SoMs (System on Modules) with Wi-Fi capability and at least 32GB of onboard storage.",
-    "products": [
-      {
-        "name": "DIGI CONNECTCORE MP"
-      },
-      {
-        "name": "OPENQ A SOM"
-      },
-      {
-        "name": "JETSON ORIN NX"
-      },
-      {
-        "name": "IMX-M MINI SOM"
-      },
-      {
-        "name": "IMX SOM"
-      }
-    ]
-  },
-  {
-    "prompt": "Show System-on-Modules featuring WiFi and minimum 32 gigabytes built-in storage.",
-    "products": [
-      {
-        "name": "DIGI CONNECTCORE MP"
-      },
-      {
-        "name": "OPENQ A SOM"
-      },
-      {
-        "name": "JETSON ORIN NX"
-      },
-      {
-        "name": "IMX-M MINI SOM"
-      },
-      {
-        "name": "IMX SOM"
-      }
-    ]
-  },
-  {
-    "prompt": "What SoMs offer wireless connectivity and 32GB or more onboard memory?",
-    "products": [
-      {
-        "name": "DIGI CONNECTCORE MP"
-      },
-      {
-        "name": "OPENQ A SOM"
-      },
-      {
-        "name": "JETSON ORIN NX"
-      },
-      {
-        "name": "IMX-M MINI SOM"
-      },
-      {
-        "name": "IMX SOM"
-      }
-    ]
-  },
-  {
-    "prompt": "Display System on Modules with Wi-Fi support and no less than 32GB integrated storage.",
-    "products": [
-      {
-        "name": "DIGI CONNECTCORE MP"
-      },
-      {
-        "name": "OPENQ A SOM"
-      },
-      {
-        "name": "JETSON ORIN NX"
-      },
-      {
-        "name": "IMX-M MINI SOM"
-      },
-      {
-        "name": "IMX SOM"
-      }
-    ]
-  },
-  {
-    "prompt": "Find SoM options including Wi-Fi and at least 32GB on-board storage capacity.",
-    "products": [
-      {
-        "name": "DIGI CONNECTCORE MP"
-      },
-      {
-        "name": "OPENQ A SOM"
-      },
-      {
-        "name": "JETSON ORIN NX"
-      },
-      {
-        "name": "IMX-M MINI SOM"
-      },
-      {
-        "name": "IMX SOM"
-      }
-    ]
-  },
-  {
-    "prompt": "What products offer HDMI output and have a processor TDP between 10W and 25W?",
-    "products": [
-      {
-        "name": "COM-EXPRESS COMPACT"
-      }
-    ]
-  },
-  {
-    "prompt": "List devices with HDMI port and CPU thermal design power from 10 to 25 watts.",
-    "products": [
-      {
-        "name": "COM-EXPRESS COMPACT"
-      }
-    ]
-  },
-  {
-    "prompt": "Show items featuring HDMI out and processor TDP in the 10W-25W range.",
-    "products": [
-      {
-        "name": "COM-EXPRESS COMPACT"
-      }
-    ]
-  },
-  {
-    "prompt": "What hardware has HDMI output and a CPU power consumption between 10 and 25W?",
-    "products": [
-      {
-        "name": "COM-EXPRESS COMPACT"
-      }
-    ]
-  },
-  {
-    "prompt": "Find products with High-Definition Multimedia Interface and 10-25W processor TDP.",
-    "products": [
-      {
-        "name": "COM-EXPRESS COMPACT"
-      }
-    ]
-  },
-  {
-    "prompt": "Show me embedded systems with dual Ethernet ports and support for extended temperature ranges.",
-    "products": [
-      {
-        "name": "COM-EXPRESS BASIC"
-      },
-      {
-        "name": "SANDCAT"
-      },
-      {
-        "name": "EXPRESSBD"
-      },
-      {
-        "name": "SBCCPITX"
-      },
-      {
-        "name": "COUGAR"
-      }
-    ]
-  },
-  {
-    "prompt": "List embedded devices featuring two Ethernet interfaces and wide temp range capability.",
-    "products": [
-      {
-        "name": "COM-EXPRESS BASIC"
-      },
-      {
-        "name": "SANDCAT"
-      },
-      {
-        "name": "EXPRESSBD"
-      },
-      {
-        "name": "SBCCPITX"
-      },
-      {
-        "name": "COUGAR"
-      }
-    ]
-  },
-  {
-    "prompt": "What embedded products have dual LAN ports and operate in extreme temperatures?",
-    "products": [
-      {
-        "name": "COM-EXPRESS BASIC"
-      },
-      {
-        "name": "SANDCAT"
-      },
-      {
-        "name": "EXPRESSBD"
-      },
-      {
-        "name": "SBCCPITX"
-      },
-      {
-        "name": "COUGAR"
-      }
-    ]
-  },
-  {
-    "prompt": "Display embedded systems with 2 Ethernet connections supporting extended temp ranges.",
-    "products": [
-      {
-        "name": "COM-EXPRESS BASIC"
-      },
-      {
-        "name": "SANDCAT"
-      },
-      {
-        "name": "EXPRESSBD"
-      },
-      {
-        "name": "SBCCPITX"
-      },
-      {
-        "name": "COUGAR"
-      }
-    ]
-  },
-  {
-    "prompt": "Find embedded hardware offering twin Ethernet ports and broad temperature tolerance.",
-    "products": [
-      {
-        "name": "COM-EXPRESS BASIC"
-      },
-      {
-        "name": "SANDCAT"
-      },
-      {
-        "name": "EXPRESSBD"
-      },
-      {
-        "name": "SBCCPITX"
-      },
-      {
-        "name": "COUGAR"
-      }
-    ]
-  },
-  {
-    "prompt": "Which devices have DisplayPort output and are powered by AMD processors?",
-    "products": [
-      {
-        "name": "SOM AMD RYZEN EMBEDDED V"
-      },
-      {
-        "name": "PC CPU MODULES"
-      },
-      {
-        "name": "EMQAM AMD FUSION GTE Q7"
-      },
-      {
-        "name": "PCMFSAE"
-      },
-      {
-        "name": "AMD LX LVDS VT"
-      }
-    ]
-  },
-  {
-    "prompt": "Show products with Display Port interface using AMD CPUs.",
-    "products": [
-      {
-        "name": "SOM AMD RYZEN EMBEDDED V"
-      },
-      {
-        "name": "PC CPU MODULES"
-      },
-      {
-        "name": "EMQAM AMD FUSION GTE Q7"
-      },
-      {
-        "name": "PCMFSAE"
-      },
-      {
-        "name": "AMD LX LVDS VT"
-      }
-    ]
-  },
-  {
-    "prompt": "List hardware featuring DisplayPort and AMD processor.",
-    "products": [
-      {
-        "name": "SOM AMD RYZEN EMBEDDED V"
-      },
-      {
-        "name": "PC CPU MODULES"
-      },
-      {
-        "name": "EMQAM AMD FUSION GTE Q7"
-      },
-      {
-        "name": "PCMFSAE"
-      },
-      {
-        "name": "AMD LX LVDS VT"
-      }
-    ]
-  },
-  {
-    "prompt": "What items offer DispleyPort output and run on AMD chips?",
-    "products": [
-      {
-        "name": "SOM AMD RYZEN EMBEDDED V"
-      },
-      {
-        "name": "PC CPU MODULES"
-      },
-      {
-        "name": "EMQAM AMD FUSION GTE Q7"
-      },
-      {
-        "name": "PCMFSAE"
-      },
-      {
-        "name": "AMD LX LVDS VT"
-      }
-    ]
-  },
-  {
-    "prompt": "Find devices with AMD processors that include a DisplayPort connection.",
-    "products": [
-      {
-        "name": "SOM AMD RYZEN EMBEDDED V"
-      },
-      {
-        "name": "PC CPU MODULES"
-      },
-      {
-        "name": "EMQAM AMD FUSION GTE Q7"
-      },
-      {
-        "name": "PCMFSAE"
-      },
-      {
-        "name": "AMD LX LVDS VT"
-      }
-    ]
-  },
-  {
-    "prompt": "Find products that support CAN bus interfaces and have an input voltage range that includes 24V.",
+    "prompt": "Which devices have CAN bus connectivity and accept 24V input voltage?",
+    "description": "Tests recognition of industrial communication protocols and power input specifications",
+    "variations": [
+      "List devices with CAN bus support and 24V power input",
+      "Show products featuring CAN interface and 24-volt power compatibility",
+      "What hardware includes CAN bus and works with 24V power?",
+      "Find items supporting CAN protocol and 24V input voltage"
+    ],
     "products": [
       {
         "name": "SNMPB"
@@ -1632,245 +403,7 @@
         "name": "BL PPC W"
       },
       {
-        "name": "BL PPC W"
-      },
-      {
         "name": "BL BPC S"
-      }
-    ]
-  },
-  {
-    "prompt": "List devices with CAN bus support and power input covering 24 volts.",
-    "products": [
-      {
-        "name": "SNMPB"
-      },
-      {
-        "name": "BL BPC E"
-      },
-      {
-        "name": "BL PPC W"
-      },
-      {
-        "name": "BL PPC W"
-      },
-      {
-        "name": "BL BPC S"
-      }
-    ]
-  },
-  {
-    "prompt": "Show items featuring Controller Area Network interfaces and 24V-compatible power input.",
-    "products": [
-      {
-        "name": "SNMPB"
-      },
-      {
-        "name": "BL BPC E"
-      },
-      {
-        "name": "BL PPC W"
-      },
-      {
-        "name": "BL PPC W"
-      },
-      {
-        "name": "BL BPC S"
-      }
-    ]
-  },
-  {
-    "prompt": "What hardware includes CAN bus connectivity and accepts 24V input voltage?",
-    "products": [
-      {
-        "name": "SNMPB"
-      },
-      {
-        "name": "BL BPC E"
-      },
-      {
-        "name": "BL PPC W"
-      },
-      {
-        "name": "BL PPC W"
-      },
-      {
-        "name": "BL BPC S"
-      }
-    ]
-  },
-  {
-    "prompt": "Display products supporting CAN protocol and operable with 24-volt power supply.",
-    "products": [
-      {
-        "name": "SNMPB"
-      },
-      {
-        "name": "BL BPC E"
-      },
-      {
-        "name": "BL PPC W"
-      },
-      {
-        "name": "BL PPC W"
-      },
-      {
-        "name": "BL BPC S"
-      }
-    ]
-  },
-  {
-    "prompt": "What options are available for fanless systems with Intel Core i7 processors and at least 16GB of RAM?",
-    "products": [
-      {
-        "name": "EMETXEIC"
-      },
-      {
-        "name": "EMETXEI"
-      },
-      {
-        "name": "PCA HALF SIZE CPU CARD"
-      },
-      {
-        "name": "PCE SINGLE HOST"
-      },
-      {
-        "name": "ASMB"
-      }
-    ]
-  },
-  {
-    "prompt": "List passive-cooled devices using Intel i7 CPUs and minimum 16 gigabytes memory.",
-    "products": [
-      {
-        "name": "EMETXEIC"
-      },
-      {
-        "name": "EMETXEI"
-      },
-      {
-        "name": "PCA HALF SIZE CPU CARD"
-      },
-      {
-        "name": "PCE SINGLE HOST"
-      },
-      {
-        "name": "ASMB"
-      }
-    ]
-  },
-  {
-    "prompt": "Show fanless products with Core i7 chips and 16GB or more RAM.",
-    "products": [
-      {
-        "name": "EMETXEIC"
-      },
-      {
-        "name": "EMETXEI"
-      },
-      {
-        "name": "PCA HALF SIZE CPU CARD"
-      },
-      {
-        "name": "PCE SINGLE HOST"
-      },
-      {
-        "name": "ASMB"
-      }
-    ]
-  },
-  {
-    "prompt": "What fanless hardware features Intel i7 processors and at least 16GB of memory?",
-    "products": [
-      {
-        "name": "EMETXEIC"
-      },
-      {
-        "name": "EMETXEI"
-      },
-      {
-        "name": "PCA HALF SIZE CPU CARD"
-      },
-      {
-        "name": "PCE SINGLE HOST"
-      },
-      {
-        "name": "ASMB"
-      }
-    ]
-  },
-  {
-    "prompt": "Find systems without fans, powered by Intel Core i7, with 16GB+ random access memory.",
-    "products": [
-      {
-        "name": "EMETXEIC"
-      },
-      {
-        "name": "EMETXEI"
-      },
-      {
-        "name": "PCA HALF SIZE CPU CARD"
-      },
-      {
-        "name": "PCE SINGLE HOST"
-      },
-      {
-        "name": "ASMB"
-      }
-    ]
-  },
-  {
-    "prompt": "Which products offer both M.2 and mSATA storage options and are compliant with MIL-STD-810 standards?",
-    "products": [
-      {
-        "name": "AGS"
-      },
-      {
-        "name": "BENGAL"
-      }
-    ]
-  },
-  {
-    "prompt": "List devices with M.2 & mSATA storage interfaces meeting MIL-STD 810 requirements.",
-    "products": [
-      {
-        "name": "AGS"
-      },
-      {
-        "name": "BENGAL"
-      }
-    ]
-  },
-  {
-    "prompt": "Show items featuring M.2 and mini-SATA storage, certified to MIL-STD-810.",
-    "products": [
-      {
-        "name": "AGS"
-      },
-      {
-        "name": "BENGAL"
-      }
-    ]
-  },
-  {
-    "prompt": "What products include M.2/mSATA storage options and conform to MIL-STD 810 specs?",
-    "products": [
-      {
-        "name": "AGS"
-      },
-      {
-        "name": "BENGAL"
-      }
-    ]
-  },
-  {
-    "prompt": "Find items offering both M.2 and mSATA storage compliant with Military Standard 810.",
-    "products": [
-      {
-        "name": "AGS"
-      },
-      {
-        "name": "BENGAL"
       }
     ]
   }

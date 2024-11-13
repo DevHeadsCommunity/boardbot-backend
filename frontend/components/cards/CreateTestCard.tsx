@@ -1,6 +1,6 @@
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { useTestContext } from "@/hooks/useTestContext";
-import { TestCaseSchema } from "@/types";
+import { TEST_TYPES, TestCaseSchema } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { UploadIcon } from "lucide-react";
 import React, { useRef, useState } from "react";
@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 
 const formSchema = z.object({
   testName: z.string().min(1, "Test name is required"),
-  testType: z.enum(["accuracy", "consistency"]),
+  testType: z.enum(TEST_TYPES),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -37,11 +37,33 @@ const CreateTestCard: React.FC = () => {
     },
   });
 
-  const validateTestCases = (testCases: unknown[]): z.ZodError | null => {
-    console.log(`===:> validateTestCases: testCases`, JSON.stringify(testCases, null, 2));
-    const schema = z.array(TestCaseSchema);
+  const validateTestCases = (testCases: unknown[], testType: string): z.ZodError | null => {
+    let schema = z.array(TestCaseSchema);
+
+    if (["context_retention", "conversational_flow", "defensibility"].includes(testType)) {
+      schema = z.array(
+        TestCaseSchema.extend({
+          prompt: z.string().optional(),
+          conversation: z
+            .array(
+              z.object({
+                turn: z.number(),
+                query: z.string(),
+                expected_filters: z.record(z.any()).optional(),
+                message: z.string().optional(),
+              })
+            )
+            .min(2, "Conversation-based tests must include at least 2 turns"),
+        }).transform((data) => ({
+          ...data,
+          prompt: data.prompt || data.conversation?.[0]?.query || "",
+          messageId: data.messageId || uuidv4(),
+        }))
+      );
+    }
+
     try {
-      schema.parse(testCases);
+      const validatedCases = schema.parse(testCases);
       return null;
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -49,6 +71,54 @@ const CreateTestCard: React.FC = () => {
         return error;
       }
       throw error;
+    }
+  };
+
+  const validateContextRetention = (testCases: TestCase[]) => {
+    for (const testCase of testCases) {
+      if (!testCase.conversation) {
+        throw new Error("Context retention tests must include conversation turns");
+      }
+
+      for (const turn of testCase.conversation) {
+        if (!turn.query) {
+          throw new Error("Each conversation turn must include a query");
+        }
+        if (!turn.expected_filters) {
+          throw new Error("Context retention tests must include expected filters for each turn");
+        }
+      }
+    }
+  };
+
+  const validateConversationalFlow = (testCases: TestCase[]) => {
+    for (const testCase of testCases) {
+      if (!testCase.conversation) {
+        throw new Error("Conversational flow tests must include conversation turns");
+      }
+
+      for (const turn of testCase.conversation) {
+        if (!turn.query) {
+          throw new Error("Each conversation turn must include a query");
+        }
+      }
+    }
+  };
+
+  const validateDefensibility = (testCases: TestCase[]) => {
+    for (const testCase of testCases) {
+      if (!testCase.conversation) {
+        throw new Error("Defensibility tests must include conversation turns");
+      }
+
+      for (const turn of testCase.conversation) {
+        if (!turn.query) {
+          throw new Error("Each conversation turn must include a query");
+        }
+        if (!turn.message) {
+          throw new Error("Defensibility tests must include expected responses for each turn");
+        }
+      }
     }
   };
 
@@ -61,21 +131,28 @@ const CreateTestCard: React.FC = () => {
     try {
       const fileContent = await file.text();
       const jsonData = JSON.parse(fileContent);
-      // For every test case, add messageId, and testType
-      jsonData.forEach((testCase: any) => {
-        if (!testCase.messageId) {
-          testCase.messageId = uuidv4();
+
+      // Transform test cases based on type
+      const transformedData = jsonData.map((testCase: any) => {
+        const baseCase = {
+          ...testCase,
+          messageId: testCase.messageId || uuidv4(),
+          testType: data.testType,
+        };
+
+        if (["context_retention", "conversational_flow", "defensibility"].includes(data.testType)) {
+          return {
+            ...baseCase,
+            prompt: testCase.prompt || testCase.conversation?.[0]?.query || "",
+          };
         }
-        testCase.testType = data.testType;
+
+        return baseCase;
       });
 
-      const validationError = validateTestCases(jsonData);
+      const validationError = validateTestCases(transformedData, data.testType);
       if (validationError) {
-        const errorMessages = validationError.errors
-          .map((err) => {
-            return `${err.path.join(".")} - ${err.message}`;
-          })
-          .join("\n");
+        const errorMessages = validationError.errors.map((err) => `${err.path.join(".")} - ${err.message}`).join("\n");
         toast.error(`Invalid JSON data:\n${errorMessages}`, { autoClose: false });
         return;
       }
@@ -84,7 +161,7 @@ const CreateTestCard: React.FC = () => {
         testType: data.testType,
         name: data.testName,
         id: uuidv4(),
-        testCase: jsonData,
+        testCase: transformedData,
         createdAt: new Date().toISOString(),
       });
 
@@ -134,8 +211,11 @@ const CreateTestCard: React.FC = () => {
                     <SelectValue placeholder="Select test type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="accuracy">Accuracy</SelectItem>
-                    <SelectItem value="consistency">Consistency</SelectItem>
+                    {TEST_TYPES.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type.replace("_", " ").replace(/^\w/, (c) => c.toUpperCase())}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               )}

@@ -1,15 +1,15 @@
+import { deepEqual } from "@/lib/utils/comparison";
 import {
-  AccuracyTestResult,
-  AccuracyTestResultSchema,
   Architecture,
   ArchitectureSchema,
   HistoryManagement,
   HistoryManagementSchema,
   Model,
   ModelSchema,
-  Product,
   RequestDataSchema,
   ResponseMessage,
+  RobustnessTestResult,
+  RobustnessTestResultSchema,
   TestCase,
   TestCaseSchema,
 } from "@/types";
@@ -17,49 +17,62 @@ import { assign, sendTo, setup } from "xstate";
 import { z } from "zod";
 import { webSocketMachine } from "./webSocketMachine";
 
-// Helper functions
-function calculateProductAccuracy(actualProducts: Product[], expectedProducts: Product[] | undefined): number {
-  if (!expectedProducts) {
+// Helper function to calculate noise filtering score
+function calculateNoiseFilteringScore(extractedFilters: Record<string, any>, expectedFilters: Record<string, any>): number {
+  if (!expectedFilters || Object.keys(expectedFilters).length === 0) {
     return 1;
   }
-  const expectedProductNames = new Set(expectedProducts.map((p) => p.name.toLowerCase()));
-  const matchedProducts = actualProducts.filter((p) => expectedProductNames.has(p.name.toLowerCase()));
-  return matchedProducts.length / expectedProducts.length;
+
+  const expectedKeys = Object.keys(expectedFilters);
+  const extractedKeys = Object.keys(extractedFilters || {});
+
+  // Calculate precision (correct filters / total extracted)
+  const precision =
+    extractedKeys.reduce((score, key) => {
+      if (expectedKeys.includes(key) && deepEqual(extractedFilters[key], expectedFilters[key])) {
+        return score + 1;
+      }
+      return score;
+    }, 0) / Math.max(extractedKeys.length, 1);
+
+  // Calculate recall (correct filters / total expected)
+  const recall =
+    expectedKeys.reduce((score, key) => {
+      if (extractedKeys.includes(key) && deepEqual(extractedFilters[key], expectedFilters[key])) {
+        return score + 1;
+      }
+      return score;
+    }, 0) / expectedKeys.length;
+
+  // Return F1 score for balanced measure
+  return precision === 0 && recall === 0 ? 0 : (2 * precision * recall) / (precision + recall);
 }
 
-function isTestPassed(productAccuracy: number): boolean {
-  return productAccuracy > 0.4;
-}
-
-// Zod schema for the context
-const AccuracyTestRunnerContextSchema = z.object({
+// Context schema
+const RobustnessTestRunnerContextSchema = z.object({
   webSocketRef: z.any().optional(),
   name: z.string(),
   sessionId: z.string(),
   testCases: z.array(TestCaseSchema),
-  testResults: z.array(AccuracyTestResultSchema).default([]),
+  testResults: z.array(RobustnessTestResultSchema).default([]),
   currentTestIndex: z.number(),
-  batchSize: z.number(),
-  testTimeout: z.number(),
   progress: z.number(),
   model: ModelSchema,
   architecture: ArchitectureSchema,
   historyManagement: HistoryManagementSchema,
 });
 
-type AccuracyTestRunnerContext = z.infer<typeof AccuracyTestRunnerContextSchema>;
+type RobustnessTestRunnerContext = z.infer<typeof RobustnessTestRunnerContextSchema>;
 
-export const accuracyTestRunnerMachine = setup({
+export const robustnessTestRunnerMachine = setup({
   types: {
-    context: {} as AccuracyTestRunnerContext,
+    context: {} as RobustnessTestRunnerContext,
     input: {} as {
       name: string;
       sessionId: string;
       testCases: TestCase[];
-      testResults?: AccuracyTestResult[];
+      testResults?: RobustnessTestResult[];
       currentTestIndex?: number;
-      batchSize?: number;
-      testTimeout?: number;
       progress?: number;
       model: Model;
       architecture: Architecture;
@@ -94,19 +107,38 @@ export const accuracyTestRunnerMachine = setup({
     updateTestResults: assign({
       testResults: ({ context, event }) => {
         if (event.type !== "webSocket.messageReceived") throw new Error("Invalid event type");
-        const currentTestCase = context.testCases[context.currentTestIndex];
-        if (!currentTestCase.products) {
-          throw new Error("Test case has no expected products");
-        }
+        try {
+          const currentTestCase = context.testCases[context.currentTestIndex];
+          if (!currentTestCase.expected_filters) {
+            console.warn(`Test case ${currentTestCase.messageId} has no expected filters`);
+            return [
+              ...context.testResults,
+              {
+                response: event.data,
+                filterAccuracy: 1,
+                noiseFiltering: 1,
+                extractedFilters: {},
+              },
+            ];
+          }
 
-        const testResponse = event.data;
-        const productAccuracy = calculateProductAccuracy(testResponse.message.products, currentTestCase.products);
-        const testResult: AccuracyTestResult = {
-          response: testResponse,
-          productAccuracy: productAccuracy,
-          passed: isTestPassed(productAccuracy),
-        };
-        return [...context.testResults, testResult];
+          const testResponse = event.data;
+          const extractedFilters = testResponse.message.metadata?.filters || {};
+          const filterAccuracy = calculateNoiseFilteringScore(extractedFilters, currentTestCase.expected_filters);
+
+          return [
+            ...context.testResults,
+            {
+              response: testResponse,
+              filterAccuracy,
+              noiseFiltering: filterAccuracy,
+              extractedFilters,
+            },
+          ];
+        } catch (error) {
+          console.error("Error updating test results:", error);
+          throw error;
+        }
       },
     }),
     increaseProgress: assign({
@@ -121,21 +153,19 @@ export const accuracyTestRunnerMachine = setup({
   },
 }).createMachine({
   context: ({ input }) =>
-    AccuracyTestRunnerContextSchema.parse({
+    RobustnessTestRunnerContextSchema.parse({
       webSocketRef: undefined,
       name: input.name,
       sessionId: input.sessionId,
       testCases: input.testCases,
       testResults: input.testResults || [],
       currentTestIndex: input.currentTestIndex || 0,
-      batchSize: input.batchSize || 1,
       progress: input.progress || 0,
-      testTimeout: input.testTimeout || 10000,
       model: input.model,
       architecture: input.architecture,
       historyManagement: input.historyManagement,
     }),
-  id: "accuracyTestRunnerActor",
+  id: "robustnessTestRunnerActor",
   initial: "idle",
   states: {
     idle: {
@@ -177,7 +207,7 @@ export const accuracyTestRunnerMachine = setup({
           },
         },
         evaluatingResult: {
-          always: [{ target: "#accuracyTestRunnerActor.disconnecting", guard: "testIsComplete" }, { target: "sendingMessage" }],
+          always: [{ target: "#robustnessTestRunnerActor.disconnecting", guard: "testIsComplete" }, { target: "sendingMessage" }],
         },
         paused: {
           on: {

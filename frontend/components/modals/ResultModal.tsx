@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { getScoreColor } from "@/lib/utils/scores";
 import { TestCase } from "@/types";
 import React from "react";
 import ChatMessageContent from "../blocks/ChatMessageContent";
@@ -22,14 +23,20 @@ const ResultModal: React.FC<ResultModalProps> = ({ isOpen, onClose, data, testCa
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-7xl">
         <DialogHeader>
-          <DialogTitle>Test Result: {data.messageId}</DialogTitle>
+          <DialogTitle>Test Result Details</DialogTitle>
+          <div className="mt-2 text-sm text-muted-foreground">{testCase?.description}</div>
         </DialogHeader>
         <ScrollArea className="max-h-[80vh] overflow-y-auto">
           <div className="space-y-6 p-4">
             <GeneralInformation data={data} />
             <Metrics data={data} />
             <TestInput testCase={testCase} />
-            {data.testType === "accuracy" ? <AccuracyResultDetails data={data} testCase={testCase} /> : <ConsistencyResultDetails data={data} testCase={testCase} />}
+            {data.testType === "accuracy" && <AccuracyResultDetails data={data} testCase={testCase} />}
+            {data.testType === "consistency" && <ConsistencyResultDetails data={data} testCase={testCase} />}
+            {data.testType === "feature_inference" && <FeatureInferenceResultDetails data={data} testCase={testCase} />}
+            {data.testType === "context_retention" && <ContextRetentionResultDetails data={data} testCase={testCase} />}
+            {data.testType === "conversational_flow" && <ConversationalFlowResultDetails data={data} testCase={testCase} />}
+            {data.testType === "robustness" && <RobustnessResultDetails data={data} testCase={testCase} />}
           </div>
         </ScrollArea>
         <DialogFooter>
@@ -59,16 +66,23 @@ const Metrics: React.FC<{ data: TransformedData }> = ({ data }) => (
   <Card className="bg-muted p-4">
     <h3 className="mb-2 text-lg font-semibold">Metrics</h3>
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-      {data.testType === "accuracy" ? (
+      {data.testType === "robustness" ? (
         <>
-          <MetricItem label="Product Accuracy" value={`${(data.productAccuracy! * 100).toFixed(2)}%`} />
+          <MetricItem label="Filter Accuracy" value={`${(data.filterAccuracy! * 100).toFixed(2)}%`} />
+          <MetricItem label="Noise Filtering" value={`${(data.noiseFiltering! * 100).toFixed(2)}%`} />
         </>
-      ) : (
+      ) : data.testType === "accuracy" ? (
+        <MetricItem label="Product Accuracy" value={`${(data.productAccuracy! * 100).toFixed(2)}%`} />
+      ) : data.testType === "consistency" ? (
         <>
           <MetricItem label="Product Consistency" value={`${(data.productConsistency! * 100).toFixed(2)}%`} />
           <MetricItem label="Order Consistency" value={`${(data.orderConsistency! * 100).toFixed(2)}%`} />
         </>
-      )}
+      ) : data.testType === "feature_inference" ? (
+        <MetricItem label="Filter Accuracy" value={`${(data.filterAccuracy! * 100).toFixed(2)}%`} />
+      ) : data.testType === "context_retention" ? (
+        <MetricItem label="Context Accuracy" value={`${(data.contextAccuracy! * 100).toFixed(2)}%`} />
+      ) : null}
     </div>
   </Card>
 );
@@ -236,12 +250,21 @@ const ConsistencyResultDetails: React.FC<{ data: TransformedData; testCase: Test
   );
 };
 
-const MetricItem: React.FC<{ label: string; value: string | number }> = ({ label, value }) => (
-  <div>
-    <p className="text-sm font-medium text-muted-foreground">{label}</p>
-    <p className="text-lg font-semibold">{value}</p>
-  </div>
-);
+const MetricItem: React.FC<{ label: string; value: string | number | Date | undefined }> = ({ label, value }) => {
+  if (value === undefined) return null;
+
+  let displayValue = value;
+  if (value instanceof Date) {
+    displayValue = value.toLocaleString();
+  }
+
+  return (
+    <div>
+      <p className="text-sm font-medium text-muted-foreground">{label}</p>
+      <p className="text-lg font-semibold">{displayValue}</p>
+    </div>
+  );
+};
 
 const ProductList: React.FC<{ products: string[] }> = ({ products }) => (
   <ul className="space-y-2">
@@ -270,6 +293,234 @@ const FilterList: React.FC<{ filters: Record<string, string> | undefined }> = ({
         </li>
       ))}
     </ul>
+  );
+};
+
+const FeatureInferenceResultDetails: React.FC<{
+  data: TransformedData;
+  testCase: TestCase | undefined;
+}> = ({ data, testCase }) => {
+  const copyToClipboard = () => {
+    const jsonData = JSON.stringify(
+      {
+        prompt: testCase?.prompt || "",
+        expectedFilters: testCase?.expected_filters,
+        extractedFilters: data.extractedFilters,
+        filterAccuracy: data.filterAccuracy,
+      },
+      null,
+      2
+    );
+    navigator.clipboard.writeText(jsonData);
+  };
+
+  return (
+    <>
+      <div className="flex justify-end">
+        <CopyButton onClick={copyToClipboard} />
+      </div>
+      <Card className="bg-muted p-4">
+        <h3 className="mb-4 text-lg font-semibold">Filter Comparison</h3>
+        <div className="grid gap-6 md:grid-cols-2">
+          <div>
+            <h4 className="mb-2 text-lg font-semibold">Expected Filters</h4>
+            <pre className="whitespace-pre-wrap break-words rounded bg-muted-foreground/10 p-2">{JSON.stringify(testCase?.expected_filters, null, 2)}</pre>
+          </div>
+          <div>
+            <h4 className="mb-2 text-lg font-semibold">Extracted Filters</h4>
+            <pre className="whitespace-pre-wrap break-words rounded bg-muted-foreground/10 p-2">{JSON.stringify(data.extractedFilters, null, 2)}</pre>
+          </div>
+        </div>
+      </Card>
+      <Card className="bg-muted p-4">
+        <h3 className="mb-2 text-lg font-semibold">Response</h3>
+        <ChatMessageContent message={data.response} />
+      </Card>
+      <Card className="bg-muted p-4">
+        <h3 className="mb-2 text-lg font-semibold">Reasoning</h3>
+        <pre className="whitespace-pre-wrap break-words rounded bg-muted-foreground/10 p-2">{data.reasoning}</pre>
+      </Card>
+    </>
+  );
+};
+
+const ContextRetentionResultDetails: React.FC<{
+  data: TransformedData;
+  testCase: TestCase | undefined;
+}> = ({ data, testCase }) => {
+  return (
+    <>
+      <div className="space-y-6">
+        <Card className="bg-muted p-4">
+          <h3 className="mb-4 text-lg font-semibold">Conversation History</h3>
+          {data.conversation?.map((turn, index) => (
+            <div key={index} className="mb-6">
+              <div className="mb-2 flex items-center gap-2">
+                <Badge>Turn {index + 1}</Badge>
+                <Badge variant="outline">{turn === data.conversation![0] ? "Initial Query" : "Follow-up"}</Badge>
+              </div>
+              <div className="space-y-4 rounded-lg bg-white p-4 shadow-sm">
+                <div>
+                  <h4 className="mb-2 font-medium">Query</h4>
+                  <p className="text-gray-700">{testCase?.conversation?.[index]?.query || "N/A"}</p>
+                </div>
+                <Separator />
+                <div>
+                  <h4 className="mb-2 font-medium">Response</h4>
+                  <p className="text-gray-700">{turn.message.message}</p>
+                </div>
+                <div>
+                  <h4 className="mb-2 font-medium">Filters</h4>
+                  <FilterList filters={data.filterProgression?.[index]} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </Card>
+
+        <Card className="bg-muted p-4">
+          <h3 className="mb-4 text-lg font-semibold">Filter Progression</h3>
+          <div className="space-y-4">
+            {data.filterProgression?.map((filters, index) => (
+              <div key={index}>
+                <h4 className="mb-2 font-medium">Turn {index + 1}</h4>
+                <FilterList filters={filters} />
+                {index < (data.filterProgression?.length || 0) - 1 && (
+                  <div className="my-2 flex items-center justify-center">
+                    <span className="text-2xl">↓</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="bg-muted p-4">
+          <h3 className="mb-2 text-lg font-semibold">Context Retention Score</h3>
+          <div className={`text-2xl font-bold ${getScoreColor(data.contextAccuracy)}`}>{(data.contextAccuracy! * 100).toFixed(2)}%</div>
+        </Card>
+      </div>
+    </>
+  );
+};
+
+const ConversationalFlowResultDetails: React.FC<{
+  data: TransformedData;
+  testCase: TestCase | undefined;
+}> = ({ data, testCase }) => {
+  return (
+    <>
+      <div className="space-y-6">
+        <Card className="bg-muted p-4">
+          <h3 className="mb-4 text-lg font-semibold">Conversation Flow Analysis</h3>
+          {data.conversation?.map((turn, index) => (
+            <div key={index} className="mb-6">
+              <div className="mb-2 flex items-center gap-2">
+                <Badge>Turn {index + 1}</Badge>
+                <Badge variant="outline">{turn === data.conversation![0] ? "Initial Query" : "Follow-up"}</Badge>
+              </div>
+              <div className="space-y-4 rounded-lg bg-white p-4 shadow-sm">
+                <div>
+                  <h4 className="mb-2 font-medium">Query</h4>
+                  <p className="text-gray-700">{testCase?.conversation?.[index]?.query || "N/A"}</p>
+                </div>
+                <Separator />
+                <div>
+                  <h4 className="mb-2 font-medium">Response</h4>
+                  <p className="text-gray-700">{turn.message.message}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </Card>
+
+        <Card className="bg-muted p-4">
+          <h3 className="mb-4 text-lg font-semibold">Flow Metrics</h3>
+          <div className="grid gap-6 md:grid-cols-2">
+            <div>
+              <h4 className="mb-2 font-medium">Flow Coherence</h4>
+              <div className={`text-2xl font-bold ${getScoreColor(data.flowCoherence)}`}>{(data.flowCoherence! * 100).toFixed(2)}%</div>
+            </div>
+            <div>
+              <h4 className="mb-2 font-medium">Topic Transition Accuracy</h4>
+              <div className={`text-2xl font-bold ${getScoreColor(data.topicTransitionAccuracy)}`}>{(data.topicTransitionAccuracy! * 100).toFixed(2)}%</div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="bg-muted p-4">
+          <h3 className="mb-2 text-lg font-semibold">Reasoning</h3>
+          <pre className="whitespace-pre-wrap break-words rounded bg-muted-foreground/10 p-2">{data.reasoning}</pre>
+        </Card>
+      </div>
+    </>
+  );
+};
+
+const RobustnessResultDetails: React.FC<{
+  data: TransformedData;
+  testCase: TestCase | undefined;
+}> = ({ data, testCase }) => {
+  const copyToClipboard = () => {
+    const jsonData = JSON.stringify(
+      {
+        prompt: testCase?.prompt || "",
+        expectedFilters: testCase?.expected_filters,
+        extractedFilters: data.extractedFilters,
+        filterAccuracy: data.filterAccuracy,
+        noiseFiltering: data.noiseFiltering,
+      },
+      null,
+      2
+    );
+    navigator.clipboard.writeText(jsonData);
+  };
+
+  return (
+    <>
+      <div className="flex justify-end">
+        <CopyButton onClick={copyToClipboard} />
+      </div>
+      <Card className="bg-muted p-4">
+        <h3 className="mb-4 text-lg font-semibold">Filter Analysis</h3>
+        <div className="grid gap-6 md:grid-cols-2">
+          <div>
+            <h4 className="mb-2 text-lg font-semibold">Expected Filters</h4>
+            <pre className="whitespace-pre-wrap break-words rounded bg-muted-foreground/10 p-2">{JSON.stringify(testCase?.expected_filters, null, 2)}</pre>
+          </div>
+          <div>
+            <h4 className="mb-2 text-lg font-semibold">Extracted Filters</h4>
+            <pre className="whitespace-pre-wrap break-words rounded bg-muted-foreground/10 p-2">{JSON.stringify(data.extractedFilters, null, 2)}</pre>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="bg-muted p-4">
+        <h3 className="mb-2 text-lg font-semibold">Performance Metrics</h3>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <h4 className="mb-2 font-medium">Filter Accuracy</h4>
+            <div className={`text-2xl font-bold ${getScoreColor(data.filterAccuracy)}`}>{(data.filterAccuracy! * 100).toFixed(2)}%</div>
+          </div>
+          <div>
+            <h4 className="mb-2 font-medium">Noise Filtering</h4>
+            <div className={`text-2xl font-bold ${getScoreColor(data.noiseFiltering)}`}>{(data.noiseFiltering! * 100).toFixed(2)}%</div>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="bg-muted p-4">
+        <h3 className="mb-2 text-lg font-semibold">Response</h3>
+        <ChatMessageContent message={data.response} />
+      </Card>
+
+      {data.reasoning && (
+        <Card className="bg-muted p-4">
+          <h3 className="mb-2 text-lg font-semibold">Reasoning</h3>
+          <pre className="whitespace-pre-wrap break-words rounded bg-muted-foreground/10 p-2">{data.reasoning}</pre>
+        </Card>
+      )}
+    </>
   );
 };
 

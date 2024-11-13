@@ -1,6 +1,13 @@
 import { convertStateToString } from "@/lib/stateToStr";
-import { accuracyTestRunnerMachine } from "@/machines/accuracyTestRunnerMachine";
-import { consistencyTestRunnerMachine } from "@/machines/consistencyTestRunnerMachine";
+import {
+  accuracyTestRunnerMachine,
+  consistencyTestRunnerMachine,
+  contextRetentionTestRunnerMachine,
+  conversationalFlowTestRunnerMachine,
+  defensibilityTestRunnerMachine,
+  featureInferenceTestRunnerMachine,
+  robustnessTestRunnerMachine,
+} from "@/machines";
 import { useSelector } from "@xstate/react";
 import { useCallback, useMemo } from "react";
 import { ActorRefFrom } from "xstate";
@@ -14,13 +21,16 @@ export enum TestRunnerState {
   Paused = "Paused",
   Evaluating = "Evaluating",
   Disconnecting = "Disconnecting",
+  SendingConversationTurn = "SendingConversationTurn",
 }
 
 const stateMap: Record<string, TestRunnerState> = {
   idle: TestRunnerState.Idle,
   connecting: TestRunnerState.Connecting,
   "running.sendingMessage": TestRunnerState.Running,
+  "running.sendingConversationTurn": TestRunnerState.SendingConversationTurn,
   "running.paused": TestRunnerState.Paused,
+  "running.evaluatingResult": TestRunnerState.Evaluating,
   "running.evaluatingResults": TestRunnerState.Evaluating,
   disconnecting: TestRunnerState.Disconnecting,
 };
@@ -32,19 +42,25 @@ export const useTestRunnerContext = () => {
   const testActorRef = actorRef.test;
   const testActorState = useSelector(testActorRef, (state) => state);
   const testRunnerActorRef = testActorState?.context.selectedTest?.testRunnerRef as
-    | ActorRefFrom<typeof accuracyTestRunnerMachine | typeof consistencyTestRunnerMachine>
+    | ActorRefFrom<
+        | typeof accuracyTestRunnerMachine
+        | typeof consistencyTestRunnerMachine
+        | typeof featureInferenceTestRunnerMachine
+        | typeof contextRetentionTestRunnerMachine
+        | typeof robustnessTestRunnerMachine
+        | typeof conversationalFlowTestRunnerMachine
+        | typeof defensibilityTestRunnerMachine
+      >
     | undefined;
   const testRunnerActorState = useSelector(testRunnerActorRef, (state) => state);
   useToast(testRunnerActorRef);
 
   const testRunnerState = useMemo(() => {
-    console.log(`-----> testRunnerActorState: ${JSON.stringify(testRunnerActorState.value)}`);
     if (!testRunnerActorState) return TestRunnerState.Idle;
     let stateValue = testRunnerActorState.value as string;
     if (typeof stateValue !== "string") {
       stateValue = convertStateToString(stateValue);
     }
-    console.log(`-----> stateValue: ${stateValue}`);
     return stateMap[stateValue] || TestRunnerState.Idle;
   }, [testRunnerActorState]);
 

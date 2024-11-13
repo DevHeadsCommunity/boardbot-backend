@@ -1,0 +1,303 @@
+[
+  {
+    "description": "Tests progressive feature refinement for industrial applications, maintaining processor and environmental requirements while adding connectivity specs",
+    "conversation": [
+      {
+        "turn": 1,
+        "query": "Show me ARM-based industrial boards",
+        "expected_filters": {
+          "processor_architecture": "ARM"
+        }
+      },
+      {
+        "turn": 2,
+        "query": "Which ones can operate in -40°C environments?",
+        "expected_filters": {
+          "processor_architecture": "ARM",
+          "operating_temperature_min": "-40°C"
+        }
+      },
+      {
+        "turn": 3,
+        "query": "From those, show me ones with dual Ethernet ports",
+        "expected_filters": {
+          "processor_architecture": "ARM",
+          "operating_temperature_min": "-40°C",
+          "io_count": {
+            "ETHERNET": 2
+          }
+        }
+      }
+    ]
+  },
+  {
+    "description": "Tests context retention for OS compatibility and memory specifications while adding wireless capabilities",
+    "conversation": [
+      {
+        "turn": 1,
+        "query": "Find boards that support both Windows and Linux",
+        "expected_filters": {
+          "operating_system_bsp": ["WINDOWS", "LINUX"]
+        }
+      },
+      {
+        "turn": 2,
+        "query": "Which ones have at least 32GB RAM?",
+        "expected_filters": {
+          "operating_system_bsp": ["WINDOWS", "LINUX"],
+          "memory": "32.0GB DDR4"
+        }
+      },
+      {
+        "turn": 3,
+        "query": "And support WiFi 6?",
+        "expected_filters": {
+          "operating_system_bsp": ["WINDOWS", "LINUX"],
+          "memory": "32.0GB DDR4",
+          "wireless": "WI-FI 6"
+        }
+      }
+    ]
+  },
+  {
+    "description": "Tests manufacturer-specific context retention while adding storage and certification requirements",
+    "conversation": [
+      {
+        "turn": 1,
+        "query": "Show me Advantech products",
+        "expected_filters": {
+          "manufacturer": "ADVANTECH"
+        }
+      },
+      {
+        "turn": 2,
+        "query": "Which ones have NVMe storage?",
+        "expected_filters": {
+          "manufacturer": "ADVANTECH",
+          "onboard_storage": "NVME SSD"
+        }
+      },
+      {
+        "turn": 3,
+        "query": "From those, which ones are military certified?",
+        "expected_filters": {
+          "manufacturer": "ADVANTECH",
+          "onboard_storage": "NVME SSD",
+          "certifications": ["MIL-STD-810"]
+        }
+      }
+    ]
+  },
+  {
+    "description": "Tests form factor context retention while adding processor and power requirements",
+    "conversation": [
+      {
+        "turn": 1,
+        "query": "List all COM Express modules",
+        "expected_filters": {
+          "form_factor": "COM EXPRESS"
+        }
+      },
+      {
+        "turn": 2,
+        "query": "Which ones use Intel Core processors?",
+        "expected_filters": {
+          "form_factor": "COM EXPRESS",
+          "processor_architecture": "INTEL CORE"
+        }
+      },
+      {
+        "turn": 3,
+        "query": "Show me the ones with TDP under 15W",
+        "expected_filters": {
+          "form_factor": "COM EXPRESS",
+          "processor_architecture": "INTEL CORE",
+          "processor_tdp": "15.0W"
+        }
+      }
+    ]
+  },
+  {
+    "description": "Tests context retention for temperature requirements while adding interface specifications",
+    "conversation": [
+      {
+        "turn": 1,
+        "query": "Find boards that operate in extreme temperatures from -40°C to 85°C",
+        "expected_filters": {
+          "operating_temperature_min": "-40°C",
+          "operating_temperature_max": "85°C"
+        }
+      },
+      {
+        "turn": 2,
+        "query": "Which ones have USB 3.0?",
+        "expected_filters": {
+          "operating_temperature_min": "-40°C",
+          "operating_temperature_max": "85°C",
+          "io_count": {
+            "USB 3.0": true
+          }
+        }
+      },
+      {
+        "turn": 3,
+        "query": "And also support SATA 3.0?",
+        "expected_filters": {
+          "operating_temperature_min": "-40°C",
+          "operating_temperature_max": "85°C",
+          "io_count": {
+            "USB 3.0": true,
+            "SATA 3.0": true
+          }
+        }
+      }
+    ]
+  },
+  {
+    "description": "Tests wireless capability context while adding memory and storage specifications",
+    "conversation": [
+      {
+        "turn": 1,
+        "query": "Show boards with WiFi 6 and Bluetooth 5",
+        "expected_filters": {
+          "wireless": ["WI-FI 6", "BLUETOOTH 5+"]
+        }
+      },
+      {
+        "turn": 2,
+        "query": "Which ones have DDR4 memory?",
+        "expected_filters": {
+          "wireless": ["WI-FI 6", "BLUETOOTH 5+"],
+          "memory": "DDR4"
+        }
+      },
+      {
+        "turn": 3,
+        "query": "And include eMMC storage?",
+        "expected_filters": {
+          "wireless": ["WI-FI 6", "BLUETOOTH 5+"],
+          "memory": "DDR4",
+          "onboard_storage": "EMMC"
+        }
+      }
+    ]
+  },
+  {
+    "description": "Tests context retention for specialized industrial requirements",
+    "conversation": [
+      {
+        "turn": 1,
+        "query": "Find DIN rail mounted devices",
+        "expected_filters": {
+          "form_factor": "DIN RAIL"
+        }
+      },
+      {
+        "turn": 2,
+        "query": "Which ones accept 24V input?",
+        "expected_filters": {
+          "form_factor": "DIN RAIL",
+          "input_voltage": "24.0V"
+        }
+      },
+      {
+        "turn": 3,
+        "query": "From those, which ones have CAN bus support?",
+        "expected_filters": {
+          "form_factor": "DIN RAIL",
+          "input_voltage": "24.0V",
+          "io_count": {
+            "OTHER_BUS": true
+          }
+        }
+      }
+    ]
+  },
+  {
+    "description": "Tests context retention for processor specifications while adding connectivity requirements",
+    "conversation": [
+      {
+        "turn": 1,
+        "query": "Show me boards with 8 or more CPU cores",
+        "expected_filters": {
+          "processor_core_count": 8
+        }
+      },
+      {
+        "turn": 2,
+        "query": "Which ones are made by Intel?",
+        "expected_filters": {
+          "processor_core_count": 8,
+          "processor_manufacturer": "INTEL"
+        }
+      },
+      {
+        "turn": 3,
+        "query": "And support PCIe Gen 4?",
+        "expected_filters": {
+          "processor_core_count": 8,
+          "processor_manufacturer": "INTEL",
+          "io_count": {
+            "PCIE 4": true
+          }
+        }
+      }
+    ]
+  },
+  {
+    "description": "Tests context retention for certification requirements while adding environmental specifications",
+    "conversation": [
+      {
+        "turn": 1,
+        "query": "Find CE certified boards",
+        "expected_filters": {
+          "certifications": ["CE"]
+        }
+      },
+      {
+        "turn": 2,
+        "query": "Which ones are also UL certified?",
+        "expected_filters": {
+          "certifications": ["CE", "UL"]
+        }
+      },
+      {
+        "turn": 3,
+        "query": "From those, which can operate in high temperatures up to 85°C?",
+        "expected_filters": {
+          "certifications": ["CE", "UL"],
+          "operating_temperature_max": "85°C"
+        }
+      }
+    ]
+  },
+  {
+    "description": "Tests context retention for form factor while adding OS and wireless requirements",
+    "conversation": [
+      {
+        "turn": 1,
+        "query": "Show Mini-ITX boards",
+        "expected_filters": {
+          "form_factor": "MINI-ITX"
+        }
+      },
+      {
+        "turn": 2,
+        "query": "Which ones run Windows IoT?",
+        "expected_filters": {
+          "form_factor": "MINI-ITX",
+          "operating_system_bsp": "WINDOWS IOT"
+        }
+      },
+      {
+        "turn": 3,
+        "query": "And have cellular connectivity?",
+        "expected_filters": {
+          "form_factor": "MINI-ITX",
+          "operating_system_bsp": "WINDOWS IOT",
+          "wireless": ["CELLULAR", "4G/LTE"]
+        }
+      }
+    ]
+  }
+]

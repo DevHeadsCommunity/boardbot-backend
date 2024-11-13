@@ -1,0 +1,260 @@
+[
+  {
+    "description": "Tests natural progression from wireless capabilities to power specifications, evaluating handling of related feature exploration",
+    "conversation": [
+      {
+        "turn": 1,
+        "query": "What boards offer WiFi 6 support?",
+        "expected_filters": {
+          "wireless": "WI-FI 6"
+        }
+      },
+      {
+        "turn": 2,
+        "query": "Do any of these also have 5G capability?",
+        "expected_filters": {
+          "wireless": ["WI-FI 6", "5G"]
+        }
+      },
+      {
+        "turn": 3,
+        "query": "What's the power consumption like for these boards?",
+        "expected_filters": {
+          "wireless": ["WI-FI 6", "5G"]
+        }
+      },
+      {
+        "turn": 4,
+        "query": "Show me the ones with TDP under 15W",
+        "expected_filters": {
+          "wireless": ["WI-FI 6", "5G"],
+          "processor_tdp": "15.0W"
+        }
+      }
+    ]
+  },
+  {
+    "description": "Tests transition from basic form factor questions to specific technical requirements and environmental specifications",
+    "conversation": [
+      {
+        "turn": 1,
+        "query": "What COM Express modules do you offer?",
+        "expected_filters": {
+          "form_factor": "COM EXPRESS"
+        }
+      },
+      {
+        "turn": 2,
+        "query": "Can you compare their processor types?",
+        "expected_filters": {
+          "form_factor": "COM EXPRESS"
+        }
+      },
+      {
+        "turn": 3,
+        "query": "Tell me about their temperature ratings",
+        "expected_filters": {
+          "form_factor": "COM EXPRESS"
+        }
+      },
+      {
+        "turn": 4,
+        "query": "Which ones are rated for industrial use?",
+        "expected_filters": {
+          "form_factor": "COM EXPRESS",
+          "operating_temperature_min": "-40°C",
+          "operating_temperature_max": "85°C"
+        }
+      }
+    ]
+  },
+  {
+    "description": "Tests handling of manufacturer-specific queries transitioning to technical specifications and certifications",
+    "conversation": [
+      {
+        "turn": 1,
+        "query": "What's available from Advantech?",
+        "expected_filters": {
+          "manufacturer": "ADVANTECH"
+        }
+      },
+      {
+        "turn": 2,
+        "query": "Which product lines support Windows IoT?",
+        "expected_filters": {
+          "manufacturer": "ADVANTECH",
+          "operating_system_bsp": "WINDOWS IOT"
+        }
+      },
+      {
+        "turn": 3,
+        "query": "What certifications do these boards have?",
+        "expected_filters": {
+          "manufacturer": "ADVANTECH",
+          "operating_system_bsp": "WINDOWS IOT"
+        }
+      },
+      {
+        "turn": 4,
+        "query": "Show me the ones with military certification",
+        "expected_filters": {
+          "manufacturer": "ADVANTECH",
+          "operating_system_bsp": "WINDOWS IOT",
+          "certifications": ["MIL-STD-810"]
+        }
+      }
+    ]
+  },
+  {
+    "description": "Tests transition from memory requirements to storage options and interface specifications",
+    "conversation": [
+      {
+        "turn": 1,
+        "query": "I need boards with 32GB or more RAM",
+        "expected_filters": {
+          "memory": "32.0GB DDR4"
+        }
+      },
+      {
+        "turn": 2,
+        "query": "What storage options are available on these?",
+        "expected_filters": {
+          "memory": "32.0GB DDR4"
+        }
+      },
+      {
+        "turn": 3,
+        "query": "Which ones support both SATA and NVMe?",
+        "expected_filters": {
+          "memory": "32.0GB DDR4",
+          "onboard_storage": ["SATA 3.0", "NVME SSD"]
+        }
+      }
+    ]
+  },
+  {
+    "description": "Tests progression from basic processor queries to specific performance and cooling requirements",
+    "conversation": [
+      {
+        "turn": 1,
+        "query": "Show me boards with Intel Core processors",
+        "expected_filters": {
+          "processor_architecture": "INTEL CORE"
+        }
+      },
+      {
+        "turn": 2,
+        "query": "How many cores do they have?",
+        "expected_filters": {
+          "processor_architecture": "INTEL CORE"
+        }
+      },
+      {
+        "turn": 3,
+        "query": "Which ones are available in fanless designs?",
+        "expected_filters": {
+          "processor_architecture": "INTEL CORE",
+          "processor_tdp": "15.0W"
+        }
+      }
+    ]
+  },
+  {
+    "description": "Tests handling of industrial requirement specifications transitioning to connectivity options",
+    "conversation": [
+      {
+        "turn": 1,
+        "query": "Need DIN rail mounted devices",
+        "expected_filters": {
+          "form_factor": "DIN RAIL"
+        }
+      },
+      {
+        "turn": 2,
+        "query": "What's their input voltage range?",
+        "expected_filters": {
+          "form_factor": "DIN RAIL"
+        }
+      },
+      {
+        "turn": 3,
+        "query": "Which ones support 24V operation?",
+        "expected_filters": {
+          "form_factor": "DIN RAIL",
+          "input_voltage": "24.0V"
+        }
+      },
+      {
+        "turn": 4,
+        "query": "Do any of these have cellular connectivity?",
+        "expected_filters": {
+          "form_factor": "DIN RAIL",
+          "input_voltage": "24.0V",
+          "wireless": ["CELLULAR", "4G/LTE"]
+        }
+      }
+    ]
+  },
+  {
+    "description": "Tests transition from environmental requirements to certification standards and wireless capabilities",
+    "conversation": [
+      {
+        "turn": 1,
+        "query": "Need boards for outdoor deployment",
+        "expected_filters": {
+          "operating_temperature_min": "-40°C",
+          "operating_temperature_max": "85°C"
+        }
+      },
+      {
+        "turn": 2,
+        "query": "What certifications do they have?",
+        "expected_filters": {
+          "operating_temperature_min": "-40°C",
+          "operating_temperature_max": "85°C"
+        }
+      },
+      {
+        "turn": 3,
+        "query": "Which ones have wireless capabilities?",
+        "expected_filters": {
+          "operating_temperature_min": "-40°C",
+          "operating_temperature_max": "85°C"
+        }
+      }
+    ]
+  },
+  {
+    "description": "Tests handling of display interface requirements transitioning to performance specifications",
+    "conversation": [
+      {
+        "turn": 1,
+        "query": "Looking for boards with triple display support",
+        "expected_filters": {
+          "io_count": {
+            "DISPLAY": 3
+          }
+        }
+      },
+      {
+        "turn": 2,
+        "query": "What processor options are available?",
+        "expected_filters": {
+          "io_count": {
+            "DISPLAY": 3
+          }
+        }
+      },
+      {
+        "turn": 3,
+        "query": "Show me the ones with high-performance processors",
+        "expected_filters": {
+          "io_count": {
+            "DISPLAY": 3
+          },
+          "processor_architecture": "INTEL CORE"
+        }
+      }
+    ]
+  }
+]

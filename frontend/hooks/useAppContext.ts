@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/useToast";
 import { convertStateToString } from "@/lib/stateToStr";
 import { Architecture, HistoryManagement, Model } from "@/types";
 import { useSelector } from "@xstate/react";
-import { useCallback, useContext, useEffect, useMemo } from "react";
+import { useCallback, useContext, useMemo } from "react";
 import { AppContext } from "../context/appContext";
 
 export enum AppState {
@@ -67,13 +67,13 @@ export const useAppContext = () => {
     [appActorRef]
   );
 
-  useEffect(() => {
-    const saveInterval = setInterval(() => {
-      appActorRef.send({ type: "sys.saveState" });
-    }, 15000); // Save every 15 seconds
+  // useEffect(() => {
+  //   const saveInterval = setInterval(() => {
+  //     appActorRef.send({ type: "sys.saveState" });
+  //   }, 15000); // Save every 15 seconds
 
-    return () => clearInterval(saveInterval);
-  }, [appActorRef]);
+  //   return () => clearInterval(saveInterval);
+  // }, [appActorRef]);
 
   return {
     actorRef: {

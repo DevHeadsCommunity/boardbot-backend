@@ -22,7 +22,6 @@ import { webSocketMachine } from "./webSocketMachine";
 // Helper functions
 function calculateProductConsistency(mainProducts: Product[], variationProductsList: Product[][]): number {
   if (mainProducts.length === 0) {
-    // If main prompt returned no products, check if variations also return no products
     const emptyVariations = variationProductsList.filter((products) => products.length === 0);
     return emptyVariations.length / Math.max(variationProductsList.length, 1);
   }
@@ -37,7 +36,6 @@ function calculateProductConsistency(mainProducts: Product[], variationProductsL
 
 function calculateOrderConsistency(mainProducts: Product[], variationProductsList: Product[][]): number {
   if (mainProducts.length === 0) {
-    // If main prompt returned no products, check if variations also return no products
     const emptyVariations = variationProductsList.filter((products) => products.length === 0);
     return emptyVariations.length / Math.max(variationProductsList.length, 1);
   }
@@ -80,7 +78,7 @@ const ConsistencyTestRunnerContextSchema = z.object({
   name: z.string(),
   sessionId: z.string(),
   testCases: z.array(TestCaseSchema),
-  testResults: z.array(ConsistencyTestResultSchema).nullable().default([]),
+  testResults: z.array(ConsistencyTestResultSchema).default([]),
   currentTestIndex: z.number(),
   batchSize: z.number(),
   testTimeout: z.number(),
@@ -89,7 +87,7 @@ const ConsistencyTestRunnerContextSchema = z.object({
   architecture: ArchitectureSchema,
   historyManagement: HistoryManagementSchema,
   pendingResponses: z.number(),
-  currentResponses: z.array(ResponseMessageSchema),
+  currentResponses: z.array(ResponseMessageSchema).default([]),
 });
 
 type ConsistencyTestRunnerContext = z.infer<typeof ConsistencyTestRunnerContextSchema>;
@@ -139,8 +137,6 @@ export const consistencyTestRunnerMachine = setup({
         }),
       }));
 
-      console.log(`\n\nSending ${messages.length} messages`);
-
       messages.forEach((message) => {
         self.send({ type: "internal.sendMessage", message });
       });
@@ -149,7 +145,6 @@ export const consistencyTestRunnerMachine = setup({
       ({ context }) => context.webSocketRef!,
       ({ event }) => {
         if (event.type !== "internal.sendMessage") throw new Error("Invalid event type");
-        console.log(`++++> Sending message: ${JSON.stringify(event.message.data)}`);
         return {
           type: event.message.type,
           data: event.message.data,
@@ -158,11 +153,11 @@ export const consistencyTestRunnerMachine = setup({
     ),
     setPendingResponses: assign({
       pendingResponses: ({ context }) => context.testCases[context.currentTestIndex].variations!.length,
-      currentResponses: [] as ResponseMessage[],
+      currentResponses: [],
     }),
     processResponse: assign({
       pendingResponses: ({ context }) => context.pendingResponses - 1,
-      currentResponses: ({ context, event }) => [...context.currentResponses, responseMessageFromJson((event as any).data)],
+      currentResponses: ({ context, event }) => [...context.currentResponses, responseMessageFromJson(event.data)],
     }),
     updateTestResults: assign({
       testResults: ({ context }) => {
@@ -192,20 +187,13 @@ export const consistencyTestRunnerMachine = setup({
 
         return [...context.testResults, newTestResult];
       },
-      currentResponses: [] as ResponseMessage[],
+      currentResponses: [],
     }),
     increaseCurrentTestIndex: assign({
       currentTestIndex: ({ context }) => context.currentTestIndex + 1,
     }),
-    // increaseProgress: assign({
-    //   progress: ({ context }) => (context.currentTestIndex / context.testCases.length) * 100,
-    // }),
     increaseProgress: assign({
-      progress: ({ context }) => {
-        const overallProgress = (context.currentTestIndex / context.testCases.length) * 100;
-        const currentTestProgress = (context.currentResponses.length / (context.pendingResponses + context.currentResponses.length)) * (100 / context.testCases.length);
-        return Math.min(overallProgress + currentTestProgress, 100);
-      },
+      progress: ({ context }) => ((context.currentTestIndex + 1) / context.testCases.length) * 100,
     }),
   },
   guards: {
@@ -264,48 +252,25 @@ export const consistencyTestRunnerMachine = setup({
       },
       states: {
         sendingMessage: {
-          entry: [
-            "sendTestCaseMessages",
-            "setPendingResponses",
-            ({ context }) => {
-              console.log(`++++> Sending messages. Pending responses: ${context.pendingResponses}`);
-            },
-          ],
+          entry: ["sendTestCaseMessages", "setPendingResponses"],
           on: {
             "internal.sendMessage": {
               actions: ["sendMessage"],
             },
             "webSocket.messageReceived": [
               {
-                target: "evaluatingResults",
-                actions: [
-                  "processResponse",
-                  ({ context }) => {
-                    console.log(`++++> Received response 1. Pending responses: ${context.pendingResponses}`);
-                  },
-                ],
+                actions: ["processResponse"],
                 guard: "allResponsesReceived",
+                target: "evaluatingResults",
               },
               {
-                actions: [
-                  "processResponse",
-                  ({ context }) => {
-                    console.log(`++++> Received response 2. Pending responses: ${context.pendingResponses}`);
-                  },
-                ],
+                actions: ["processResponse"],
               },
             ],
           },
         },
         evaluatingResults: {
-          entry: [
-            "updateTestResults",
-            "increaseProgress",
-            "increaseCurrentTestIndex",
-            ({ context }) => {
-              console.log(`++++> evaluatingResults. Progress: ${context.progress}`);
-            },
-          ],
+          entry: ["updateTestResults", "increaseProgress", "increaseCurrentTestIndex"],
           always: [{ target: "#consistencyTestRunnerActor.disconnecting", guard: "testIsComplete" }, { target: "sendingMessage" }],
         },
         paused: {

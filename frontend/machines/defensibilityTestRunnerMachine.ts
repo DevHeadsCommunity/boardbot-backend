@@ -1,15 +1,16 @@
 import {
-  AccuracyTestResult,
-  AccuracyTestResultSchema,
   Architecture,
   ArchitectureSchema,
+  DefensibilityTestResult,
+  DefensibilityTestResultSchema,
   HistoryManagement,
   HistoryManagementSchema,
   Model,
   ModelSchema,
-  Product,
   RequestDataSchema,
   ResponseMessage,
+  responseMessageFromJson,
+  ResponseMessageSchema,
   TestCase,
   TestCaseSchema,
 } from "@/types";
@@ -17,49 +18,38 @@ import { assign, sendTo, setup } from "xstate";
 import { z } from "zod";
 import { webSocketMachine } from "./webSocketMachine";
 
-// Helper functions
-function calculateProductAccuracy(actualProducts: Product[], expectedProducts: Product[] | undefined): number {
-  if (!expectedProducts) {
-    return 1;
-  }
-  const expectedProductNames = new Set(expectedProducts.map((p) => p.name.toLowerCase()));
-  const matchedProducts = actualProducts.filter((p) => expectedProductNames.has(p.name.toLowerCase()));
-  return matchedProducts.length / expectedProducts.length;
+// Helper function to evaluate appropriate response
+function isResponseAppropriate(response: ResponseMessage, expectedMessage: string): boolean {
+  return response.message.message.trim() === expectedMessage.trim();
 }
 
-function isTestPassed(productAccuracy: number): boolean {
-  return productAccuracy > 0.4;
-}
-
-// Zod schema for the context
-const AccuracyTestRunnerContextSchema = z.object({
+// Context schema
+const DefensibilityTestRunnerContextSchema = z.object({
   webSocketRef: z.any().optional(),
   name: z.string(),
   sessionId: z.string(),
   testCases: z.array(TestCaseSchema),
-  testResults: z.array(AccuracyTestResultSchema).default([]),
+  testResults: z.array(DefensibilityTestResultSchema).default([]),
   currentTestIndex: z.number(),
-  batchSize: z.number(),
-  testTimeout: z.number(),
   progress: z.number(),
   model: ModelSchema,
   architecture: ArchitectureSchema,
   historyManagement: HistoryManagementSchema,
+  conversation: z.array(ResponseMessageSchema).default([]),
+  conversationIndex: z.number().default(0),
 });
 
-type AccuracyTestRunnerContext = z.infer<typeof AccuracyTestRunnerContextSchema>;
+type DefensibilityTestRunnerContext = z.infer<typeof DefensibilityTestRunnerContextSchema>;
 
-export const accuracyTestRunnerMachine = setup({
+export const defensibilityTestRunnerMachine = setup({
   types: {
-    context: {} as AccuracyTestRunnerContext,
+    context: {} as DefensibilityTestRunnerContext,
     input: {} as {
       name: string;
       sessionId: string;
       testCases: TestCase[];
-      testResults?: AccuracyTestResult[];
+      testResults?: DefensibilityTestResult[];
       currentTestIndex?: number;
-      batchSize?: number;
-      testTimeout?: number;
       progress?: number;
       model: Model;
       architecture: Architecture;
@@ -75,39 +65,46 @@ export const accuracyTestRunnerMachine = setup({
       | { type: "webSocket.disconnected" },
   },
   actions: {
-    sendNextMessage: sendTo(
+    sendNextConversationTurn: sendTo(
       ({ context }) => context.webSocketRef!,
-      ({ context }) => ({
-        type: "parentActor.sendMessage",
-        data: RequestDataSchema.parse({
-          type: "textMessage",
-          sessionId: context.sessionId,
-          messageId: context.testCases[context.currentTestIndex].messageId,
-          message: context.testCases[context.currentTestIndex].prompt,
-          timestamp: new Date().toISOString(),
-          model: context.model,
-          architectureChoice: context.architecture,
-          historyManagementChoice: context.historyManagement,
-        }),
-      })
-    ),
-    updateTestResults: assign({
-      testResults: ({ context, event }) => {
-        if (event.type !== "webSocket.messageReceived") throw new Error("Invalid event type");
+      ({ context }) => {
         const currentTestCase = context.testCases[context.currentTestIndex];
-        if (!currentTestCase.products) {
-          throw new Error("Test case has no expected products");
-        }
+        const conversationTurn = currentTestCase.conversation![context.conversationIndex];
+        return {
+          type: "parentActor.sendMessage",
+          data: RequestDataSchema.parse({
+            type: "textMessage",
+            sessionId: context.sessionId,
+            messageId: `${currentTestCase.messageId}_${context.conversationIndex}`,
+            message: conversationTurn.query,
+            timestamp: new Date().toISOString(),
+            model: context.model,
+            architectureChoice: context.architecture,
+            historyManagementChoice: context.historyManagement,
+          }),
+        };
+      }
+    ),
+    updateConversation: assign({
+      conversation: ({ context, event }) => [...context.conversation, responseMessageFromJson(event.data)],
+      conversationIndex: ({ context }) => context.conversationIndex + 1,
+    }),
+    updateTestResults: assign({
+      testResults: ({ context }) => {
+        const currentTestCase = context.testCases[context.currentTestIndex];
+        const lastResponse = context.conversation[context.conversation.length - 1];
+        const expectedMessage = currentTestCase.conversation![context.conversation.length - 1].message!;
+        const appropriateResponse = isResponseAppropriate(lastResponse, expectedMessage);
 
-        const testResponse = event.data;
-        const productAccuracy = calculateProductAccuracy(testResponse.message.products, currentTestCase.products);
-        const testResult: AccuracyTestResult = {
-          response: testResponse,
-          productAccuracy: productAccuracy,
-          passed: isTestPassed(productAccuracy),
+        const testResult: DefensibilityTestResult = {
+          conversation: context.conversation,
+          boundaryMaintenance: appropriateResponse ? 1 : 0,
+          appropriateResponse,
         };
         return [...context.testResults, testResult];
       },
+      conversation: [],
+      conversationIndex: 0,
     }),
     increaseProgress: assign({
       progress: ({ context }) => ((context.currentTestIndex + 1) / context.testCases.length) * 100,
@@ -117,25 +114,29 @@ export const accuracyTestRunnerMachine = setup({
     }),
   },
   guards: {
+    conversationComplete: ({ context }) => {
+      const currentTestCase = context.testCases[context.currentTestIndex];
+      return context.conversationIndex >= currentTestCase.conversation!.length;
+    },
     testIsComplete: ({ context }) => context.currentTestIndex >= context.testCases.length - 1,
   },
 }).createMachine({
   context: ({ input }) =>
-    AccuracyTestRunnerContextSchema.parse({
+    DefensibilityTestRunnerContextSchema.parse({
       webSocketRef: undefined,
       name: input.name,
       sessionId: input.sessionId,
       testCases: input.testCases,
       testResults: input.testResults || [],
       currentTestIndex: input.currentTestIndex || 0,
-      batchSize: input.batchSize || 1,
       progress: input.progress || 0,
-      testTimeout: input.testTimeout || 10000,
       model: input.model,
       architecture: input.architecture,
       historyManagement: input.historyManagement,
+      conversation: [],
+      conversationIndex: 0,
     }),
-  id: "accuracyTestRunnerActor",
+  id: "defensibilityTestRunnerActor",
   initial: "idle",
   states: {
     idle: {
@@ -159,29 +160,35 @@ export const accuracyTestRunnerMachine = setup({
       },
     },
     running: {
-      initial: "sendingMessage",
+      initial: "sendingConversationTurn",
       on: {
         "user.stopTest": { target: "disconnecting" },
         "user.pauseTest": { target: ".paused" },
       },
       states: {
-        sendingMessage: {
-          entry: "sendNextMessage",
+        sendingConversationTurn: {
+          entry: "sendNextConversationTurn",
           on: {
             "webSocket.messageReceived": [
               {
+                actions: ["updateConversation"],
+                guard: "conversationComplete",
                 target: "evaluatingResult",
-                actions: ["updateTestResults", "increaseCurrentTestIndex", "increaseProgress"],
+              },
+              {
+                actions: ["updateConversation"],
+                target: "sendingConversationTurn",
               },
             ],
           },
         },
         evaluatingResult: {
-          always: [{ target: "#accuracyTestRunnerActor.disconnecting", guard: "testIsComplete" }, { target: "sendingMessage" }],
+          entry: ["updateTestResults", "increaseCurrentTestIndex", "increaseProgress"],
+          always: [{ target: "#defensibilityTestRunnerActor.disconnecting", guard: "testIsComplete" }, { target: "sendingConversationTurn" }],
         },
         paused: {
           on: {
-            "user.continueTest": { target: "sendingMessage" },
+            "user.continueTest": { target: "sendingConversationTurn" },
           },
         },
       },
