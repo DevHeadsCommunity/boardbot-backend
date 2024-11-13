@@ -1,13 +1,13 @@
+import { deepEqual } from "@/lib/utils/comparison";
 import {
-  AccuracyTestResult,
-  AccuracyTestResultSchema,
   Architecture,
   ArchitectureSchema,
+  FeatureInferenceTestResult,
+  FeatureInferenceTestResultSchema,
   HistoryManagement,
   HistoryManagementSchema,
   Model,
   ModelSchema,
-  Product,
   RequestDataSchema,
   ResponseMessage,
   TestCase,
@@ -17,29 +17,40 @@ import { assign, sendTo, setup } from "xstate";
 import { z } from "zod";
 import { webSocketMachine } from "./webSocketMachine";
 
-// Helper functions
-function calculateProductAccuracy(actualProducts: Product[], expectedProducts: Product[] | undefined): number {
-  if (!expectedProducts) {
+// Update the calculateFilterAccuracy function
+function calculateFilterAccuracy(extractedFilters: Record<string, any>, expectedFilters: Record<string, any>): number {
+  if (!expectedFilters || Object.keys(expectedFilters).length === 0) {
     return 1;
   }
-  const expectedProductNames = new Set(expectedProducts.map((p) => p.name.toLowerCase()));
-  const matchedProducts = actualProducts.filter((p) => expectedProductNames.has(p.name.toLowerCase()));
-  return matchedProducts.length / expectedProducts.length;
+
+  const expectedKeys = Object.keys(expectedFilters);
+  const extractedKeys = Object.keys(extractedFilters || {});
+  let matchedFilters = 0;
+  let totalFilters = expectedKeys.length;
+
+  // Check for both key presence and value match
+  for (const key of expectedKeys) {
+    if (extractedKeys.includes(key)) {
+      // Handle different value types (string, number, array, object)
+      const expectedValue = expectedFilters[key];
+      const extractedValue = extractedFilters[key];
+      if (deepEqual(expectedValue, extractedValue)) {
+        matchedFilters++;
+      }
+    }
+  }
+
+  return totalFilters > 0 ? matchedFilters / totalFilters : 1;
 }
 
-function isTestPassed(productAccuracy: number): boolean {
-  return productAccuracy > 0.4;
-}
-
-// Zod schema for the context
-const AccuracyTestRunnerContextSchema = z.object({
+// Context schema
+const FeatureInferenceTestRunnerContextSchema = z.object({
   webSocketRef: z.any().optional(),
   name: z.string(),
   sessionId: z.string(),
   testCases: z.array(TestCaseSchema),
-  testResults: z.array(AccuracyTestResultSchema).default([]),
+  testResults: z.array(FeatureInferenceTestResultSchema).default([]),
   currentTestIndex: z.number(),
-  batchSize: z.number(),
   testTimeout: z.number(),
   progress: z.number(),
   model: ModelSchema,
@@ -47,18 +58,17 @@ const AccuracyTestRunnerContextSchema = z.object({
   historyManagement: HistoryManagementSchema,
 });
 
-type AccuracyTestRunnerContext = z.infer<typeof AccuracyTestRunnerContextSchema>;
+type FeatureInferenceTestRunnerContext = z.infer<typeof FeatureInferenceTestRunnerContextSchema>;
 
-export const accuracyTestRunnerMachine = setup({
+export const featureInferenceTestRunnerMachine = setup({
   types: {
-    context: {} as AccuracyTestRunnerContext,
+    context: {} as FeatureInferenceTestRunnerContext,
     input: {} as {
       name: string;
       sessionId: string;
       testCases: TestCase[];
-      testResults?: AccuracyTestResult[];
+      testResults?: FeatureInferenceTestResult[];
       currentTestIndex?: number;
-      batchSize?: number;
       testTimeout?: number;
       progress?: number;
       model: Model;
@@ -95,16 +105,28 @@ export const accuracyTestRunnerMachine = setup({
       testResults: ({ context, event }) => {
         if (event.type !== "webSocket.messageReceived") throw new Error("Invalid event type");
         const currentTestCase = context.testCases[context.currentTestIndex];
-        if (!currentTestCase.products) {
-          throw new Error("Test case has no expected products");
+        if (!currentTestCase.expected_filters) {
+          console.warn("Test case has no expected filters, treating as success");
+          return [
+            ...context.testResults,
+            {
+              response: event.data,
+              filterAccuracy: 1,
+              extractedFilters: {},
+              expectedFilters: {},
+            },
+          ];
         }
 
         const testResponse = event.data;
-        const productAccuracy = calculateProductAccuracy(testResponse.message.products, currentTestCase.products);
-        const testResult: AccuracyTestResult = {
+        const extractedFilters = testResponse.message.metadata?.filters || {};
+        const filterAccuracy = calculateFilterAccuracy(extractedFilters, currentTestCase.expected_filters);
+
+        const testResult: FeatureInferenceTestResult = {
           response: testResponse,
-          productAccuracy: productAccuracy,
-          passed: isTestPassed(productAccuracy),
+          filterAccuracy,
+          extractedFilters,
+          expectedFilters: currentTestCase.expected_filters,
         };
         return [...context.testResults, testResult];
       },
@@ -121,21 +143,20 @@ export const accuracyTestRunnerMachine = setup({
   },
 }).createMachine({
   context: ({ input }) =>
-    AccuracyTestRunnerContextSchema.parse({
+    FeatureInferenceTestRunnerContextSchema.parse({
       webSocketRef: undefined,
       name: input.name,
       sessionId: input.sessionId,
       testCases: input.testCases,
       testResults: input.testResults || [],
       currentTestIndex: input.currentTestIndex || 0,
-      batchSize: input.batchSize || 1,
       progress: input.progress || 0,
       testTimeout: input.testTimeout || 10000,
       model: input.model,
       architecture: input.architecture,
       historyManagement: input.historyManagement,
     }),
-  id: "accuracyTestRunnerActor",
+  id: "featureInferenceTestRunnerActor",
   initial: "idle",
   states: {
     idle: {
@@ -177,7 +198,7 @@ export const accuracyTestRunnerMachine = setup({
           },
         },
         evaluatingResult: {
-          always: [{ target: "#accuracyTestRunnerActor.disconnecting", guard: "testIsComplete" }, { target: "sendingMessage" }],
+          always: [{ target: "#featureInferenceTestRunnerActor.disconnecting", guard: "testIsComplete" }, { target: "sendingMessage" }],
         },
         paused: {
           on: {

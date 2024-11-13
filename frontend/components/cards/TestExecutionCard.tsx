@@ -4,158 +4,253 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { TestRunnerState, useTestRunnerContext } from "@/hooks/useTestRunnerContext";
-import { AccuracyTestResult, ConsistencyTestResult } from "@/types";
+import {
+  AccuracyTestResult,
+  ConsistencyTestResult,
+  ContextRetentionTestResult,
+  ConversationalFlowTestResult,
+  DefensibilityTestResult,
+  FeatureInferenceTestResult,
+  RobustnessTestResult,
+} from "@/types";
 import { CircleStop, PauseIcon, PlayIcon } from "lucide-react";
 import React, { useMemo } from "react";
+
+// Add these helper functions before the TestExecutionCard component
+const calculateCost = (metadata: any) => {
+  if (!metadata) return 0;
+  const inputTokens = metadata?.inputTokenUsage ? Object.values(metadata.inputTokenUsage).reduce((sum, tokens) => sum + tokens, 0) : 0;
+  const outputTokens = metadata?.outputTokenUsage ? Object.values(metadata.outputTokenUsage).reduce((sum, tokens) => sum + tokens, 0) : 0;
+  return inputTokens * 0.0000025 + outputTokens * 0.00001;
+};
+
+const calculateTotalResponseTime = (consistencyResult: ConsistencyTestResult) => {
+  // Calculate main prompt response time
+  const mainMetadata = consistencyResult.mainPromptResponse.message.metadata;
+  const mainResponseTime = mainMetadata?.timeTaken ? Object.values(mainMetadata.timeTaken).reduce((sum, time) => sum + time, 0) : 0;
+
+  // Calculate variations response time
+  const variationResponseTime = consistencyResult.variationResponses.reduce((acc, response) => {
+    const varMetadata = response.message.metadata;
+    const varResponseTime = varMetadata?.timeTaken ? Object.values(varMetadata.timeTaken).reduce((sum, time) => sum + time, 0) : 0;
+    return acc + varResponseTime;
+  }, 0);
+
+  // Calculate average response time across all prompts
+  const promptCount = 1 + consistencyResult.variationResponses.length;
+  return (mainResponseTime + variationResponseTime) / promptCount;
+};
+
+const calculateTotalCost = (consistencyResult: ConsistencyTestResult) => {
+  // Calculate main prompt cost
+  const mainMetadata = consistencyResult.mainPromptResponse.message.metadata;
+  const mainCost = calculateCost(mainMetadata);
+
+  // Calculate variations cost
+  const variationCost = consistencyResult.variationResponses.reduce((acc, response) => {
+    const varMetadata = response.message.metadata;
+    return acc + calculateCost(varMetadata);
+  }, 0);
+
+  return mainCost + variationCost;
+};
+
+const calculateFeatureInferenceMetrics = (testResults: FeatureInferenceTestResult[]) => {
+  return testResults.reduce(
+    (acc, result) => {
+      const metadata = result.response.message.metadata;
+      const responseTime = metadata?.timeTaken ? Object.values(metadata.timeTaken).reduce((sum, time) => sum + time, 0) : 0;
+      const cost = calculateCost(metadata);
+
+      return {
+        filterAccuracy: acc.filterAccuracy + result.filterAccuracy,
+        responseTime: acc.responseTime + responseTime,
+        cost: acc.cost + cost,
+        totalCost: acc.totalCost + cost,
+      };
+    },
+    { filterAccuracy: 0, responseTime: 0, cost: 0, totalCost: 0 }
+  );
+};
+
+const calculateContextRetentionMetrics = (testResults: ContextRetentionTestResult[]) => {
+  return testResults.reduce(
+    (acc, result) => {
+      const totalResponseTime =
+        result.conversation.reduce((time, turn) => {
+          const metadata = turn.message.metadata;
+          const turnTime = metadata?.timeTaken ? Object.values(metadata.timeTaken).reduce((sum, t) => sum + t, 0) : 0;
+          return time + turnTime;
+        }, 0) / result.conversation.length;
+
+      const totalCost = result.conversation.reduce((cost, turn) => {
+        const metadata = turn.message.metadata;
+        return cost + calculateCost(metadata);
+      }, 0);
+
+      return {
+        contextAccuracy: acc.contextAccuracy + result.contextAccuracy,
+        responseTime: acc.responseTime + totalResponseTime,
+        cost: acc.cost + totalCost,
+        totalCost: acc.totalCost + totalCost,
+        turnCount: acc.turnCount + result.conversation.length,
+      };
+    },
+    { contextAccuracy: 0, responseTime: 0, cost: 0, totalCost: 0, turnCount: 0 }
+  );
+};
 
 const TestExecutionCard: React.FC = () => {
   const { state, data, actions } = useTestRunnerContext();
 
   const { passedCount, failedCount, pendingCount, errorCount } = useMemo(() => {
     if (!data.testCases || !data.testResults) return { passedCount: 0, failedCount: 0, pendingCount: 0, errorCount: 0 };
-    if (data.testCases[0]?.testType === "accuracy") {
-      return data.testResults.reduce(
-        (acc, result) => {
+    const testType = data.testCases[0]?.testType;
+    const totalTests = data.testCases.length;
+    const completedTests = data.testResults.length;
+    const pendingTests = totalTests - completedTests;
+    let passed = 0;
+    let failed = 0;
+
+    data.testResults.forEach((result) => {
+      switch (testType) {
+        case "accuracy":
           const accuracyResult = result as AccuracyTestResult;
-          if (accuracyResult.productAccuracy > 0.4) acc.passedCount++;
-          else acc.failedCount++;
-          return acc;
-        },
-        {
-          passedCount: 0,
-          failedCount: 0,
-          pendingCount: data.testCases.length - data.testResults.length,
-          errorCount: 0,
-        }
-      );
-    } else {
-      return data.testResults.reduce(
-        (acc, result) => {
+          if (accuracyResult.productAccuracy > 0.4) passed++;
+          else failed++;
+          break;
+        case "consistency":
           const consistencyResult = result as ConsistencyTestResult;
-          if (consistencyResult.productConsistency >= 0.4) acc.passedCount++;
-          else acc.failedCount++;
-          return acc;
-        },
-        {
-          passedCount: 0,
-          failedCount: 0,
-          pendingCount: data.testCases.length - data.testResults.length,
-          errorCount: 0,
-        }
-      );
-    }
+          if (consistencyResult.productConsistency >= 0.4) passed++;
+          else failed++;
+          break;
+        case "feature_inference":
+          const featureResult = result as FeatureInferenceTestResult;
+          if (featureResult.filterAccuracy >= 0.4) passed++;
+          else failed++;
+          break;
+        case "context_retention":
+          const contextResult = result as ContextRetentionTestResult;
+          if (contextResult.contextAccuracy >= 0.4) passed++;
+          else failed++;
+          break;
+        case "robustness":
+          const robustnessResult = result as RobustnessTestResult;
+          if (robustnessResult.noiseFiltering >= 0.4) passed++;
+          else failed++;
+          break;
+        case "conversational_flow":
+          const flowResult = result as ConversationalFlowTestResult;
+          if (flowResult.flowCoherence >= 0.4) passed++;
+          else failed++;
+          break;
+        case "defensibility":
+          const defensibilityResult = result as DefensibilityTestResult;
+          if (defensibilityResult.appropriateResponse) passed++;
+          else failed++;
+          break;
+      }
+    });
+
+    return {
+      passedCount: passed,
+      failedCount: failed,
+      pendingCount: pendingTests,
+      errorCount: 0,
+    };
   }, [data.testResults, data.testCases]);
 
-  const calculateCost = (metadata: any) => {
-    if (!metadata) return 0;
-    const inputTokens = metadata?.inputTokenUsage ? Object.values(metadata.inputTokenUsage).reduce((sum, tokens) => sum + tokens, 0) : 0;
-    const outputTokens = metadata?.outputTokenUsage ? Object.values(metadata.outputTokenUsage).reduce((sum, tokens) => sum + tokens, 0) : 0;
-    return inputTokens * 0.0000025 + outputTokens * 0.00001;
-  };
-
-  const { averageMetrics, totalCost } = useMemo(() => {
+  const calculateMetrics = useMemo(() => {
     if (!data.testCases || !data.testResults || data.testResults.length === 0) {
       return {
-        averageMetrics: {
-          averageProductAccuracy: 0,
-          averageFeatureAccuracy: 0,
-          averageProductConsistency: 0,
-          averageOrderConsistency: 0,
-          averageResponseTime: 0,
-          averageCost: 0,
-        },
+        metrics: {},
         totalCost: 0,
       };
     }
 
-    if (data.testCases[0]?.testType === "accuracy") {
-      const sum = data.testResults.reduce(
-        (acc, result) => {
-          const accuracyResult = result as AccuracyTestResult;
-          const metadata = accuracyResult.response.message.metadata;
-          const responseTime = metadata?.timeTaken ? Object.values(metadata.timeTaken).reduce((sum, time) => sum + time, 0) : 0;
-          const cost = calculateCost(metadata);
+    const testType = data.testCases[0]?.testType;
+    let metrics = {};
+    let totalCost = 0;
 
-          return {
-            ...acc,
-            productAccuracy: acc.productAccuracy + accuracyResult.productAccuracy,
-            featureAccuracy: acc.featureAccuracy + accuracyResult.featureAccuracy,
-            totalResponseTime: acc.totalResponseTime + responseTime,
-            totalCost: acc.totalCost + cost,
-          };
-        },
-        {
-          productAccuracy: 0,
-          featureAccuracy: 0,
-          totalResponseTime: 0,
-          totalCost: 0,
-        }
-      );
+    switch (testType) {
+      case "accuracy":
+        const accuracyMetrics = data.testResults.reduce(
+          (acc, result) => {
+            const accuracyResult = result as AccuracyTestResult;
+            const metadata = accuracyResult.response.message.metadata;
+            const responseTime = metadata?.timeTaken ? Object.values(metadata.timeTaken).reduce((sum, time) => sum + time, 0) : 0;
+            const cost = calculateCost(metadata);
+            totalCost += cost;
 
-      return {
-        totalCost: sum.totalCost,
-        averageMetrics: {
-          averageProductAccuracy: sum.productAccuracy / data.testResults.length,
-          averageFeatureAccuracy: sum.featureAccuracy / data.testResults.length,
-          averageResponseTime: sum.totalResponseTime / data.testResults.length,
-          averageCost: sum.totalCost / data.testResults.length,
-        },
-      };
-    } else {
-      const sum = data.testResults.reduce(
-        (acc, result) => {
-          const consistencyResult = result as ConsistencyTestResult;
+            return {
+              productAccuracy: acc.productAccuracy + accuracyResult.productAccuracy,
+              responseTime: acc.responseTime + responseTime,
+              cost: acc.cost + cost,
+            };
+          },
+          { productAccuracy: 0, responseTime: 0, cost: 0 }
+        );
 
-          // Calculate main prompt metrics
-          const mainMetadata = consistencyResult.mainPromptResponse.message.metadata;
-          const mainResponseTime = mainMetadata?.timeTaken ? Object.values(mainMetadata.timeTaken).reduce((sum, time) => sum + time, 0) : 0;
-          const mainCost = calculateCost(mainMetadata);
+        metrics = {
+          "Average Product Accuracy": accuracyMetrics.productAccuracy / data.testResults.length,
+          "Average Response Time": accuracyMetrics.responseTime / data.testResults.length,
+          "Average Cost": accuracyMetrics.cost / data.testResults.length,
+        };
+        break;
 
-          // Calculate variations metrics
-          const variationMetrics = consistencyResult.variationResponses.reduce(
-            (varAcc, response) => {
-              const varMetadata = response.message.metadata;
-              const varResponseTime = varMetadata?.timeTaken ? Object.values(varMetadata.timeTaken).reduce((sum, time) => sum + time, 0) : 0;
-              const varCost = calculateCost(varMetadata);
-              return {
-                responseTime: varAcc.responseTime + varResponseTime,
-                cost: varAcc.cost + varCost,
-              };
-            },
-            { responseTime: 0, cost: 0 }
-          );
+      case "consistency":
+        const consistencyMetrics = data.testResults.reduce(
+          (acc, result) => {
+            const consistencyResult = result as ConsistencyTestResult;
+            const mainMetadata = consistencyResult.mainPromptResponse.message.metadata;
+            const responseTime = calculateTotalResponseTime(consistencyResult);
+            const cost = calculateTotalCost(consistencyResult);
+            totalCost += cost;
 
-          // For each test case, calculate the average response time across all prompts
-          const promptCount = 1 + consistencyResult.variationResponses.length; // main + variations
-          const avgResponseTime = (mainResponseTime + variationMetrics.responseTime) / promptCount;
-          const totalCostForTest = mainCost + variationMetrics.cost;
+            return {
+              productConsistency: acc.productConsistency + consistencyResult.productConsistency,
+              orderConsistency: acc.orderConsistency + consistencyResult.orderConsistency,
+              responseTime: acc.responseTime + responseTime,
+              cost: acc.cost + cost,
+            };
+          },
+          { productConsistency: 0, orderConsistency: 0, responseTime: 0, cost: 0 }
+        );
 
-          return {
-            ...acc,
-            productConsistency: acc.productConsistency + consistencyResult.productConsistency,
-            orderConsistency: acc.orderConsistency + consistencyResult.orderConsistency,
-            totalResponseTime: acc.totalResponseTime + avgResponseTime, // Now storing average per test
-            totalCost: acc.totalCost + totalCostForTest,
-          };
-        },
-        {
-          productConsistency: 0,
-          orderConsistency: 0,
-          totalResponseTime: 0,
-          totalCost: 0,
-        }
-      );
+        metrics = {
+          "Average Product Consistency": consistencyMetrics.productConsistency / data.testResults.length,
+          "Average Order Consistency": consistencyMetrics.orderConsistency / data.testResults.length,
+          "Average Response Time": consistencyMetrics.responseTime / data.testResults.length,
+          "Average Cost": consistencyMetrics.cost / data.testResults.length,
+        };
+        break;
 
-      return {
-        totalCost: sum.totalCost,
-        averageMetrics: {
-          averageProductConsistency: sum.productConsistency / data.testResults.length,
-          averageOrderConsistency: sum.orderConsistency / data.testResults.length,
-          averageResponseTime: sum.totalResponseTime / data.testResults.length, // Now correctly averaged
-          averageCost: sum.totalCost / (data.testResults.length * (1 + (data.testCases[0]?.variations?.length ?? 0))),
-        },
-      };
+      case "feature_inference": {
+        const featureMetrics = calculateFeatureInferenceMetrics(data.testResults as FeatureInferenceTestResult[]);
+        metrics = {
+          "Filter Accuracy": featureMetrics.filterAccuracy / data.testResults.length,
+          "Average Response Time": featureMetrics.responseTime / data.testResults.length,
+          "Average Cost": featureMetrics.cost / data.testResults.length,
+        };
+        totalCost = featureMetrics.totalCost;
+        break;
+      }
+
+      case "context_retention": {
+        const contextMetrics = calculateContextRetentionMetrics(data.testResults as ContextRetentionTestResult[]);
+
+        metrics = {
+          "Context Accuracy": contextMetrics.contextAccuracy / data.testResults.length,
+          "Average Turn Count": contextMetrics.turnCount / data.testResults.length,
+          "Average Response Time": contextMetrics.responseTime / data.testResults.length,
+          "Average Cost per Test": contextMetrics.cost / data.testResults.length,
+        };
+        totalCost = contextMetrics.totalCost;
+        break;
+      }
     }
+
+    return { metrics, totalCost };
   }, [data.testResults, data.testCases]);
 
   const renderControlButton = () => {
@@ -179,6 +274,11 @@ const TestExecutionCard: React.FC = () => {
           </Button>
         );
     }
+  };
+
+  const LoadingState = () => {
+    const isContextRetentionTest = data.testCases?.[0]?.testType === "context_retention";
+    return <div className="text-sm text-muted-foreground">{isContextRetentionTest ? `Processing conversation turn ${data.currentTestIndex + 1}` : "Processing test case..."}</div>;
   };
 
   return (
@@ -214,25 +314,14 @@ const TestExecutionCard: React.FC = () => {
 
         <Separator className="my-4" />
 
-        {data.testCases && data.testCases[0]?.testType === "accuracy" ? (
-          <>
-            <AccuracyItem label="Average Product Accuracy" value={averageMetrics.averageProductAccuracy} />
-            <AccuracyItem label="Average Response Time" value={averageMetrics.averageResponseTime} unit="sec" />
-            <AccuracyItem label="Average Cost" value={averageMetrics.averageCost} unit="$" />
-            <AccuracyItem label="Total Cost" value={totalCost} unit="$" />
-          </>
-        ) : (
-          <>
-            <AccuracyItem label="Average Product Consistency" value={averageMetrics.averageProductConsistency} />
-            <AccuracyItem label="Average Order Consistency" value={averageMetrics.averageOrderConsistency} />
-            <AccuracyItem label="Average Response Time" value={averageMetrics.averageResponseTime} unit="sec" />
-            <AccuracyItem label="Average Cost" value={averageMetrics.averageCost} unit="$" />
-            <AccuracyItem label="Total Cost" value={totalCost} unit="$" />
-          </>
-        )}
+        {Object.entries(calculateMetrics.metrics).map(([label, value]) => (
+          <MetricItem key={label} label={label} value={value} unit={label.toLowerCase().includes("cost") ? "$" : label.toLowerCase().includes("time") ? "sec" : undefined} />
+        ))}
+
+        {calculateMetrics.totalCost > 0 && <MetricItem label="Total Cost" value={calculateMetrics.totalCost} unit="$" />}
       </CardContent>
       <CardFooter>
-        <div className="text-sm text-muted-foreground">Status: {state.testRunnerState}</div>
+        <div className="text-sm text-muted-foreground">{state.testRunnerState === TestRunnerState.Running ? <LoadingState /> : `Status: ${state.testRunnerState}`}</div>
       </CardFooter>
     </Card>
   );
@@ -253,17 +342,31 @@ const StatusItem: React.FC<StatusItemProps> = ({ color, label, count }) => (
   </div>
 );
 
-interface AccuracyItemProps {
+interface MetricItemProps {
   label: string;
   value: number;
   unit?: string;
 }
 
-const AccuracyItem: React.FC<AccuracyItemProps> = ({ label, value, unit }) => (
-  <div className="flex items-center justify-between">
-    <span className="font-medium">{label}:</span>
-    <span className="font-medium">{unit === "$" ? `$${value.toFixed(2)}` : unit === "sec" ? `${value.toFixed(2)} sec` : `${(value * 100).toFixed(2)}%`}</span>
-  </div>
-);
+const MetricItem: React.FC<MetricItemProps> = ({ label, value, unit }) => {
+  const getScoreColor = (value: number) => {
+    if (label.toLowerCase().includes("cost") || label.toLowerCase().includes("time")) {
+      return ""; // No color for cost and time metrics
+    }
+    const score = value * 100;
+    if (score >= 90) return "text-green-600";
+    if (score >= 70) return "text-yellow-600";
+    return "text-red-600";
+  };
+
+  const formattedValue = unit === "$" ? `$${value.toFixed(2)}` : unit === "sec" ? `${value.toFixed(2)} sec` : `${(value * 100).toFixed(2)}%`;
+
+  return (
+    <div className="flex items-center justify-between">
+      <span className="font-medium">{label}:</span>
+      <span className={`font-medium ${getScoreColor(value)}`}>{formattedValue}</span>
+    </div>
+  );
+};
 
 export default TestExecutionCard;

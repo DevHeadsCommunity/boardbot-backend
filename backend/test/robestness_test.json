@@ -1,0 +1,105 @@
+[
+  {
+    "description": "Tests filtering of personal context and timeline information while extracting display and environmental requirements",
+    "prompt": "While I'm planning my vacation next month, I need a board with dual HDMI outputs for my digital signage project that I'll start when I get back. It'll be installed outdoors, so it needs to handle extreme temperatures.",
+    "expected_filters": {
+      "io_count": {
+        "DISPLAY": 2
+      },
+      "operating_temperature_min": "-40°C",
+      "operating_temperature_max": "85°C"
+    }
+  },
+  {
+    "description": "Tests filtering of urgency statements and workplace context while extracting processor and memory requirements",
+    "prompt": "My boss needs this ASAP for a critical project due tomorrow - we're looking for an Intel Core board with at least 32GB RAM support. The whole team is waiting on this and our deadline is super tight.",
+    "expected_filters": {
+      "processor_architecture": "INTEL CORE",
+      "memory": "32.0GB DDR4"
+    }
+  },
+  {
+    "description": "Tests filtering of past experiences and opinion statements while extracting connectivity requirements",
+    "prompt": "I've had terrible experiences with other vendors, they never delivered on time. This time I need a board with WiFi 6 and Bluetooth 5 support. Can't believe how difficult it's been to find something reliable.",
+    "expected_filters": {
+      "wireless": ["WI-FI 6", "BLUETOOTH 5+"]
+    }
+  },
+  {
+    "description": "Tests filtering of budget discussion and market commentary while extracting form factor and storage requirements",
+    "prompt": "The market is really overpriced right now, but we need to proceed anyway. Looking for a COM Express module with NVMe storage. Our budget is tight this quarter, but we might have more flexibility next year.",
+    "expected_filters": {
+      "form_factor": "COM EXPRESS",
+      "onboard_storage": "NVME SSD"
+    }
+  },
+  {
+    "description": "Tests filtering of project background and future plans while extracting environmental and certification requirements",
+    "prompt": "We're expanding our railway infrastructure project across three countries next year. Right now, I need a board that's EN 50155 certified and can handle industrial temperatures. Once this phase is successful, we'll be rolling out to 12 more locations.",
+    "expected_filters": {
+      "certifications": ["EN 50155"],
+      "operating_temperature_min": "-40°C",
+      "operating_temperature_max": "85°C"
+    }
+  },
+  {
+    "description": "Tests filtering of competitor information and market position while extracting specific technical requirements",
+    "prompt": "Our competitors are all using custom solutions, but we've decided to go with COTS. Need a board with quad-core ARM processor and dual Ethernet ports. Their solution costs twice as much but doesn't even have these basic features.",
+    "expected_filters": {
+      "processor_architecture": "ARM",
+      "processor_core_count": 4,
+      "io_count": {
+        "ETHERNET": 2
+      }
+    }
+  },
+  {
+    "description": "Tests filtering of personal opinions and past experiences while extracting OS and memory requirements",
+    "prompt": "I've always preferred Linux for stability, though many disagree. We need a board that supports both Windows and Linux, with at least 64GB RAM support. My last project failed because we didn't have enough memory, what a nightmare that was.",
+    "expected_filters": {
+      "operating_system_bsp": ["WINDOWS", "LINUX"],
+      "memory": "64.0GB DDR4"
+    }
+  },
+  {
+    "description": "Tests filtering of team dynamics and internal processes while extracting interface requirements",
+    "prompt": "The software team keeps arguing about the architecture, but we've finally agreed on the interfaces. Need USB 3.0 and PCIe Gen 4 support. Still waiting for management to approve the overall system design though.",
+    "expected_filters": {
+      "io_count": {
+        "USB 3.0": true,
+        "PCIE 4": true
+      }
+    }
+  },
+  {
+    "description": "Tests filtering of schedule concerns and resource constraints while extracting power and form factor requirements",
+    "prompt": "Our installation team is booked until next quarter, but we need to order this now. Looking for DIN rail mounted devices that accept 24V input. Not sure when we'll actually get to deploy it given our current backlog.",
+    "expected_filters": {
+      "form_factor": "DIN RAIL",
+      "input_voltage": "24.0V"
+    }
+  },
+  {
+    "description": "Tests filtering of customer feedback and market demands while extracting specific processor requirements",
+    "prompt": "Customers have been complaining about our current solution's performance. We need Intel Core i7 processors with at least 8 cores. The market is moving towards higher performance computing, but we're just focusing on this specific requirement for now.",
+    "expected_filters": {
+      "processor_architecture": "INTEL CORE",
+      "processor_core_count": 8
+    }
+  },
+  {
+    "description": "Tests filtering of budget discussions and vendor comparisons while extracting storage and wireless requirements",
+    "prompt": "Other vendors are charging premium prices for basic features, it's ridiculous. We need boards with eMMC storage and WiFi 6 support. Might consider alternate vendors next time if pricing doesn't improve.",
+    "expected_filters": {
+      "onboard_storage": "EMMC",
+      "wireless": "WI-FI 6"
+    }
+  },
+  {
+    "description": "Tests filtering of project delays and internal politics while extracting certification requirements",
+    "prompt": "The project's been delayed three times already due to management changes. We need military-certified boards with CE marking. The stakeholders are getting impatient, but these requirements are non-negotiable.",
+    "expected_filters": {
+      "certifications": ["MIL-STD-810", "CE"]
+    }
+  }
+]

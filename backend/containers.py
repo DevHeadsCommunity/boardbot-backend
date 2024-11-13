@@ -14,8 +14,8 @@ from generators.semantic_router import SemanticRouter
 from generators.clear_intent_agent import ClearIntentAgent
 from generators.vague_intent_agent import VagueIntentAgent
 from feature_extraction import AgenticFeatureExtractor, ConfigSchema
-from services.feature_extraction_service import FeatureExtractionService, BatchFeatureExtractionService
 from feature_extraction.product_data_preprocessor import ProductDataProcessor
+from services.feature_extraction_service import FeatureExtractionService, BatchFeatureExtractionService
 
 
 from config import Config
