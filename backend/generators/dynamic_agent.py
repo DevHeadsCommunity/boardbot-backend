@@ -418,6 +418,7 @@ class DynamicAgent:
             "products": self._prepare_product_data(state),
             "filters": state.get("filters", {}),
             "sort": state.get("sort_context"),
+            "entities": state.get("entities", {}),
             "search_method": state.get("search_method", "semantic"),
         }
 
@@ -496,6 +497,8 @@ class DynamicAgent:
             if sort_context:
                 product[sort_context["field"]] = p.get(sort_context["field"])
             product_data.append(product)
+
+            logger.info(f"===:> Product: {product}")
 
         return product_data
 

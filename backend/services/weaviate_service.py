@@ -268,7 +268,7 @@ class WeaviateService:
             weaviate_filter = None
             if search_params.get("filters"):
                 weaviate_filter = self.query_builder.build_weaviate_filter(search_params["filters"])
-                logger.debug(f"Built Weaviate filter: {weaviate_filter}")
+                logger.info(f"Built Weaviate filter: {weaviate_filter.__dict__ if weaviate_filter else None}")
 
             # Get search parameters
             search_type = search_params.get("search_type", "semantic")

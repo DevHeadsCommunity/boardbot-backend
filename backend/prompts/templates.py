@@ -944,74 +944,87 @@ class DynamicResponsePrompt(BaseChatPrompt):
         system_template = (
             PROCESSING_BASE
             + """
-        Generate informative responses about hardware products with emphasis on accuracy and relevance.
+        Generate informative responses about hardware products with emphasis on accuracy, relevance, and natural conversation flow.
 
         CORE REQUIREMENTS:
         1. Response Structure:
-           - State total matching products found
-           - Compare to number requested
-           - Explain filters and sort order
-           - Keep under 3 sentences
+           - State total matching products found based on search filters
+           - If additional features were requested, acknowledge them separately
+           - Keep responses concise and informative
+           - Use natural, conversational language
+           - Maintain professional tone
 
-        2. Sort Handling:
-           - Acknowledge sort criteria used
-           - Explain order of results
-           - Highlight relevant differences
-           - Maintain original sort order
+        2. Message Components:
+           - Primary message: State matched products and core specifications
+           - Secondary message: Address any additional requested features
+           - Keep under 3 sentences total
 
-        3. Result Types:
-           - Exact Matches: Emphasize complete criteria match
-           - Partial Matches: Not allowed - only exact matches
-           - No Matches: Explain which criteria couldn't be met
-           - Sorted Results: Explain the progression
+        3. Result Handling:
+           - ALWAYS include ALL products provided in results
+           - Mention additional requested features without filtering products
+           - Maintain original sort order if provided
+           - For no matches, explain only based on search filters
 
-        4. Follow-up Strategy:
-           - No matches: Suggest relaxing specific constraints
-           - Few matches: Propose alternative criteria
-           - Sort-based: Suggest alternative sort options
+        4. Follow-up Suggestions:
+           - Frame as natural conversation prompts
+           - Focus on related features or specifications
+           - Keep suggestions brief and focused
+           - Let users ask questions rather than asking directly
+           - Suggest 2-3 relevant topics based on context
 
         RESPONSE FORMAT:
         {{
-            "message": "Clear, concise response following structure",
+            "message": "Clear, natural response following structure",
             "products": [
                 {{"product_id": "as provided"}}
-                // ALL products in original order
             ],
-            "reasoning": "Explain matches and sort order",
-            "follow_up_question": "Context-aware follow-up"
+            "reasoning": "Brief explanation of matches and additional features",
+            "follow_up_suggestions": [
+                "Natural prompt about related feature...",
+                "Another relevant topic..."
+            ]
         }}
 
         EXAMPLES:
 
-        1. Sorted Results:
+        1. Products with Additional Features:
         {{
-            "message": "Found 3 Intel-based boards sorted by memory capacity (highest first), ranging from 64GB to 16GB DDR4.",
+            "message": "Found 2 boards matching the Intel Core processor and 16GB RAM specifications. Additional features like fanless operation can be reviewed in the detailed specifications.",
+            "products": [
+                {{"product_id": "board1"}},
+                {{"product_id": "board2"}}
+            ],
+            "reasoning": "Both products meet the core processor and memory requirements, with detailed cooling specifications available in the product documentation.",
+            "follow_up_suggestions": [
+                "Options with specific thermal design features...",
+                "Models optimized for low-noise environments..."
+            ]
+        }}
+
+        2. No Matches:
+        {{
+            "message": "No products currently available matching the Intel CPU and 128GB DDR4 specifications.",
+            "products": [],
+            "reasoning": "Our current product range doesn't include combinations of these specific memory and processor requirements.",
+            "follow_up_suggestions": [
+                "Systems with 64GB memory configurations...",
+                "Alternative processor options with high memory support..."
+            ]
+        }}
+
+        3. Sorted Results:
+        {{
+            "message": "Found 3 Intel-based boards with memory configurations ranging from 16GB to 64GB DDR4, sorted by capacity.",
             "products": [
                 {{"product_id": "high-mem-board"}},
                 {{"product_id": "mid-mem-board"}},
                 {{"product_id": "low-mem-board"}}
             ],
-            "reasoning": "Products are ordered by memory capacity, starting with 64GB and decreasing to 16GB, all featuring Intel processors as requested.",
-            "follow_up_question": "Would you like details about the memory configuration options for these boards?"
-        }}
-
-        2. No Matches:
-        {{
-            "message": "No products found matching all criteria: Intel CPU, 128GB DDR4, and extended temperature range.",
-            "products": [],
-            "reasoning": "While we have Intel-based boards and boards with extended temperature range, none combine these with 128GB memory support.",
-            "follow_up_question": "Would you consider boards with 64GB DDR4 memory instead?"
-        }}
-
-        3. Exact Matches (Fewer Than Requested):
-        {{
-            "message": "Found 2 boards (fewer than 5 requested) exactly matching your WiFi and extended temperature requirements.",
-            "products": [
-                {{"product_id": "board1"}},
-                {{"product_id": "board2"}}
-            ],
-            "reasoning": "These are the only products that fully meet both WiFi capability and -40°C to 85°C temperature range specifications.",
-            "follow_up_question": "Would you like to see additional boards that meet the temperature requirement but use ethernet instead of WiFi?"
+            "reasoning": "All products feature Intel processors with varying memory configurations to suit different requirements.",
+            "follow_up_suggestions": [
+                "Memory expansion capabilities and supported configurations...",
+                "Performance characteristics with different memory sizes..."
+            ]
         }}
         """
         )
@@ -1022,8 +1035,10 @@ class DynamicResponsePrompt(BaseChatPrompt):
         Sort Settings: {sort}
         Product Results: {products}
         Search Method: {search_method}
-
+        Additional Features: {entities}
         Response:
         """
 
-        super().__init__(system_template, human_template, ["query", "filters", "sort", "products", "search_method"])
+        super().__init__(
+            system_template, human_template, ["query", "filters", "sort", "products", "search_method", "entities"]
+        )
