@@ -70,6 +70,45 @@ class BaseService(ABC):
             logger.error(f"Error deleting object {uuid} from {self.class_name}: {e}")
             raise
 
+    async def get_sorted(
+        self,
+        limit: int = 5,
+        filters: Optional[Filter] = None,
+        sort_by: Optional[str] = None,
+        sort_order: str = "desc",
+        return_properties: Optional[List[str]] = None,
+        include_vector: bool = False,
+    ) -> List[Dict[str, Any]]:
+        """
+        Get objects with sorting capabilities
+
+        Args:
+            sort_order: Either "asc" or "desc" (will be converted to boolean ascending parameter)
+        """
+        try:
+            if return_properties is None:
+                return_properties = self.get_properties()
+
+            sort = None
+            if sort_by:
+                # Convert sort_order string to boolean ascending parameter
+                ascending = sort_order.lower() == "asc"
+                sort = Sort.by_property(sort_by, ascending=ascending)
+
+            results = await self.client.get_objects(
+                self.class_name,
+                filters=filters,
+                limit=limit,
+                sort=sort,
+                return_properties=return_properties,
+                include_vector=include_vector,
+            )
+
+            return results
+        except Exception as e:
+            logger.error(f"Error retrieving sorted objects from {self.class_name}: {e}")
+            return []
+
     async def search(
         self,
         query_text: str,

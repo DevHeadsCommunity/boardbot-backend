@@ -100,6 +100,65 @@ const calculateContextRetentionMetrics = (testResults: ContextRetentionTestResul
   );
 };
 
+// Add new MetricDisplay component at the top level
+interface MetricDisplayProps {
+  metrics: Record<string, number>;
+  totalCost: number;
+}
+
+const MetricDisplay = React.memo(function MetricDisplay({ metrics, totalCost }: MetricDisplayProps) {
+  return (
+    <>
+      {Object.entries(metrics).map(([label, value]) => (
+        <MetricItem
+          key={label}
+          label={label}
+          value={value as number}
+          unit={label.toLowerCase().includes("cost") ? "$" : label.toLowerCase().includes("time") ? "sec" : undefined}
+        />
+      ))}
+      {totalCost > 0 && <MetricItem label="Total Cost" value={totalCost} unit="$" />}
+    </>
+  );
+});
+
+const StatusGrid = React.memo(function StatusGrid({
+  pendingCount,
+  passedCount,
+  failedCount,
+  errorCount,
+}: {
+  pendingCount: number;
+  passedCount: number;
+  failedCount: number;
+  errorCount: number;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-4">
+      <StatusItem color="gray" label="Pending" count={pendingCount} />
+      <StatusItem color="green" label="Passed" count={passedCount} />
+      <StatusItem color="yellow" label="Failed" count={failedCount} />
+      <StatusItem color="red" label="Errors" count={errorCount} />
+    </div>
+  );
+});
+
+const TestStatus = React.memo(function TestStatus({
+  state,
+  isConversationalTest,
+  currentTestIndex,
+}: {
+  state: TestRunnerState;
+  isConversationalTest: boolean;
+  currentTestIndex: number;
+}) {
+  return (
+    <div className="text-sm text-muted-foreground">
+      {state === TestRunnerState.Running ? (isConversationalTest ? `Processing conversation turn ${currentTestIndex + 1}` : "Processing test case...") : `Status: ${state}`}
+    </div>
+  );
+});
+
 const TestExecutionCard: React.FC = () => {
   const { state, data, actions } = useTestRunnerContext();
 
@@ -276,10 +335,9 @@ const TestExecutionCard: React.FC = () => {
     }
   };
 
-  const LoadingState = () => {
-    const isContextRetentionTest = data.testCases?.[0]?.testType === "context_retention";
-    return <div className="text-sm text-muted-foreground">{isContextRetentionTest ? `Processing conversation turn ${data.currentTestIndex + 1}` : "Processing test case..."}</div>;
-  };
+  const isConversationalTest = useMemo(() => {
+    return ["context_retention", "conversational_flow", "defensibility"].includes(data.testCases?.[0]?.testType);
+  }, [data.testCases]);
 
   return (
     <Card>
@@ -304,24 +362,13 @@ const TestExecutionCard: React.FC = () => {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Progress value={data.progress} className="w-full" />
-        <div className="grid grid-cols-2 gap-4">
-          <StatusItem color="gray" label="Pending" count={pendingCount} />
-          <StatusItem color="green" label="Passed" count={passedCount} />
-          <StatusItem color="yellow" label="Failed" count={failedCount} />
-          <StatusItem color="red" label="Errors" count={errorCount} />
-        </div>
-
+        <Progress value={data.progress} className="w-full transition-all duration-300" />
+        <StatusGrid pendingCount={pendingCount} passedCount={passedCount} failedCount={failedCount} errorCount={errorCount} />
         <Separator className="my-4" />
-
-        {Object.entries(calculateMetrics.metrics).map(([label, value]) => (
-          <MetricItem key={label} label={label} value={value} unit={label.toLowerCase().includes("cost") ? "$" : label.toLowerCase().includes("time") ? "sec" : undefined} />
-        ))}
-
-        {calculateMetrics.totalCost > 0 && <MetricItem label="Total Cost" value={calculateMetrics.totalCost} unit="$" />}
+        <MetricDisplay metrics={calculateMetrics.metrics} totalCost={calculateMetrics.totalCost} />
       </CardContent>
       <CardFooter>
-        <div className="text-sm text-muted-foreground">{state.testRunnerState === TestRunnerState.Running ? <LoadingState /> : `Status: ${state.testRunnerState}`}</div>
+        <TestStatus state={state.testRunnerState} isConversationalTest={isConversationalTest} currentTestIndex={data.currentTestIndex} />
       </CardFooter>
     </Card>
   );

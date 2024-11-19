@@ -179,8 +179,13 @@ class PromptManager:
         )
 
     def get_dynamic_response_prompt(
-        self, query: str, products: str, filters: str, search_method: str
+        self, query: str, products: str, filters: str, search_method: str, sort: str
     ) -> Tuple[str, str]:
         return self.get_prompt(
-            "dynamic_response", query=query, products=products, filters=filters, search_method=search_method
+            "dynamic_response",
+            query=query,
+            products=products,
+            filters=filters,
+            search_method=search_method,
+            sort=sort,
         )

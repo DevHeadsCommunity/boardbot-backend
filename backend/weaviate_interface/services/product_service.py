@@ -1,6 +1,7 @@
-from typing import List
+from typing import Any, Dict, List, Optional
 from weaviate_interface.services.base_service import BaseService
 from weaviate_interface.weaviate_client import WeaviateClient
+from weaviate.classes.query import Filter
 
 
 class ProductService(BaseService):
@@ -40,3 +41,48 @@ class ProductService(BaseService):
             "target_applications",
             "duplicate_ids",
         ]
+
+    async def query_products(
+        self,
+        filters: Optional[Dict[str, Any]] = None,
+        sort_field: Optional[str] = None,
+        sort_order: str = "desc",
+        limit: int = 5,
+    ) -> List[Dict[str, Any]]:
+        """
+        Query products with filtering and sorting capabilities.
+
+        Args:
+            filters: Dictionary of field-value pairs for filtering
+            sort_field: Field to sort by
+            sort_order: Sort direction ('asc' or 'desc')
+            limit: Maximum number of results to return
+
+        Returns:
+            List of matching products
+        """
+        try:
+            # Convert filters to Weaviate format
+            weaviate_filter = None
+            if filters:
+                filter_conditions = []
+                for key, value in filters.items():
+                    filter_conditions.append(Filter.by_property(key).equal(value))
+                weaviate_filter = (
+                    Filter.all_of(filter_conditions) if len(filter_conditions) > 1 else filter_conditions[0]
+                )
+
+            # Get sorted results
+            results = await self.get_sorted(
+                limit=limit,
+                filters=weaviate_filter,
+                sort_by=sort_field,
+                sort_order=sort_order,
+                return_properties=self.get_properties(),
+            )
+
+            return results
+
+        except Exception as e:
+            logger.error(f"Error querying products: {e}")
+            raise

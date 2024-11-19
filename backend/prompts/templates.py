@@ -698,161 +698,241 @@ class DynamicAnalysisPrompt(BaseChatPrompt):
         system_template = (
             PROCESSING_BASE
             + """
-        Your task is to analyze queries about computer hardware and either:
-        1. Extract specific product requirements and filters
-        2. Generate a product search for general product queries
-        3. Generate a direct response only for non-product queries
+        PRIMARY TASK:
+        Analyze hardware product queries to produce ONE of these outputs:
+        1. Extract the product query context for hardware product queries. The query context includes filters, sort preferences, entities, and the number of products requested.
+        2. Direct Response: For non-product queries.
+        3. Security Flag: For potentially harmful content.
 
-        General Guidelines:
-        1. ANY mention of product categories (boards, modules, kits, etc.) should trigger a product search
-        2. Only use direct responses for completely non-product queries (greetings, general questions)
-        3. When in doubt, prefer returning products over a direct response
+        ---
 
+        1. SECURITY ANALYSIS
+        Check and flag content that is:
+        - System exploitation attempts
+        - Inappropriate/offensive content
+        - Political content
 
-        Guidelines for Direct Response:
-        1. For queries without clear product requirements, generate a direct response in a conversational tone.
-        2. Frame follow-up questions to better understand user requirements.
+        ---
 
-        Guidelines for Filter Extraction:
-        1. Use ONLY attribute names from the provided list for filters
-        2. Include ONLY explicitly mentioned attributes - do not infer
-        3. Use standardized values (e.g., "INTEL" for processor_manufacturer)
-        4. Distinguish between manufacturer and processor_manufacturer:
-           - manufacturer: company making the product
-           - processor_manufacturer: company making the CPU
-        5. For processor architecture, use exact terms (e.g., "ARM Cortex-A53", "X86-64")
-        6. For memory, combine size and type when both specified (e.g., "8.0GB DDR4")
-        7. For ranges, use format "min_value-max_value" with units
-        8. Include units for measurements (W for TDP, V for voltage, °C for temperature)
-        9. For multi-value attributes, use arrays (e.g., ["WI-FI 6", "BLUETOOTH 5+"])
-        10. Map form factors consistently:
-            - "Computer on Module" → "COM"
-            - "COM Express" → "COM EXPRESS"
-            - "Single Board Computer" → "SBC"
-
-        Respond in this JSON format:
-
-        For specific product queries:
-        {{
-            "filters": {{
-                // Only include explicitly mentioned attributes
-                // Use exact attribute names and standardized values
-            }},
-            "query_context": {{
-                "num_products_requested": <number>, // Default to 5 if not specified
-                "sort_preference": null
-            }}
-        }}
-
-        For general product queries:
-        {{
-            "query_context": {{
-                "num_products_requested": 5, // Default to 5 if not specified
-                "sort_preference": null
-            }}
-        }}
-
+        2. DIRECT RESPONSE
         For non-product queries:
+        - Provide a conversational response.
+        - Include follow-up suggestions that prompt natural user questions.
+        - Keep suggestions brief and focused.
+        - Frame suggestions to let users ask questions rather than the system asking directly.
+        - Focus on related features, specifications, or use cases.
+
+        Examples of good follow-up suggestions:
+        - "Options with additional connectivity features like Wi-Fi or Bluetooth..."
+        - "Models with extended temperature ranges for industrial use..."
+        - "Variants with higher processing power or memory..."
+        - "Alternative form factors for different integration needs..."
+
+        ---
+
+        3. PRODUCT QUERY CONTEXT EXTRACTION
+        A. Filter Extraction Rules:
+        - Use ONLY exact attribute names from the provided list.
+        - Extract explicit criteria only—no inferences.
+        - Standardize values based on examples in the attribute list:
+          • Strings: UPPERCASE
+          • Power: ">=15.0W", "<=45.0W", "25.0W-35.0W"
+          • Temperature: ">=-40°C", "<=85°C", "-20°C-70°C"
+          • Memory: ">=16.0GB DDR4", "<=32.0GB DDR4", "8.0GB-64.0GB DDR4"
+        - Filter Formats:
+          • Lower bound: ">=value"
+          • Upper bound: "<=value"
+          • Explicit range: "min_value-max_value"
+        - Handle inconsistent data by extracting numerical values and units separately when possible.
+        - Exclude features not listed in the attribute descriptions.
+
+        B. Form Factor Standards:
+        - "Computer on Module" → "COM"
+        - "COM Express" → "COM EXPRESS"
+        - "Single Board Computer" or "SBC" → "SBC"
+        - "Development Kit" → "DEVELOPMENT BOARD"
+
+        C. Manufacturer Distinction:
+        - `manufacturer`: product maker
+        - `processor_manufacturer`: CPU maker
+
+        D. Sort Detection:
+        Memory:
+        - Highest/Most → {{"field": "memory", "order": "desc"}}
+        - Lowest/Least → {{"field": "memory", "order": "asc"}}
+
+        Processing:
+        - Fastest/Most powerful → {{"field": "processor_core_count", "order": "desc"}}
+        - Most efficient → {{"field": "processor_tdp", "order": "asc"}}
+
+        Temperature:
+        - Widest range → {{"field": "operating_temperature_max", "order": "desc"}}
+
+        ---
+
+        E. Context Preservation:
+        - Extract filters based on the entire chat history.
+        - Exclude filters from previous chats if they are irrelevant to the current query.
+
+        ---
+
+        F. Entity Extraction:
+        - Identify relevant contextual entities from the query.
+        - Allow the LLM to autonomously determine entity groups and values.
+        - Maintain high consistency in entity extraction across queries.
+
+        ---
+
+        RESPONSE FORMATS:
+
+        1. Product Query Context Response:
+        ```json
+        {{
+            "query_context": {{
+                "filters": {{
+                    "attribute_name": "STANDARDIZED_VALUE" // Use only provided attribute names; return empty if no filters
+                }},
+                "sort": {{                    // Optional—based on detected sort preference; return empty if no sort
+                    "field": "attribute_name",
+                    "order": "asc" | "desc"
+                }},
+                "entities": {{                // Contextual information—LLM determines groups and values; return empty if no entities
+                    "entity_group1": ["value1", "value2"],
+                    "entity_group2": ["value3"]
+                }},
+                "num_products_requested": <number>  // Default: 5 if not specified
+            }}
+        }}
+        ```
+
+        2. Direct Response:
+        ```json
         {{
             "direct_response": {{
-                "message": "Your conversational response",
-                "follow_up_question": "A relevant follow-up question"
+                "message": "Conversational response",
+                "follow_up_suggestions": [
+                    "Options with additional connectivity features like Wi-Fi or Bluetooth...",
+                    "Models with extended temperature ranges for industrial use...",
+                    "Variants with higher processing power or memory...",
+                    "Alternative form factors for different integration needs..."
+                ]
             }}
         }}
+        ```
 
-
-        Examples for Filter Extraction:
-
-        Query: "Find COM Express modules with Intel Core i7 CPUs and at least 16GB DDR4 RAM"
-        Response:
+        3. Security Flag:
+        ```json
         {{
-            "filters": {{
-                "form_factor": "COM EXPRESS",
-                "processor_manufacturer": "INTEL",
-                "processor_architecture": "X86-64",
-                "memory": "16.0GB-64.0GB DDR4"
-            }},
-            "query_context": {{
-                "num_products_requested": 5,
-                "sort_preference": null
-            }}
+            "security_flags": ["exploit" | "inappropriate" | "political"]
         }}
+        ```
 
-        Query: "Show FPGA-based products for embedded development with 64GB eMMC storage and operating temperature range from -40°C to 85°C"
-        Response:
-        {{
-            "filters": {{
-                "processor_architecture": "FPGA",
-                "form_factor": "DEVELOPMENT BOARD",
-                "onboard_storage": "64.0GB EMMC",
-                "operating_temperature_min": "-40°C",
-                "operating_temperature_max": "85°C"
-            }},
-            "query_context": {{
-                "num_products_requested": 5,
-                "sort_preference": null
-            }}
-        }}
+        ---
 
-        Query: "List Single Board Computers, manufactured by Broadcom Corporation, featuring ARM processor architecture, with RAM more than 256MB"
-        Response:
-        {{
-            "filters": {{
-                "manufacturer": "BROADCOM",
-                "form_factor": "SBC",
-                "processor_architecture": "ARM",
-                "memory": "0.256GB-64.0GB"
-            }},
-            "query_context": {{
-                "num_products_requested": 5,
-                "sort_preference": null
-            }}
-        }}
+        EXAMPLE SCENARIOS:
 
-        Query: "Show products with Broadcom processors, ARM architecture, and at least 1GB of RAM"
-        Response:
-        {{
-            "filters": {{
-                "processor_manufacturer": "BROADCOM",
-                "processor_architecture": "ARM",
-                "memory": "1.0GB-64.0GB"
-            }},
-            "query_context": {{
-                "num_products_requested": 5,
-                "sort_preference": null
-            }}
-        }}
-
-        Examples for general product queries:
-
-        Query: "Tell me about development boards"
-        Response:
+        1. **Product Query with Lower Bound Filter and Sort:**
+        Input: "List the top 5 SBCs with at least 8GB RAM sorted by highest processor core count."
+        ```json
         {{
             "query_context": {{
-                "num_products_requested": 5,
-                "sort_preference": null
+                "filters": {{
+                    "form_factor": "SBC",
+                    "memory": ">=8.0GB"
+                }},
+                "sort": {{
+                    "field": "processor_core_count",
+                    "order": "desc"
+                }},
+                "entities": {{}},
+                "num_products_requested": 5
             }}
         }}
+        ```
 
-        Examples for Non-Product Queries:
+        2. **Product Query with Upper Bound Filter:**
+        Input: "Find development boards under $200 with power consumption less than or equal to 10W."
+        ```json
+        {{
+            "query_context": {{
+                "filters": {{
+                    "form_factor": "DEVELOPMENT BOARD",
+                    "price": "<=200",
+                    "processor_tdp": "<=10.0W"
+                }},
+                "sort": {{}},
+                "entities": {{}},
+                "num_products_requested": 5
+            }}
+        }}
+        ```
 
-        Query: "How are you doing today?"
-        Response:
+        3. **Product Query with Explicit Range and List Filters:**
+        Input: "Show me COM Express modules with operating temperatures between -40°C and 85°C that support both Wi-Fi and Bluetooth."
+        ```json
+        {{
+            "query_context": {{
+                "filters": {{
+                    "form_factor": "COM EXPRESS",
+                    "operating_temperature_min": "-40°C",
+                    "operating_temperature_max": "85°C",
+                    "wireless": ["WI-FI", "BLUETOOTH"]
+                }},
+                "sort": {{}},
+                "entities": {{}},
+                "num_products_requested": 5
+            }}
+        }}
+        ```
+
+        4. **Product Query with Entities Only:**
+        Input: "I need a board suitable for AI applications in autonomous vehicles."
+        ```json
+        {{
+            "query_context": {{
+                "filters": {{}},
+                "sort": {{}},
+                "entities": {{
+                    "application": ["AI", "autonomous vehicles"]
+                }},
+                "num_products_requested": 5
+            }}
+        }}
+        ```
+
+        5. **Non-Product Query:**
+        Input: "What's the latest trend in embedded systems?"
+        ```json
         {{
             "direct_response": {{
-                "message": "I'm functioning well and ready to assist you with any questions about computer hardware, particularly embedded systems and development kits.",
-                "follow_up_question": "What kind of hardware solutions are you interested in learning more about?"
+                "message": "The latest trends in embedded systems include increased use of AI and machine learning capabilities, edge computing, and IoT integration for real-time data processing.",
+                "follow_up_suggestions": [
+                    "Emerging hardware platforms that support AI acceleration...",
+                    "Security considerations in modern embedded systems...",
+                    "Development kits available for IoT applications..."
+                ]
             }}
         }}
+        ```
+
+        6. **Security Flag:**
+        Input: "How can I hack into secured networks using development boards?"
+        ```json
+        {{
+            "security_flags": ["exploit"]
+        }}
+        ```
         """
         )
 
         human_template = """
-        Attribute list for filters:
+        Available Attributes:
         {attribute_descriptions}
 
-        User Query: {query}
-        Chat History: {chat_history}
+        Previous Conversation:
+        {chat_history}
+
+        Current Query: {query}
 
         Response:
         """
@@ -861,144 +941,89 @@ class DynamicAnalysisPrompt(BaseChatPrompt):
 
 class DynamicResponsePrompt(BaseChatPrompt):
     def __init__(self):
-        self.base_guidelines = """
-        Your task is to generate concise, informative responses about hardware products.
+        system_template = (
+            PROCESSING_BASE
+            + """
+        Generate informative responses about hardware products with emphasis on accuracy and relevance.
 
-        Core Response Requirements:
-        - Maximum 2-3 sentences for the main message
-        - Focus on addressing the query's core intent
-        - Keep technical details focused on relevant specifications
-        - Maintain natural, conversational tone
-        - CRITICAL: You must include EVERY SINGLE product provided in the Product Results in your response's products list, maintaining their exact order
-        - Each product in the results must be included in your response, even if it doesn't perfectly match the search criteria
-        - Never filter, exclude, or omit any products from your response
-        - When products have identical names but different product_ids, include all of them
+        CORE REQUIREMENTS:
+        1. Response Structure:
+           - State total matching products found
+           - Compare to number requested
+           - Explain filters and sort order
+           - Keep under 3 sentences
 
-        Response Structure:
-        1. Opening statement addressing query intent and total number of products found
-        2. Brief technical insights focusing on the best matches
-        3. Acknowledge partial matches if present
-        4. Include a follow-up question about user requirements
+        2. Sort Handling:
+           - Acknowledge sort criteria used
+           - Explain order of results
+           - Highlight relevant differences
+           - Maintain original sort order
 
-        Technical Details Guidelines:
-        - Only mention specs relevant to the query
-        - Use standardized units and terminology
-        - Prioritize user-specified requirements
-        - When discussing multiple similar products, focus on key differentiators
+        3. Result Types:
+           - Exact Matches: Emphasize complete criteria match
+           - Partial Matches: Not allowed - only exact matches
+           - No Matches: Explain which criteria couldn't be met
+           - Sorted Results: Explain the progression
+
+        4. Follow-up Strategy:
+           - No matches: Suggest relaxing specific constraints
+           - Few matches: Propose alternative criteria
+           - Sort-based: Suggest alternative sort options
+
+        RESPONSE FORMAT:
+        {{
+            "message": "Clear, concise response following structure",
+            "products": [
+                {{"product_id": "as provided"}}
+                // ALL products in original order
+            ],
+            "reasoning": "Explain matches and sort order",
+            "follow_up_question": "Context-aware follow-up"
+        }}
+
+        EXAMPLES:
+
+        1. Sorted Results:
+        {{
+            "message": "Found 3 Intel-based boards sorted by memory capacity (highest first), ranging from 64GB to 16GB DDR4.",
+            "products": [
+                {{"product_id": "high-mem-board"}},
+                {{"product_id": "mid-mem-board"}},
+                {{"product_id": "low-mem-board"}}
+            ],
+            "reasoning": "Products are ordered by memory capacity, starting with 64GB and decreasing to 16GB, all featuring Intel processors as requested.",
+            "follow_up_question": "Would you like details about the memory configuration options for these boards?"
+        }}
+
+        2. No Matches:
+        {{
+            "message": "No products found matching all criteria: Intel CPU, 128GB DDR4, and extended temperature range.",
+            "products": [],
+            "reasoning": "While we have Intel-based boards and boards with extended temperature range, none combine these with 128GB memory support.",
+            "follow_up_question": "Would you consider boards with 64GB DDR4 memory instead?"
+        }}
+
+        3. Exact Matches (Fewer Than Requested):
+        {{
+            "message": "Found 2 boards (fewer than 5 requested) exactly matching your WiFi and extended temperature requirements.",
+            "products": [
+                {{"product_id": "board1"}},
+                {{"product_id": "board2"}}
+            ],
+            "reasoning": "These are the only products that fully meet both WiFi capability and -40°C to 85°C temperature range specifications.",
+            "follow_up_question": "Would you like to see additional boards that meet the temperature requirement but use ethernet instead of WiFi?"
+        }}
         """
+        )
 
-        self.search_guidelines = {
-            "filtered": {
-                "focus": "Exact technical requirement matches",
-                "key_points": [
-                    "Start with total number of products found",
-                    "Lead with products that match specified requirements",
-                    "Acknowledge products that partially match requirements",
-                    "Include ALL products in the response, even those with minimal relevance",
-                ],
-                "example": """{{
-                    "message": "Found 5 boards in total, with 2 fully matching your Intel CPU and DDR4 requirements, and 3 offering alternative configurations that might interest you.",
-                    "products": [
-                        // MUST include ALL products from Product Results in the same order
-                        {{"product_id": "product1"}},
-                        {{"product_id": "product2"}},
-                        {{"product_id": "product3"}},
-                        {{"product_id": "product4"}},
-                        {{"product_id": "product5"}}
-                    ],
-                    "reasoning": "Listed all available products, with product1 and product2 being exact matches for your requirements, while the others offer different specifications that might be suitable alternatives.",
-                    "follow_up_question": "Would you like more details about specific features of any of these boards?"
-                }}""",
-            },
-            "semantic": {
-                "focus": "Category and capability overview",
-                "key_points": [
-                    "Start with total number of products found",
-                    "Highlight range of capabilities across all products",
-                    "Emphasize distinct features across selection",
-                    "Include ALL products in the response",
-                ],
-                "example": """{{
-                    "message": "Found 5 development boards in total, ranging from compact ARM solutions to full-featured x86 platforms, offering diverse connectivity options.",
-                    "products": [
-                        // MUST include ALL products from Product Results in the same order
-                        {{"product_id": "product1"}},
-                        {{"product_id": "product2"}},
-                        {{"product_id": "product3"}},
-                        {{"product_id": "product4"}},
-                        {{"product_id": "product5"}}
-                    ],
-                    "reasoning": "Listed all available products, showcasing the full range of architectures and capabilities in our catalog.",
-                    "follow_up_question": "Which processor architecture interests you most?"
-                }}""",
-            },
-            "hybrid": {
-                "focus": "Balanced exact and similar matches",
-                "key_points": [
-                    "Start with total number of products found",
-                    "Present exact matches first",
-                    "Include relevant alternatives",
-                    "Include ALL products in the response",
-                ],
-                "example": """{{
-                    "message": "Found 5 boards in total: 2 exactly matching your specifications, plus 3 alternatives with complementary features.",
-                    "products": [
-                        // MUST include ALL products from Product Results in the same order
-                        {{"product_id": "product1"}},
-                        {{"product_id": "product2"}},
-                        {{"product_id": "product3"}},
-                        {{"product_id": "product4"}},
-                        {{"product_id": "product5"}}
-                    ],
-                    "reasoning": "Listed all available products, combining exact requirement matches with relevant alternatives that offer additional features.",
-                    "follow_up_question": "Would you like to explore the additional features of the alternative options?"
-                }}""",
-            },
-        }
-
-        # Define templates
         human_template = """
         User Query: {query}
         Applied Filters: {filters}
+        Sort Settings: {sort}
         Product Results: {products}
+        Search Method: {search_method}
 
         Response:
         """
 
-        # Initialize with default template
-        super().__init__(
-            self._build_system_template("semantic"), human_template, ["query", "filters", "products", "search_method"]
-        )
-
-    def _build_system_template(self, search_method: str) -> str:
-        """Build the system template for a specific search method."""
-        method = self.search_guidelines.get(search_method, self.search_guidelines["semantic"])
-
-        template = f"""{USER_FACING_BASE}
-        {self.base_guidelines}
-
-        Current Search Context: {method['focus']}
-
-        Response Priorities:
-        {self._format_list(method['key_points'])}
-
-        Expected Response Format:
-        {method['example']}
-
-        Remember:
-        - Keep responses focused and concise
-        - Maintain technical accuracy
-        - Use conversational but professional tone
-        - Address core user needs first
-        """
-        return template
-
-    def _format_list(self, items: List[str]) -> str:
-        """Format a list of items as bullet points."""
-        return "\n".join(f"- {item}" for item in items)
-
-    def format(self, **kwargs: Any) -> List[Dict[str, str]]:
-        """Override format to use the appropriate template based on search method."""
-        search_method = kwargs.get("search_method", "semantic")
-        self.template.messages[0].prompt.template = self._build_system_template(search_method)
-        return super().format(**kwargs)
+        super().__init__(system_template, human_template, ["query", "filters", "sort", "products", "search_method"])

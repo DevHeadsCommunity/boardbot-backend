@@ -22,6 +22,8 @@ export enum TestRunnerState {
   Evaluating = "Evaluating",
   Disconnecting = "Disconnecting",
   SendingConversationTurn = "SendingConversationTurn",
+  EvaluatingTurn = "EvaluatingTurn",
+  Processing = "Processing",
 }
 
 const stateMap: Record<string, TestRunnerState> = {
@@ -33,6 +35,8 @@ const stateMap: Record<string, TestRunnerState> = {
   "running.evaluatingResult": TestRunnerState.Evaluating,
   "running.evaluatingResults": TestRunnerState.Evaluating,
   disconnecting: TestRunnerState.Disconnecting,
+  "running.checkingConversation": TestRunnerState.EvaluatingTurn,
+  "running.processing": TestRunnerState.Processing,
 };
 
 type TestRunnerAction = { type: "user.startTest" } | { type: "user.stopTest" } | { type: "user.pauseTest" } | { type: "user.continueTest" };
@@ -81,6 +85,8 @@ export const useTestRunnerContext = () => {
       testResults: useSelector(testRunnerActorRef, (state) => state?.context.testResults),
       currentTestIndex: useSelector(testRunnerActorRef, (state) => state?.context.currentTestIndex),
       progress: useSelector(testRunnerActorRef, (state) => state?.context.progress),
+      conversation: useSelector(testRunnerActorRef, (state) => state?.context.conversation),
+      conversationIndex: useSelector(testRunnerActorRef, (state) => state?.context.conversationIndex),
     },
     actions: {
       startTest: () => testRunnerDispatch({ type: "user.startTest" }),
