@@ -1,6 +1,9 @@
+from dataclasses import dataclass
+from enum import Enum
 import json
 import logging
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional, Tuple, TypedDict, Union
+from services.utils.filter_parser import QueryBuilder
 from weaviate_interface import WeaviateInterface, route_descriptions
 from feature_extraction.product_data_preprocessor import ProductDataProcessor
 from weaviate.classes.query import Filter
@@ -9,12 +12,34 @@ from weaviate.classes.config import Property, DataType
 logger = logging.getLogger(__name__)
 
 
+class SortOrder(str, Enum):
+    ASC = "asc"
+    DESC = "desc"
+
+
+@dataclass
+class SortConfig:
+    field: str
+    order: SortOrder
+    weight: float = 1.0  # For multi-sort scenarios
+
+
+class SearchParams(TypedDict, total=False):
+    query: Optional[str]
+    filters: Optional[Dict[str, Any]]
+    sort: Optional[Union[SortConfig, List[SortConfig]]]
+    limit: int
+    offset: int
+    search_type: str
+
+
 class WeaviateService:
 
     def __init__(self, openai_key: str, weaviate_url: str, product_data_preprocessor: ProductDataProcessor):
         self.connected = False
         self.wi = WeaviateInterface(weaviate_url, openai_key)
         self.data_processor = product_data_preprocessor
+        self.query_builder = QueryBuilder()
 
     async def __aenter__(self):
         await self.connect()
@@ -92,37 +117,6 @@ class WeaviateService:
             return [(route["route"], route["certainty"]) for route in routes]
         except Exception as e:
             logger.error(f"Error searching routes: {e}", exc_info=True)
-            raise
-
-    async def search_products(
-        self, query: str, limit: int = 5, filters: Optional[Dict[str, Any]] = None, search_type: str = "semantic"
-    ) -> List[Tuple[Dict[str, Any], float]]:
-        try:
-            weaviate_filter = None
-            if filters:
-                filter_conditions = []
-                for key, value in filters.items():
-                    filter_conditions.append(Filter.by_property(key).equal(value))
-                weaviate_filter = (
-                    Filter.all_of(filter_conditions) if len(filter_conditions) > 1 else filter_conditions[0]
-                )
-
-            if search_type == "semantic":
-                results = await self.wi.product_service.search(query_text=query, limit=limit, filters=weaviate_filter)
-            elif search_type == "keyword":
-                results = await self.wi.product_service.keyword_search(
-                    query_text=query, limit=limit, filters=weaviate_filter
-                )
-            elif search_type == "hybrid":
-                results = await self.wi.product_service.hybrid_search(
-                    query_text=query, limit=limit, filters=weaviate_filter
-                )
-            else:
-                raise ValueError(f"Invalid search type: {search_type}")
-
-            return results
-        except Exception as e:
-            logger.error(f"Error searching products: {e}", exc_info=True)
             raise
 
     async def get_all_products(self) -> List[Dict[str, Any]]:
@@ -264,3 +258,167 @@ class WeaviateService:
         except Exception as e:
             logger.error(f"Error deleting product data for {product_id}: {e}", exc_info=True)
             raise
+
+    async def search_products(self, search_params: SearchParams) -> List[Dict[str, Any]]:
+        """
+        Unified search function handling all search scenarios.
+        """
+        try:
+            # Build Weaviate filter from filter dictionary
+            weaviate_filter = None
+            if search_params.get("filters"):
+                weaviate_filter = self.query_builder.build_weaviate_filter(search_params["filters"])
+                logger.info(f"Built Weaviate filter: {weaviate_filter.__dict__ if weaviate_filter else None}")
+
+            # Get search parameters
+            search_type = search_params.get("search_type", "semantic")
+            limit = search_params.get("limit", 5)
+            query = search_params.get("query")
+
+            # Get sort configuration
+            sort_configs = self._normalize_sort_config(search_params.get("sort"))
+
+            # If no query is provided for semantic/hybrid search, fall back to filtered
+            if not query and search_type in ("semantic", "hybrid"):
+                logger.warning(f"No query provided for {search_type} search, falling back to filtered search")
+                search_type = "filtered"
+
+            # Get properties to return
+            return_properties = self.wi.product_service.get_properties()
+
+            # Execute search based on type
+            if search_type == "semantic":
+                results = await self.wi.product_service.semantic_search(
+                    query_text=query, limit=limit, filters=weaviate_filter, return_properties=return_properties
+                )
+            elif search_type == "hybrid":
+                results = await self.wi.product_service.hybrid_search(
+                    query_text=query, limit=limit, filters=weaviate_filter, return_properties=return_properties
+                )
+            else:
+                # Direct filtered query with sorting
+                results = await self._execute_sorted_query(
+                    filters=weaviate_filter,
+                    sort_configs=sort_configs,
+                    limit=limit,
+                )
+
+            # Post-process results
+            processed_results = self._post_process_results(results, sort_configs)
+
+            # Add search metadata
+            for result in processed_results:
+                result["_search_metadata"] = {
+                    "search_type": search_type,
+                    "applied_filters": search_params.get("filters", {}),
+                    "sort_config": (
+                        [{"field": sc.field, "order": sc.order.value, "weight": sc.weight} for sc in sort_configs]
+                        if sort_configs
+                        else None
+                    ),
+                }
+
+            return processed_results
+
+        except Exception as e:
+            logger.error(f"Error in search_products: {str(e)}", exc_info=True)
+            raise
+
+    async def _execute_sorted_query(
+        self,
+        filters: Optional[Filter] = None,  # Updated type hint to Filter
+        sort_configs: Optional[List[SortConfig]] = None,
+        limit: int = 5,
+    ) -> List[Dict[str, Any]]:
+        """Execute query with sorting capabilities."""
+        try:
+            return_properties = self.wi.product_service.get_properties()
+
+            if not sort_configs:
+                return await self.wi.product_service.get_all(
+                    limit=limit, filters=filters, return_properties=return_properties
+                )
+
+            # For single sort condition
+            if len(sort_configs) == 1:
+                sort_config = sort_configs[0]
+                return await self.wi.product_service.get_sorted(
+                    filters=filters,
+                    sort_by=sort_config.field,
+                    sort_order=sort_config.order.value,
+                    limit=limit,
+                    return_properties=return_properties,
+                )
+
+            # For multiple sort conditions, fetch extra results to ensure accurate sorting
+            fetch_limit = min(limit * 2, 100)
+            results = await self.wi.product_service.get_all(
+                limit=fetch_limit, filters=filters, return_properties=return_properties
+            )
+
+            # Apply multiple sorts and return requested limit
+            sorted_results = self._apply_multiple_sorts(results, sort_configs)
+            return sorted_results[:limit]
+
+        except Exception as e:
+            logger.error(f"Error in _execute_sorted_query: {str(e)}", exc_info=True)
+            raise
+
+    def _normalize_sort_config(
+        self, sort_config: Optional[Union[SortConfig, List[SortConfig], Dict[str, Any]]]
+    ) -> List[SortConfig]:
+        """Normalizes various sort config input formats into a list of SortConfig objects"""
+        if not sort_config:
+            return []
+
+        if isinstance(sort_config, SortConfig):
+            return [sort_config]
+
+        if isinstance(sort_config, dict):
+            # Handle legacy format {"field": "...", "order": "..."}
+            return [SortConfig(field=sort_config["field"], order=SortOrder(sort_config["order"].lower()), weight=1.0)]
+
+        if isinstance(sort_config, list):
+            return [
+                (
+                    conf
+                    if isinstance(conf, SortConfig)
+                    else SortConfig(
+                        field=conf["field"], order=SortOrder(conf["order"].lower()), weight=conf.get("weight", 1.0)
+                    )
+                )
+                for conf in sort_config
+            ]
+
+        raise ValueError(f"Invalid sort configuration format: {sort_config}")
+
+    def _apply_multiple_sorts(
+        self, results: List[Dict[str, Any]], sort_configs: List[SortConfig]
+    ) -> List[Dict[str, Any]]:
+        """Applies multiple sort conditions with weights"""
+
+        def sort_key(item):
+            # Create a tuple of weighted values for sorting
+            return tuple(
+                (
+                    config.weight * float(item.get(config.field, 0))
+                    if config.order == SortOrder.ASC
+                    else -config.weight * float(item.get(config.field, 0))
+                )
+                for config in sort_configs
+            )
+
+        return sorted(results, key=sort_key)
+
+    def _post_process_results(
+        self, results: List[Dict[str, Any]], sort_configs: List[SortConfig]
+    ) -> List[Dict[str, Any]]:
+        """Post-process results to include sort-related metadata"""
+        if not results:
+            return []
+
+        # Add sorting metadata to help with response generation
+        for result in results:
+            result["_sort_values"] = {config.field: result.get(config.field) for config in sort_configs}
+
+        return results

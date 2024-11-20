@@ -92,7 +92,7 @@ class ClearIntentAgent:
 
         # Perform hybrid search with all filters
         initial_results = await self.weaviate_service.search_products(
-            query=filter_query, limit=limit * 2, filters=filters, search_type="hybrid"
+            {"query": filter_query, "filters": filters, "limit": limit * 2, "search_type": "hybrid"}
         )
 
         for result in initial_results:
@@ -104,7 +104,7 @@ class ClearIntentAgent:
         if len(unique_results) < limit:
             for key, value in filters.items():
                 partial_results = await self.weaviate_service.search_products(
-                    query=f"{key}:{value}", limit=limit, filters={key: value}, search_type="hybrid"
+                    {"query": f"{key}:{value}", "filters": {key: value}, "limit": limit, "search_type": "hybrid"}
                 )
                 for result in partial_results:
                     if result["product_id"] not in unique_results:

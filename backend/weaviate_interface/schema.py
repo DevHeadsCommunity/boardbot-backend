@@ -96,7 +96,7 @@ SCHEMA = {
         },
         {
             "class": "Product",
-            "description": "A class representing products.",
+            "description": "A class representing hardware products with enhanced sorting capabilities.",
             "properties": [
                 Property(
                     name="product_id",
@@ -104,6 +104,7 @@ SCHEMA = {
                     data_type=DataType.TEXT,
                     index_filterable=True,
                     index_searchable=True,
+                    index_sortable=True,
                 ),
                 Property(
                     name="name",
@@ -146,6 +147,7 @@ SCHEMA = {
                     data_type=DataType.TEXT,
                     index_filterable=True,
                     index_searchable=True,
+                    index_sortable=True,
                 ),
                 Property(
                     name="processor_manufacturer",
@@ -158,15 +160,17 @@ SCHEMA = {
                     name="processor_tdp",
                     description="The Thermal Design Power of the processor.",
                     data_type=DataType.TEXT,
-                    index_filterable=False,
+                    index_filterable=True,
                     index_searchable=True,
+                    index_sortable=True,
                 ),
                 Property(
                     name="memory",
                     description="The size and type of RAM in the product.",
                     data_type=DataType.TEXT,
-                    index_filterable=False,
+                    index_filterable=True,
                     index_searchable=True,
+                    index_sortable=True,
                 ),
                 Property(
                     name="onboard_storage",

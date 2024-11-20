@@ -7,6 +7,7 @@ import {
   AccuracyTestResult,
   ConsistencyTestResult,
   ContextRetentionTestResult,
+  DefensibilityTestResult,
   FeatureInferenceTestResult,
   Product,
   ResponseMessage,
