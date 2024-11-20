@@ -15,71 +15,216 @@ class ValueTypes(Enum):
 
 class FeatureValues:
     # Memory and Storage sizes (in GB)
-    MEMORY_STORAGE_VALUES = {0.1, 0.2, 0.5, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024}
+    MEMORY_STORAGE_VALUES = {
+        0.1,
+        0.2,
+        0.5,
+        1,
+        1.0,
+        2,
+        2.0,
+        4,
+        4.0,
+        8,
+        8.0,
+        16,
+        16.0,
+        32,
+        32.0,
+        64,
+        64.0,
+        128,
+        128.0,
+        256,
+        256.0,
+        320,
+        320.0,
+        512,
+        512.0,
+        1024,
+        1024.0,
+    }
 
     # Voltage values (in V)
-    VOLTAGE_VALUES = {1, 2, 3, 4, 5, 7, 8, 9, 12, 19, 24, 30, 36, 48}
+    VOLTAGE_VALUES = {
+        1,
+        1.0,
+        2,
+        2.0,
+        3,
+        3.0,
+        4,
+        4.0,
+        5,
+        5.0,
+        7,
+        7.0,
+        8,
+        8.0,
+        9,
+        9.0,
+        12,
+        12.0,
+        19,
+        19.0,
+        24,
+        24.0,
+        30,
+        30.0,
+        36,
+        36.0,
+        48,
+        48.0,
+    }
 
     # Temperature values (in °C)
     TEMPERATURE_VALUES = {
         -40,
+        -40.0,
         -30,
+        -30.0,
         -25,
+        -25.0,
         -20,
+        -20.0,
         -10,
+        -10.0,
         0,
+        0.0,
         5,
+        5.0,
         35,
+        35.0,
         40,
+        40.0,
         45,
+        45.0,
         50,
+        50.0,
         55,
+        55.0,
         60,
+        60.0,
         65,
+        65.0,
         70,
+        70.0,
         75,
+        75.0,
         80,
+        80.0,
         85,
+        85.0,
         90,
+        90.0,
         95,
+        95.0,
         100,
+        100.0,
         105,
+        105.0,
         125,
+        125.0,
     }
 
     # Processor core counts
-    PROCESSOR_CORES = {1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 14, 16, 20, 24, 32, 64, 80, 128}
+    PROCESSOR_CORES = {
+        1,
+        1.0,
+        2,
+        2.0,
+        3,
+        3.0,
+        4,
+        4.0,
+        5,
+        5.0,
+        6,
+        6.0,
+        8,
+        8.0,
+        9,
+        9.0,
+        10,
+        10.0,
+        12,
+        12.0,
+        14,
+        14.0,
+        16,
+        16.0,
+        20,
+        20.0,
+        24,
+        24.0,
+        32,
+        32.0,
+        64,
+        64.0,
+        80,
+        80.0,
+        128,
+        128.0,
+    }
 
     # TDP power values (in W)
     POWER_VALUES = {
         1,
+        1.0,
         2,
+        2.0,
         5,
+        5.0,
         6,
+        6.0,
         7,
+        7.0,
         8,
+        8.0,
         9,
+        9.0,
         10,
+        10.0,
         12,
+        12.0,
         13,
+        13.0,
         15,
+        15.0,
         17,
+        17.0,
         19,
+        19.0,
         25,
+        25.0,
         28,
+        28.0,
         31,
+        31.0,
         35,
+        35.0,
         45,
+        45.0,
         65,
+        65.0,
         70,
+        70.0,
         77,
+        77.0,
         80,
+        80.0,
         95,
+        95.0,
         100,
+        100.0,
         105,
+        105.0,
         125,
+        125.0,
         160,
+        160.0,
         205,
+        205.0,
     }
 
     # Feature type mapping
@@ -102,6 +247,18 @@ class FeatureValues:
             return sorted([v for v in valid_set if v <= value])
 
     @classmethod
+    def _format_numeric_values(cls, values: List[float]) -> List[str]:
+        """Format numeric values to include both integer and float representations when applicable."""
+        result = []
+        for v in values:
+            v_float = float(v)
+            if v_float.is_integer():
+                result.extend([f"{int(v_float)}", f"{v_float:.1f}"])
+            else:
+                result.append(f"{v_float}")
+        return result
+
+    @classmethod
     def get_valid_values(cls, feature_name: str, value: str) -> List[str]:
         """Get valid values for a given feature based on its type."""
         feature_type = cls.FEATURE_TYPE_MAP.get(feature_name)
@@ -114,27 +271,22 @@ class FeatureValues:
         except ValueError:
             return [value]
 
-        if feature_type in [ValueTypes.MEMORY, ValueTypes.STORAGE]:
-            valid_values = cls._get_nearest_valid_values(num_value, cls.MEMORY_STORAGE_VALUES, operator)
-            return [f"{v}" for v in valid_values]
+        # Map feature types to their corresponding value sets
+        value_set_map = {
+            ValueTypes.MEMORY: cls.MEMORY_STORAGE_VALUES,
+            ValueTypes.STORAGE: cls.MEMORY_STORAGE_VALUES,
+            ValueTypes.VOLTAGE: cls.VOLTAGE_VALUES,
+            ValueTypes.TEMPERATURE: cls.TEMPERATURE_VALUES,
+            ValueTypes.PROCESSOR_CORES: cls.PROCESSOR_CORES,
+            ValueTypes.POWER: cls.POWER_VALUES,
+        }
 
-        elif feature_type == ValueTypes.VOLTAGE:
-            valid_values = cls._get_nearest_valid_values(num_value, cls.VOLTAGE_VALUES, operator)
-            return [f"{v}" for v in valid_values]
+        valid_set = value_set_map.get(feature_type)
+        if valid_set is None:
+            return [value]
 
-        elif feature_type == ValueTypes.TEMPERATURE:
-            valid_values = cls._get_nearest_valid_values(num_value, cls.TEMPERATURE_VALUES, operator)
-            return [f"{int(v)}" for v in valid_values]
-
-        elif feature_type == ValueTypes.PROCESSOR_CORES:
-            valid_values = cls._get_nearest_valid_values(num_value, cls.PROCESSOR_CORES, operator)
-            return [str(int(v)) for v in valid_values]
-
-        elif feature_type == ValueTypes.POWER:
-            valid_values = cls._get_nearest_valid_values(num_value, cls.POWER_VALUES, operator)
-            return [f"{v}" for v in valid_values]
-
-        return [value]
+        valid_values = cls._get_nearest_valid_values(num_value, valid_set, operator)
+        return cls._format_numeric_values(valid_values)
 
 
 class QueryBuilder:

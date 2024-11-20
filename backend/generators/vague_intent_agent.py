@@ -93,7 +93,7 @@ class VagueIntentAgent:
         if filters:
             filter_query = " ".join([f"{key}:{value}" for key, value in filters.items()])
             hybrid_results = await self.weaviate_service.search_products(
-                query=filter_query, limit=limit * 2, filters=filters, search_type="hybrid"
+                {"query": filter_query, "filters": filters, "limit": limit * 2, "search_type": "hybrid"}
             )
 
             for result in hybrid_results:
@@ -107,10 +107,12 @@ class VagueIntentAgent:
                     if len(unique_results) >= limit:
                         break
                     partial_results = await self.weaviate_service.search_products(
-                        query=f"{key}:{value}",
-                        limit=limit - len(unique_results),
-                        filters={key: value},
-                        search_type="hybrid",
+                        {
+                            "query": f"{key}:{value}",
+                            "filters": {key: value},
+                            "limit": limit - len(unique_results),
+                            "search_type": "hybrid",
+                        }
                     )
                     for result in partial_results:
                         if result["product_id"] not in unique_results:
@@ -121,7 +123,11 @@ class VagueIntentAgent:
         # If still not enough results or no filters, use direct semantic search
         if len(unique_results) < limit:
             semantic_results = await self.weaviate_service.search_products(
-                query=state["semantic_search_query"], limit=limit * 2 - len(unique_results), search_type="semantic"
+                {
+                    "query": state["semantic_search_query"],
+                    "limit": limit * 2 - len(unique_results),
+                    "search_type": "semantic",
+                }
             )
 
             for result in semantic_results:

@@ -20,7 +20,7 @@ class SocketIOHandler:
             async_mode="asgi",
             cors_allowed_origins=[
                 "http://localhost:3000",
-    f"http://{config.IP_ADDRESS}:3000",
+                f"http://{config.IP_ADDRESS}:3000",
                 "https://api.boardbot.ai",
                 "https://boardbot.ai",
             ],
