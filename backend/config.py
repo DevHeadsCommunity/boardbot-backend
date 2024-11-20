@@ -12,6 +12,7 @@ class Config(BaseSettings):
     DEFAULT_MAX_TOKENS: int = Field(2400, env="DEFAULT_MAX_TOKENS")
     DEFAULT_TEMPERATURE: float = Field(0.0, env="DEFAULT_TEMPERATURE")
     DEFAULT_TOP_P: float = Field(1.0, env="DEFAULT_TOP_P")
+    IP_ADDRESS: str = Field(..., env="IP_ADDRESS")
 
     class Config:
         env_file = ".env"

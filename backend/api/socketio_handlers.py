@@ -4,6 +4,8 @@ from dateutil.parser import isoparse
 from core.models.message import RequestMessage, ResponseMessage
 from core import SessionManager, MessageProcessor
 import datetime
+from config import config
+
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +20,7 @@ class SocketIOHandler:
             async_mode="asgi",
             cors_allowed_origins=[
                 "http://localhost:3000",
-                "http://192.168.229.104:3000",
+    f"http://{config.IP_ADDRESS}:3000",
                 "https://api.boardbot.ai",
                 "https://boardbot.ai",
             ],
