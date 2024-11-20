@@ -30,10 +30,10 @@
     "prompt": "Find COM Express modules with Intel processors and DDR4 memory support",
     "description": "Tests understanding of form factor specifications, processor manufacturers, and memory types",
     "variations": [
-      "List COM Express boards using Intel CPUs and compatible with DDR4 RAM",
-      "Show Computers on Module that have Intel processors and support DDR4 memory",
-      "What COM Express products have Intel processers and work with DDR4?",
-      "Display COM Express units with Intel CPUs and DDR-4 memory support"
+      "List COM Express boards with Intel CPUs and DDR4 RAM compatibility",
+      "Show Computer-On-Module solutions featuring Intel architecture and DDR4 memory",
+      "What COM Express products have Intel chips and support DDR4?",
+      "Display COM Expres modules with Intel processer and DDR-4 memry suport"
     ],
     "products": [
       {
@@ -49,7 +49,7 @@
         "name": "COM-EXPRESS R TYPE"
       },
       {
-        "name": "SOM"
+        "name": "SOM COM-EXPRESS COMPACT"
       }
     ]
   },
@@ -57,20 +57,26 @@
     "prompt": "Show me fanless embedded systems that support Windows 10 and have a minimum operating temperature of -20°C or lower",
     "description": "Tests recognition of cooling specifications, environmental requirements, and OS compatibility",
     "variations": [
-      "List fanless embeded systems compatible with Win 10 and operable at -20 degrees Celsius or below",
-      "What passive-cooled devices run Windows 10 and work in temperatures of -20°C or colder?",
-      "Display fanless systems supporting Windows Ten with minimum operating temps of -20 Celsius or less",
-      "Find embedded computers without fans, Windows 10 compatible, and functional at -20°C or lower"
+      "List fanless systems compatible with Windows 10 and -20°C minimum temperature",
+      "Show passive-cooled embedded solutions supporting Windows 10 and sub -20 degree operation",
+      "What fanless computers run Windows 10 and work in -20°C or colder?",
+      "Display embeded fanles systems with Windows 10 and opeating at minus 20 celcius"
     ],
     "products": [
       {
         "name": "ARK-1123H"
       },
       {
-        "name": "INTELLIGENT INSPECTION"
+        "name": "ARK INTEL CELERON N FANLESS EMBEDDED BOX PC"
       },
       {
-        "name": "ARK INTEL CELERON N FANLESS EMBEDDED BOX PC"
+        "name": "ARKP"
+      },
+      {
+        "name": "ARKFSAE"
+      },
+      {
+        "name": "PCM"
       }
     ]
   },
@@ -78,17 +84,20 @@
     "prompt": "List SoMs (System on Modules) with Wi-Fi capability and at least 32GB of onboard storage",
     "description": "Tests recognition of wireless connectivity features and storage capacity specifications",
     "variations": [
-      "Show System-on-Modules featuring WiFi and minimum 32 gigabytes built-in storage",
-      "What SoMs offer wireless connectivity and 32GB or more onboard memory?",
-      "Display System on Modules with Wi-Fi support and no less than 32GB integrated storage",
-      "Find SoM options including Wi-Fi and at least 32GB on-board storage capacity"
+      "List SoM devices with Wi-Fi and 32GB minimum storage capacity",
+      "Show System-on-Module solutions featuring wireless connectivity and 32GB+ storage",
+      "What SoMs include Wi-Fi and offer 32GB or more memory?",
+      "Display sistems on module with wifi and 32 gigabyte storage minimum"
     ],
     "products": [
       {
-        "name": "DIGI CONNECTCORE MP"
+        "name": "RASPBERRY-PI COMPUTE"
       },
       {
-        "name": "JETSON ORIN NX"
+        "name": "FETC SOM"
+      },
+      {
+        "name": "RASPBERRY-PI COMPUTE"
       }
     ]
   },
@@ -97,19 +106,19 @@
     "description": "Tests recognition of multiple interface types and mounting specifications",
     "variations": [
       "List devices with Ethernet & serial interfaces, made for DIN-rail installation",
-      "Show items featuring Ethernet and RS-232 ports, compatible with DIN rail mounts",
+      "Show items featuring Ethernet and serial ports, compatible with DIN rail mounts",
       "What products include Ethernet and serial connections, suited for DIN rail attachment?",
-      "Display hardware with Ethernet/serial ports designed to be DIN rail mounted"
+      "Display hadware with Ethernet/serial ports desined to be DIN rail mounted"
     ],
     "products": [
+      {
+        "name": "ARKCCH"
+      },
       {
         "name": "HAIIC MICA USB"
       },
       {
-        "name": "UNO"
-      },
-      {
-        "name": "REVPI CONNECT"
+        "name": "EDIPC"
       }
     ]
   },
@@ -120,7 +129,7 @@
       "List industrial PCs with 8+ CPU cores that work with Error-Correcting Code memory",
       "What industrial machines have a minimum of eight cores and ECC RAM support?",
       "Display industrial systems featuring 8 or more processor cores and ECC memory compatibility",
-      "Find industrial computers with no less than 8 cores and Error Correction Code memory support"
+      "Find industrial compters with no less than 8 cores and ECC memory support"
     ],
     "products": [
       {
@@ -142,10 +151,19 @@
     ],
     "products": [
       {
-        "name": "INTELLIGENT INSPECTION"
+        "name": "EAGLE EYES AIHD"
       },
       {
-        "name": "UBIQUITOUS TOUCH"
+        "name": "ARK-1550VSAE"
+      },
+      {
+        "name": "TREK"
+      },
+      {
+        "name": "CPU MINIITX SBC"
+      },
+      {
+        "name": "AMAX COMPACT SBC"
       }
     ]
   },
@@ -154,16 +172,19 @@
     "description": "Tests recognition of multi-OS support and specific storage type requirements",
     "variations": [
       "Show products compatible with Linux and Andriod OS, featuring eMMC memory",
-      "What devices run both Linux and Android and include embedded MultiMediaCard storage?",
+      "What devices run both Linux and Android and include eMMC storage?",
       "Find hardware supporting Linux & Android operating systems with eMMC",
-      "Display items that work with Linux/Android OSes and have eMMC storage options"
+      "Display items that work with Linux/Android OS and have eMMC storge options"
     ],
     "products": [
       {
-        "name": "EMETXEI"
+        "name": "PCM"
       },
       {
-        "name": "EMETXEIC"
+        "name": "ROM NXP IMX-M CORTEXA SMARC COMPUTERONMODULE"
+      },
+      {
+        "name": "ROM B"
       }
     ]
   },
@@ -173,8 +194,8 @@
     "variations": [
       "Show modules featuring Bluetooth and Low-Power DDR4 RAM",
       "List devices with Bluetooth capability and LPDDR4 memory type",
-      "What products offer Bluetooth conectivity and LP-DDR4 memory?",
-      "Find modules supporting Bluetooth and equipped with LPDDR-4 RAM"
+      "What products offer Bluetooth conectivity and LPDDR4 memory?",
+      "Find modules supprting Bluetooth and has with LPDDR4 memry"
     ],
     "products": [
       {
@@ -186,20 +207,29 @@
     ]
   },
   {
-    "prompt": "Find products that support CAN bus interfaces and have an input voltage range that includes 24V",
-    "description": "Tests recognition of industrial communication protocols and power supply specifications",
+    "prompt": "Find products that support Wi-Fi connectivity and have an input voltage range that includes 24V",
+    "description": "Tests recognition of wireless connectivity and power supply specifications",
     "variations": [
-      "List devices with CAN bus support and power input covering 24 volts",
-      "Show items featuring Controller Area Network interfaces and 24V-compatible power input",
-      "What hardware includes CAN bus connectivity and accepts 24V input voltage?",
-      "Display products supporting CAN protocol and operable with 24-volt power supply"
+      "List devices with Wi-Fi support and power input covering 24 volts",
+      "Show items featuring wireless connectivity and 24V-compatible power input",
+      "What hardware includes Wi-Fi capability and accepts 24V input voltage?",
+      "Display products supporting WiFi and operable with 24-volt power supply"
     ],
     "products": [
       {
-        "name": "SNMPB"
+        "name": "BL BPC EWW"
       },
       {
-        "name": "BL BPC E"
+        "name": "TPCB MODULAR TPC COMPUTING BOX"
+      },
+      {
+        "name": "REVPI CONNECT"
+      },
+      {
+        "name": "TREK"
+      },
+      {
+        "name": "ARKFSAE"
       }
     ]
   },
@@ -210,50 +240,68 @@
       "Show products with Display Port interface using AMD CPUs",
       "List hardware featuring DisplayPort and AMD processor",
       "What items offer DispleyPort output and run on AMD chips?",
-      "Find devices with AMD processors that include a DisplayPort connection"
+      "Find devices with AMD prosessors that include a DisplayPort connction"
     ],
     "products": [
       {
-        "name": "SOM AMD RYZEN EMBEDDED V"
+        "name": "PCM"
       },
       {
-        "name": "PC CPU MODULES"
+        "name": "GEODE NX SBC"
+      },
+      {
+        "name": "PCM"
+      },
+      {
+        "name": "AIMB"
+      },
+      {
+        "name": "AIMB-225"
       }
     ]
   },
   {
-    "prompt": "What options are available for fanless systems with Intel Core i7 processors and at least 16GB of RAM?",
-    "description": "Tests recognition of specific processor models, cooling requirements, and memory capacity",
+    "prompt": "Show me all ARM-based devices that have wireless capabilities",
+    "description": "Tests recognition of processor architecture and wireless connectivity features",
     "variations": [
-      "List passive-cooled devices using Intel i7 CPUs and minimum 16 gigabytes memory",
-      "Show fanless products with Core i7 chips and 16GB or more RAM",
-      "What fanless hardware features Intel i7 processors and at least 16GB of memory?",
-      "Find systems without fans, powered by Intel Core i7, with 16GB+ random access memory"
+      "List devices with ARM processors and wireless connectivity options",
+      "Show systems featuring ARM architecture and radio communication capabilities",
+      "What products use ARM chips and include wireless features?",
+      "Display items with ARM processer and wirelss conectivity suport"
     ],
     "products": [
       {
-        "name": "EMETXEIC"
+        "name": "RASPBERRY-PI COMPUTE"
       },
       {
-        "name": "EMETXEI"
+        "name": "RASPBERRY-PI MODEL B"
+      },
+      {
+        "name": "IMX-M PLUS SOM"
+      },
+      {
+        "name": "RASPBERRY-PI PICO W"
+      },
+      {
+        "name": "IMX OSM LGA"
       }
     ]
   },
   {
-    "prompt": "Which products offer both M.2 and mSATA storage options and are compliant with MIL-STD-810 standards?",
-    "description": "Tests recognition of multiple storage interfaces and military certification requirements",
+    "prompt": "Which products offer both M.2 and mSATA storage options with X86 architecture?",
+    "description": "Tests recognition of multiple storage interfaces and specific processor architecture",
     "variations": [
-      "List devices with M.2 & mSATA storage interfaces meeting MIL-STD 810 requirements",
-      "Show items featuring M.2 and mini-SATA storage, certified to MIL-STD-810",
-      "What products include M.2/mSATA storage options and conform to MIL-STD 810 specs?",
-      "Find items offering both M.2 and mSATA storage compliant with Military Standard 810"
+      "List devices with M.2 & mSATA storage interfaces using X86 processors",
+      "Show items featuring M.2 and mini-SATA storage with X86 architecture",
+      "What products include M.2/mSATA storage options and X86 chips?",
+      "Find items offering both M.2 and mSATA storage with X86 compatibility"
     ],
     "products": [
       {
-        "name": "AGS"
+        "name": "AIMB-275"
       },
       {
-        "name": "BENGAL"
+        "name": "AIMB-275"
       }
     ]
   },
@@ -286,10 +334,19 @@
     ],
     "products": [
       {
-        "name": "RASPBERRY-PI COMPUTE"
+        "name": "EMNANOAM"
       },
       {
-        "name": "ARMADA SOM A"
+        "name": "UP CORE PLUS"
+      },
+      {
+        "name": "VENICE GW"
+      },
+      {
+        "name": "EMQIN"
+      },
+      {
+        "name": "MIOUSAE"
       }
     ]
   },
@@ -304,13 +361,19 @@
     ],
     "products": [
       {
-        "name": "RASPBERRY-PI COMPUTE"
+        "name": "CONGABAC"
       },
       {
-        "name": "ARMADA SOM A"
+        "name": "EMETXEIM"
       },
       {
-        "name": "MYCCX"
+        "name": "MBF MBRF"
+      },
+      {
+        "name": "ROMWQRAE"
+      },
+      {
+        "name": "RASPBERRY-PI"
       }
     ]
   },
@@ -328,7 +391,16 @@
         "name": "COM-EXPRESS BASIC"
       },
       {
-        "name": "SANDCAT"
+        "name": "COUGAR"
+      },
+      {
+        "name": "EXPRESSBD"
+      },
+      {
+        "name": "EMQI"
+      },
+      {
+        "name": "VIPER EBX SINGLE BOARD"
       }
     ]
   },
@@ -343,19 +415,19 @@
     ],
     "products": [
       {
-        "name": "CONGATS"
+        "name": "CPU MINIITX SBC"
       },
       {
-        "name": "EMETXEIMUE"
+        "name": "CPCI HLM"
       },
       {
-        "name": "SOM AMD RYZEN EMBEDDED V"
+        "name": "SBCCPITX"
       },
       {
-        "name": "COM-EXPRESS R TYPE"
+        "name": "SBC-AP-ITX"
       },
       {
-        "name": "EXPRESSBD"
+        "name": "CPU LOW POWER SBC NXP IMX"
       }
     ]
   },
@@ -387,26 +459,29 @@
     ]
   },
   {
-    "prompt": "Which devices have CAN bus connectivity and accept 24V input voltage?",
+    "prompt": "Which devices have USB bus connectivity and accept 24V input voltage?",
     "description": "Tests recognition of industrial communication protocols and power input specifications",
     "variations": [
-      "List devices with CAN bus support and 24V power input",
-      "Show products featuring CAN interface and 24-volt power compatibility",
-      "What hardware includes CAN bus and works with 24V power?",
-      "Find items supporting CAN protocol and 24V input voltage"
+      "List devices with USB bus support and 24V power input",
+      "Show products featuring USB interface and 24-volt power compatibility",
+      "What hardware includes USB bus and works with 24V power?",
+      "Find items supporting USB protocol and 24V input voltage"
     ],
     "products": [
       {
-        "name": "SNMPB"
+        "name": "CONGAIC"
       },
       {
-        "name": "BL BPC E"
+        "name": "HAIIC MICA USB"
+      },
+      {
+        "name": "SNMPB"
       },
       {
         "name": "BL PPC W"
       },
       {
-        "name": "BL BPC S"
+        "name": "EDGEBOXRPI"
       }
     ]
   }
