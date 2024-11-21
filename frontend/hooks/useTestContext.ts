@@ -32,7 +32,7 @@ export const useTestContext = () => {
   const { actorRef } = useAppContext();
   const testActorRef = actorRef.test;
   const testActorState = useSelector(testActorRef, (state) => state);
-  useToast(testActorRef);
+  // useToast(testActorRef);
 
   const testState = useMemo(() => {
     if (!testActorState) return TestState.Idle;
