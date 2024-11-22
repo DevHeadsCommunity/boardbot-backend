@@ -135,26 +135,26 @@ export const appMachine = setup({
       chatRef: spawn(chatMachine, {
         input: {
           model: "gpt-4o",
-          architecture: "llm-router",
+          architecture: "dynamic-agent",
           historyManagement: "keep-last-5",
         },
       }),
       testRef: spawn(testMachine, {
         input: {
           model: "gpt-4o",
-          architecture: "llm-router",
+          architecture: "dynamic-agent",
           historyManagement: "keep-last-5",
         },
       }),
       prodRef: spawn(productMachine, {
         input: {
           model: "gpt-4o",
-          architecture: "llm-router",
+          architecture: "dynamic-agent",
           historyManagement: "keep-last-5",
         },
       }),
       model: "gpt-4o",
-      architecture: "llm-router",
+      architecture: "dynamic-agent",
       historyManagement: "keep-last-5",
     };
   },
@@ -370,13 +370,13 @@ export const appMachine = setup({
               actions: [
                 assign({
                   model: "gpt-4o",
-                  architecture: "llm-router",
+                  architecture: "dynamic-agent",
                   historyManagement: "keep-last-5",
                 }),
                 ({ context }) => {
                   const resetData = {
                     model: "gpt-4o" as Model,
-                    architecture: "llm-router" as Architecture,
+                    architecture: "dynamic-agent" as Architecture,
                     historyManagement: "keep-last-5" as HistoryManagement,
                   };
                   context.chatRef.send({

@@ -57,7 +57,7 @@ export const useTestRunnerContext = () => {
       >
     | undefined;
   const testRunnerActorState = useSelector(testRunnerActorRef, (state) => state);
-  // useToast(testRunnerActorRef);
+  useToast(testRunnerActorRef);
 
   const testRunnerState = useMemo(() => {
     if (!testRunnerActorState) return TestRunnerState.Idle;
