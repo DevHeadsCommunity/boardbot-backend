@@ -63,15 +63,33 @@ class SocketIOHandler:
     async def process_message(self, sid, data):
         logger.info(f"\n\n ===:> Received message from {sid}: {data}\n\n")
 
+        # Validate model choice
+        model = data.get("model")
+        if not model:
+            await self.sio.emit(
+                "error",
+                {"message": "Model choice is required"},
+                room=sid
+            )
+            return
+
+        if not (model.startswith(("gpt-", "text-", "claude-"))):
+            await self.sio.emit(
+                "error",
+                {"message": f"Unsupported model: {model}"},
+                room=sid
+            )
+            return
+
         message = RequestMessage(
             id=data.get("message_id"),
             message=data.get("message"),
             timestamp=self.get_timestamp(data.get("timestamp", None)),
             session_id=data.get("session_id"),
-            model=data.get("model"),
+            model=model,
             architecture_choice=data.get("architecture_choice"),
             history_management_choice=data.get("history_management_choice"),
-            is_user_message=True,  # Add this line
+            is_user_message=True,
         )
         response = await self.message_processor.process_message(message)
         response_dict = response.to_dict()

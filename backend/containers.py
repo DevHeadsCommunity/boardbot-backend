@@ -16,6 +16,7 @@ from generators.vague_intent_agent import VagueIntentAgent
 from feature_extraction import AgenticFeatureExtractor, ConfigSchema
 from feature_extraction.product_data_preprocessor import ProductDataProcessor
 from services.feature_extraction_service import FeatureExtractionService, BatchFeatureExtractionService
+from services.anthropic_service import AnthropicService
 
 
 from config import Config
@@ -91,10 +92,17 @@ class Container(containers.DeclarativeContainer):
         prompt_manager=prompt_manager,
     )
 
+    anthropic_service = providers.Singleton(
+        AnthropicService, 
+        api_key=config.ANTHROPIC_API_KEY, 
+        config=config_obj
+    )
+
     dynamic_agent = providers.Singleton(
         DynamicAgent,
         session_manager=session_manager,
         openai_service=openai_service,
+        anthropic_service=anthropic_service,
         weaviate_service=weaviate_service,
         prompt_manager=prompt_manager,
     )

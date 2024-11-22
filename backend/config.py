@@ -1,5 +1,6 @@
 from pydantic import Field
 from pydantic_settings import BaseSettings
+import os
 
 
 class Config(BaseSettings):
@@ -13,6 +14,8 @@ class Config(BaseSettings):
     DEFAULT_TEMPERATURE: float = Field(0.0, env="DEFAULT_TEMPERATURE")
     DEFAULT_TOP_P: float = Field(1.0, env="DEFAULT_TOP_P")
     IP_ADDRESS: str = Field(..., env="IP_ADDRESS")
+    ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
+    DEFAULT_ANTHROPIC_MODEL: str = "claude-3-sonnet-20240229"
 
     class Config:
         env_file = ".env"

@@ -6,6 +6,7 @@ from generators.dynamic_agent import DynamicAgent
 from generators.hybrid_router import HybridRouter
 from generators.semantic_router import SemanticRouter
 from .models.message import Message, ResponseMessage
+from services.anthropic_service import AnthropicService
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,13 @@ class MessageProcessor:
         self.dynamic_agent = dynamic_agent
 
     async def process_message(self, message: Message) -> ResponseMessage:
+        # Validate model choice
+        if message.model.startswith(("gpt-", "text-")):
+            service_type = "openai"
+        elif message.model.startswith("claude-"):
+            service_type = "anthropic"
+        else:
+            raise ValueError(f"Unsupported model: {message.model}")
 
         if message.architecture_choice == "llm-router":
             response = await self.llm_router.run(message)
@@ -43,6 +51,7 @@ class MessageProcessor:
             message=json.dumps(response),
             is_complete=True,
             model=message.model,
+            service_type=service_type,
             architecture_choice=message.architecture_choice,
             history_management_choice=message.history_management_choice,
             timestamp=datetime.datetime.now(),

@@ -8,6 +8,7 @@ from core.session_manager import SessionManager
 from prompts.prompt_manager import PromptManager
 from services.openai_service import OpenAIService
 from services.weaviate_service import WeaviateService
+from services.anthropic_service import AnthropicService
 from .utils.response_formatter import ResponseFormatter
 from weaviate_interface.models.product import attribute_descriptions
 from typing import List, Dict, Any, Literal, Tuple, TypedDict, Optional, Annotated, Callable, Union
@@ -143,11 +144,13 @@ class DynamicAgent:
         session_manager: SessionManager,
         weaviate_service: WeaviateService,
         openai_service: OpenAIService,
+        anthropic_service: AnthropicService,
         prompt_manager: PromptManager,
     ):
         self.session_manager = session_manager
         self.weaviate_service = weaviate_service
         self.openai_service = openai_service
+        self.anthropic_service = anthropic_service
         self.prompt_manager = prompt_manager
         self.response_formatter = ResponseFormatter()
         self.workflow = self.setup_workflow()
@@ -206,6 +209,14 @@ class DynamicAgent:
 
         raise ValueError("No valid routing option found")
 
+    async def _get_llm_service(self, model_name: str):
+        if model_name.startswith(("gpt-", "text-")):
+            return self.openai_service
+        elif model_name.startswith("claude-"):
+            return self.anthropic_service
+        else:
+            raise ValueError(f"Unsupported model: {model_name}")
+
     @log_node(
         "Initial Analysis",
         {
@@ -223,8 +234,8 @@ class DynamicAgent:
                 query=state["current_message"], chat_history=state["chat_history"]
             )
 
-            # Get LLM response
-            response, input_tokens, output_tokens = await self.openai_service.generate_response(
+            llm_service = await self._get_llm_service(state["model_name"])
+            response, input_tokens, output_tokens = await llm_service.generate_response(
                 user_message=user_message,
                 system_message=system_message,
                 formatted_chat_history=state["chat_history"],
@@ -426,7 +437,10 @@ class DynamicAgent:
             query=state["current_message"], **context
         )
 
-        response, input_tokens, output_tokens = await self.openai_service.generate_response(
+        # Get the appropriate service based on model name
+        llm_service = await self._get_llm_service(state["model_name"])
+        
+        response, input_tokens, output_tokens = await llm_service.generate_response(
             user_message=user_message,
             system_message=system_message,
             formatted_chat_history=state["chat_history"],
