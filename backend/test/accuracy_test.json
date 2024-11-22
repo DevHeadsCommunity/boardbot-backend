@@ -1,7 +1,7 @@
 [
   {
     "prompt": "Find all products with USB 3.0 interface and support for Windows 10 operating system",
-    "description": "Tests recognition of industry-standard interfaces and OS compatibility, including common technical terminology variations",
+    "description": "AC_01: Tests recognition of industry-standard interfaces and OS compatibility, including common technical terminology variations",
     "variations": [
       "List devices with USB 3.0 ports that run Windows 10 OS",
       "Show hardware offering USB 3 connectivity and Windows Ten compatibility",
@@ -28,7 +28,7 @@
   },
   {
     "prompt": "Find COM Express modules with Intel processors and DDR4 memory support",
-    "description": "Tests understanding of form factor specifications, processor manufacturers, and memory types",
+    "description": "AC_02: Tests understanding of form factor specifications, processor manufacturers, and memory types",
     "variations": [
       "List COM Express boards with Intel CPUs and DDR4 RAM compatibility",
       "Show Computer-On-Module solutions featuring Intel architecture and DDR4 memory",
@@ -55,7 +55,7 @@
   },
   {
     "prompt": "Show me fanless embedded systems that support Windows 10 and have a minimum operating temperature of -20°C or lower",
-    "description": "Tests recognition of cooling specifications, environmental requirements, and OS compatibility",
+    "description": "AC_03: Tests recognition of cooling specifications, environmental requirements, and OS compatibility",
     "variations": [
       "List fanless systems compatible with Windows 10 and -20°C minimum temperature",
       "Show passive-cooled embedded solutions supporting Windows 10 and sub -20 degree operation",
@@ -82,7 +82,7 @@
   },
   {
     "prompt": "List SoMs (System on Modules) with Wi-Fi capability and at least 32GB of onboard storage",
-    "description": "Tests recognition of wireless connectivity features and storage capacity specifications",
+    "description": "AC_04: Tests recognition of wireless connectivity features and storage capacity specifications",
     "variations": [
       "List SoM devices with Wi-Fi and 32GB minimum storage capacity",
       "Show System-on-Module solutions featuring wireless connectivity and 32GB+ storage",
@@ -103,7 +103,7 @@
   },
   {
     "prompt": "Find products that have both Ethernet and serial ports, and are designed for DIN rail mounting",
-    "description": "Tests recognition of multiple interface types and mounting specifications",
+    "description": "AC_05: Tests recognition of multiple interface types and mounting specifications",
     "variations": [
       "List devices with Ethernet & serial interfaces, made for DIN-rail installation",
       "Show items featuring Ethernet and serial ports, compatible with DIN rail mounts",
@@ -124,12 +124,12 @@
   },
   {
     "prompt": "Show me industrial computers with at least 8 processor cores and support for ECC memory",
-    "description": "Tests recognition of processor specifications and advanced memory features",
+    "description": "AC_06: Tests recognition of processor specifications and advanced memory features",
     "variations": [
-      "List industrial PCs with 8+ CPU cores that work with Error-Correcting Code memory",
-      "What industrial machines have a minimum of eight cores and ECC RAM support?",
-      "Display industrial systems featuring 8 or more processor cores and ECC memory compatibility",
-      "Find industrial compters with no less than 8 cores and ECC memory support"
+      "List PCs with 8+ CPU cores that work with Error-Correcting Code memory",
+      "What machines have a minimum of eight cores and ECC RAM support?",
+      "Display systems featuring 8 or more processor cores and ECC memory compatibility",
+      "Find compters with no less than 8 cores and ECC memory support"
     ],
     "products": [
       {
@@ -142,7 +142,7 @@
   },
   {
     "prompt": "Which devices support Windows IoT and have a maximum operating temperature of 70°C or higher?",
-    "description": "Tests recognition of specialized OS support and high-temperature operation capabilities",
+    "description": "AC_07: Tests recognition of specialized OS support and high-temperature operation capabilities",
     "variations": [
       "List products compatible with Windows IOT and operable up to at least 70 degrees Celsius",
       "Show devices running Windows Internet of Things with max temps of 70°C or above",
@@ -169,7 +169,7 @@
   },
   {
     "prompt": "List devices that support both Linux and Android operating systems and have eMMC storage",
-    "description": "Tests recognition of multi-OS support and specific storage type requirements",
+    "description": "AC_08: Tests recognition of multi-OS support and specific storage type requirements",
     "variations": [
       "Show products compatible with Linux and Andriod OS, featuring eMMC memory",
       "What devices run both Linux and Android and include eMMC storage?",
@@ -190,7 +190,7 @@
   },
   {
     "prompt": "What options are available for modules with Bluetooth connectivity and LPDDR4 memory?",
-    "description": "Tests recognition of wireless standards and specific memory type requirements",
+    "description": "AC_09: Tests recognition of wireless standards and specific memory type requirements",
     "variations": [
       "Show modules featuring Bluetooth and Low-Power DDR4 RAM",
       "List devices with Bluetooth capability and LPDDR4 memory type",
@@ -208,7 +208,7 @@
   },
   {
     "prompt": "Find products that support Wi-Fi connectivity and have an input voltage range that includes 24V",
-    "description": "Tests recognition of wireless connectivity and power supply specifications",
+    "description": "AC_10: Tests recognition of wireless connectivity and power supply specifications",
     "variations": [
       "List devices with Wi-Fi support and power input covering 24 volts",
       "Show items featuring wireless connectivity and 24V-compatible power input",
@@ -235,7 +235,7 @@
   },
   {
     "prompt": "Which devices have DisplayPort output and are powered by AMD processors?",
-    "description": "Tests recognition of display interface standards and specific processor manufacturers",
+    "description": "AC_11: Tests recognition of display interface standards and specific processor manufacturers",
     "variations": [
       "Show products with Display Port interface using AMD CPUs",
       "List hardware featuring DisplayPort and AMD processor",
@@ -262,7 +262,7 @@
   },
   {
     "prompt": "Show me all ARM-based devices that have wireless capabilities",
-    "description": "Tests recognition of processor architecture and wireless connectivity features",
+    "description": "AC_12: Tests recognition of processor architecture and wireless connectivity features",
     "variations": [
       "List devices with ARM processors and wireless connectivity options",
       "Show systems featuring ARM architecture and radio communication capabilities",
@@ -289,7 +289,7 @@
   },
   {
     "prompt": "Which products offer both M.2 and mSATA storage options with X86 architecture?",
-    "description": "Tests recognition of multiple storage interfaces and specific processor architecture",
+    "description": "AC_13: Tests recognition of multiple storage interfaces and specific processor architecture",
     "variations": [
       "List devices with M.2 & mSATA storage interfaces using X86 processors",
       "Show items featuring M.2 and mini-SATA storage with X86 architecture",
@@ -307,7 +307,7 @@
   },
   {
     "prompt": "Find all products manufactured by Advantech with ETX form factor",
-    "description": "Tests recognition of specific manufacturers and legacy form factors",
+    "description": "AC_14: Tests recognition of specific manufacturers and legacy form factors",
     "variations": [
       "List Advantech-made products with ETX form-factor",
       "Show me ETX devices produced by Advantec",
@@ -325,7 +325,7 @@
   },
   {
     "prompt": "Show products that support Wi-Fi 5 and run on Ubuntu operating system",
-    "description": "Tests recognition of wireless standards and specific OS requirements",
+    "description": "AC_15: Tests recognition of wireless standards and specific OS requirements",
     "variations": [
       "List devices supporting Wi-Fi 5 and running on Ubuntu OS",
       "Show me products with Wi-Fi 5 and Ubuntu OS",
@@ -352,7 +352,7 @@
   },
   {
     "prompt": "List devices with ARM architecture and at least 4GB of memory",
-    "description": "Tests recognition of processor architecture and memory capacity specifications",
+    "description": "AC_16: Tests recognition of processor architecture and memory capacity specifications",
     "variations": [
       "Show me products with ARM architechture and 4 gigabytes or more RAM",
       "What devices use ARM chips and have minimum 4GB memory?",
@@ -379,7 +379,7 @@
   },
   {
     "prompt": "Show me embedded systems with dual Ethernet ports and support for extended temperature ranges",
-    "description": "Tests recognition of networking interfaces and environmental operating specifications",
+    "description": "AC_17: Tests recognition of networking interfaces and environmental operating specifications",
     "variations": [
       "List embedded devices featuring two Ethernet interfaces and wide temp range capability",
       "What embedded products have dual LAN ports and operate in extreme temperatures?",
@@ -406,7 +406,7 @@
   },
   {
     "prompt": "List all products with a minimum operating temperature of -40°C and SATA storage interface",
-    "description": "Tests recognition of extreme temperature requirements and storage interface specifications",
+    "description": "AC_18: Tests recognition of extreme temperature requirements and storage interface specifications",
     "variations": [
       "Show devices that operate at -40 degrees Celsius or lower and have SATA storage",
       "What hardware functions in -40°C environments and includes a SATA interface?",
@@ -433,7 +433,7 @@
   },
   {
     "prompt": "Find all products with USB 3.0 interface and support for Windows 10 operating system",
-    "description": "Tests recognition of USB interface standards and specific OS compatibility",
+    "description": "AC_19: Tests recognition of USB interface standards and specific OS compatibility",
     "variations": [
       "List devices with USB 3.0 ports that run Windows 10 OS",
       "Show hardware offering USB 3 connectivity and Windows Ten compatibility",
@@ -460,7 +460,7 @@
   },
   {
     "prompt": "Which devices have USB bus connectivity and accept 24V input voltage?",
-    "description": "Tests recognition of industrial communication protocols and power input specifications",
+    "description": "AC_20: Tests recognition of industrial communication protocols and power input specifications",
     "variations": [
       "List devices with USB bus support and 24V power input",
       "Show products featuring USB interface and 24-volt power compatibility",

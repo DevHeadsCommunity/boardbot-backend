@@ -8,12 +8,14 @@ from fastapi.exceptions import RequestValidationError
 from starlette.types import ASGIApp, Receive, Scope, Send
 from dependencies import container, get_socket_handler, get_weaviate_service, get_openai_service
 
+from config import config
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # CORS configuration
 origins = [
     "http://localhost:3000",
-    "http://192.168.248.104:3000",
+    f"http://{config.IP_ADDRESS}:3000",
     "https://api.boardbot.ai",
     "https://boardbot.ai",
 ]

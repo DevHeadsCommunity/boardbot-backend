@@ -1,254 +1,222 @@
 [
   {
-    "prompt": "List Single Board Computers with a processor frequency of 1.5 GHz or higher and manufactured by Broadcom",
+    "prompt": "List COM Express modules with Intel processors and DDR4 memory support",
     "variations": [
-      "List Single Board Computers with a processor frequency of 1.5 GHz or higher and manufactured by Broadcom",
-      "Show Broadcom Single Board Computers with processors running at least 1.5 GHz",
-      "Display SBCs made by Broadcom with CPU speeds of 1.5 GHz or above",
-      "Enumerate Broadcom-manufactured Single Board Computers featuring 1.5+ GHz processors",
-      "Find SBCs from Broadcom with processor frequencies of 1.5 GHz and higher"
+      "List COM Express modules that include Intel CPUs and support DDR4 memory",
+      "Show Intel-powered COM Express boards with DDR4 RAM compatibility",
+      "What COM Express modules feature Intel processors and DDR4 memory?",
+      "Display COM Express solutions with Intel CPUs and support for DDR4 memory",
+      "Enumerate COM Express products equipped with Intel processors and DDR4 RAM"
     ],
-    "description": "Tests consistency in recognizing specific manufacturer and processor speed requirements"
+    "description": "CON_01: Tests consistency in recognizing form factor, processor manufacturer, and memory type requirements"
   },
   {
-    "prompt": "What are the available Computers on Module (COM) with DDR4 memory support and comes with an Intel processor?",
+    "prompt": "Show me MINI-ITX boards that include ARM architecture and support LPDDR4 memory",
     "variations": [
-      "What are the available Computers on Module (COM) with DDR4 memory support and comes with an Intel processor?",
-      "List COMs featuring Intel processors and DDR4 memory compatibility",
-      "Show Computers on Module with Intel CPUs and DDR4 RAM support",
-      "Display available COMs that have Intel processors and DDR4 memory",
-      "Enumerate Intel-based Computers on Module supporting DDR4 memory"
+      "Show MINI-ITX boards with ARM architecture and LPDDR4 memory support",
+      "List MINI-ITX systems featuring ARM processors and LPDDR4 RAM compatibility",
+      "What MINI-ITX boards have ARM architecture and support for LPDDR4 memory?",
+      "Display MINI-ITX modules equipped with ARM CPUs and LPDDR4 memory",
+      "Enumerate MINI-ITX products that include ARM architecture and LPDDR4 RAM support"
     ],
-    "description": "Tests consistency in identifying form factor specifications and memory technology combinations"
+    "description": "CON_02: Tests consistency in identifying form factor, processor architecture, and memory technology requirements"
   },
   {
-    "prompt": "Show Devkits that include FPGA and are manufactured by Microsemi Corporation.",
+    "prompt": "List DIN RAIL mounted systems with X86 architecture and support for Windows operating system",
     "variations": [
-      "Show Devkits that include FPGA and are manufactured by Microsemi Corporation.",
-      "List Microsemi Corporation development boards featuring FPGAs",
-      "Display FPGA-equipped devkits produced by Microsemi Corporation",
-      "Enumerate Microsemi-made development kits that incorporate FPGAs",
-      "Find Microsemi Corporation devkits with integrated FPGA technology"
+      "Show DIN RAIL systems featuring X86 processors and Windows OS compatibility",
+      "What DIN RAIL mounted devices use X86 architecture and run on Windows?",
+      "Display DIN RAIL modules with X86 CPUs and support Windows operating system",
+      "Enumerate DIN RAIL products equipped with X86 processors and Windows OS",
+      "Find DIN RAIL mounted boards that include X86 architecture and Windows support"
     ],
-    "description": "Tests consistency in recognizing specialized hardware components and specific manufacturers"
+    "description": "CON_03: Tests consistency in recognizing form factor, processor architecture, and operating system requirements"
   },
   {
-    "prompt": "Find all SBCs that support PCIe Gen3 interface and have more than 8 cores",
+    "prompt": "List COM Express modules featuring NXP CPUs and eMMC storage",
     "variations": [
-      "Find all SBCs that support PCIe Gen3 interface and have more than 8 cores",
-      "List Single Board Computers with PCIe Gen3 support and over 8 processor cores",
-      "Show SBCs featuring PCIe Gen3 compatibility and exceeding 8 CPU cores",
-      "Display all Single Board Computers with PCIe Gen3 interface and 9+ cores",
-      "Enumerate SBCs offering PCIe Gen3 and more than 8 processor cores"
+      "Show me COM Express modules having NXP CPUs and eMMC storage",
+      "What COM Express systems use NXP processors and include eMMC storage?",
+      "Display COM Express solutions with NXP architecture and eMMC storage support",
+      "Enumerate COM Express products equipped with NXP processors and eMMC storage",
+      "Identify COM Express form factor boards equipped with NXP-brand processors and featuring eMMC storage solutions."
     ],
-    "description": "Tests consistency in handling interface standards and multi-core processor specifications"
+    "description": "CON_04: Tests consistency in identifying form factor, processor manufacturer, and storage type requirements"
   },
   {
-    "prompt": "Provide a list of products with ARM Cortex processors that are available in a COM Express Basic form factor.",
+    "prompt": "List MINI-ITX systems with ARM architecture and support for DDR4 32GB memory",
     "variations": [
-      "Provide a list of products with ARM Cortex processors that are available in a COM Express Basic form factor.",
-      "Show COM Express Basic modules featuring ARM Cortex processors",
-      "List products using ARM Cortex CPUs in COM Express Basic form factor",
-      "Display ARM Cortex-based devices available in COM Express Basic format",
-      "Enumerate COM Express Basic offerings equipped with ARM Cortex processors"
+      "Show MINI-ITX boards featuring ARM processors and 32GB DDR4 memory support",
+      "What MINI-ITX modules use ARM architecture and include 32GB DDR4 RAM?",
+      "Display MINI-ITX devices equipped with ARM CPUs and 32GB DDR4 memory",
+      "Enumerate MINI-ITX products with ARM architecture and supporting 32GB DDR4 memory",
+      "Find MINI-ITX mounted boards that include ARM processors and 32GB DDR4 RAM"
     ],
-    "description": "Tests consistency in recognizing processor architecture and form factor combinations"
+    "description": "CON_05: Tests consistency in recognizing form factor, processor architecture, and memory capacity requirements"
   },
   {
-    "prompt": "Identify all hardware components manufactured by Broadcom Corporation that include ARM processors.",
+    "prompt": "I'm seeking DIN RAIL systems that incorporate X86 architecture and operate on Windows IOT",
     "variations": [
-      "Identify all hardware components manufactured by Broadcom Corporation that include ARM processors.",
-      "List Broadcom Corporation products featuring ARM processors",
-      "Show hardware components from Broadcom that use ARM-based CPUs",
-      "Enumerate Broadcom-made devices incorporating ARM processors",
-      "Display all ARM processor-equipped hardware produced by Broadcom Corporation"
+      "Looking for DIN RAIL mounted devices with X86 processors running Windows IOT",
+      "Need DIN RAIL boards featuring X86 architecture and Windows IOT operating system",
+      "Require DIN RAIL modules equipped with X86 CPUs and Windows IOT support",
+      "Searching for DIN RAIL products using X86 processors and compatible with Windows IOT",
+      "Interested in DIN RAIL systems that have X86 architecture and support Windows IOT"
     ],
-    "description": "Tests consistency in identifying manufacturer-specific processor architectures"
+    "description": "CON_06: Ensures consistent extraction of form factor, processor architecture, and Windows IOT operating system from varied phrasings"
   },
   {
-    "prompt": "Which Advantech Computer on Modules support USB 3.0 interface?",
+    "prompt": "Our project demands COM Express boards utilizing NXP processors coupled with DDR4 memory",
     "variations": [
-      "Which Advantech Computer on Modules support USB 3.0 interface?",
-      "List Advantech COMs that offer USB 3.0 compatibility",
-      "Show Computer on Modules from Advantech with USB 3.0 support",
-      "Display Advantech-manufactured COMs featuring USB 3.0 interfaces",
-      "Enumerate Advantech Computer on Modules equipped with USB 3.0 ports"
+      "We need COM Express modules that use NXP CPUs and have DDR4 memory",
+      "Require COM Express systems equipped with NXP processors and DDR4 memory support",
+      "Looking for COM Express solutions featuring NXP architecture and DDR4 memory",
+      "Seeking COM Express products with NXP processors and integrated DDR4 memory",
+      "Looking to acquire COM Express mounted boards that include NXP processors and DDR4 memory"
     ],
-    "description": "Tests consistency in recognizing manufacturer-specific interface standards"
+    "description": "CON_07: Validates consistency in recognizing form factor, processor manufacturer, and memory type across different expressions"
   },
   {
-    "prompt": "List all Single Board Computers with a memory capacity of 128GB or more with more than 2 USB ports.",
+    "prompt": "Coordinate acquiring MINI-ITX units that support ARM architecture along with DDR4 memory",
     "variations": [
-      "List all Single Board Computers with a memory capacity of 128GB or more with more than 2 USB ports.",
-      "Show SBCs featuring 128GB+ memory and 3 or more USB interfaces",
-      "Display Single Board Computers with at least 128GB RAM and over 2 USB ports",
-      "Enumerate SBCs that have 128GB or higher memory capacity and 3+ USB connections",
-      "Find Single Board Computers with 128GB+ memory and more than two USB interfaces"
+      "Coordinate procurement of MINI-ITX boards featuring ARM processors and DDR4 RAM",
+      "Arrange for MINI-ITX systems equipped with ARM architecture and DDR4 memory support",
+      "Plan to acquire MINI-ITX modules that include ARM CPUs and DDR4 memory",
+      "Manage the acquisition of MINI-ITX products with ARM architecture and DDR4 RAM",
+      "Organize the purchase of MINI-ITX mounted boards supporting ARM processors and DDR4 memory"
     ],
-    "description": "Tests consistency in handling memory capacity and multiple interface requirements"
+    "description": "CON_08: Tests consistency in identifying form factor, processor architecture, and memory type through diverse sentence structures"
   },
   {
-    "prompt": "What are the available NXP powered Computer on Module products that include SATA 3.0 interface?",
+    "prompt": "Identify COM Express form factor boards equipped with Intel X86 processors and featuring SATA storage solutions.",
     "variations": [
-      "What are the available NXP powered Computer on Module products that include SATA 3.0 interface?",
-      "List COMs with NXP processors featuring SATA 3.0 support",
-      "Show NXP-based Computer on Modules that offer SATA 3.0 connectivity",
-      "Display Computer on Module products using NXP chips and including SATA 3.0 interfaces",
-      "Enumerate NXP-powered COMs equipped with SATA 3.0 ports"
+      "Looking for COM Express systems that utilize Intel X86 CPUs and incorporate SATA storage.",
+      "Seeking out COM Express modules powered by Intel X86 processors and supporting SATA memory.",
+      "Searching for COM Express solutions integrating Intel X86 processors with SATA storage.",
+      "Want to find COM Express mounted boards that employ Intel X86 CPUs and have SATA storage.",
+      "Need COM Express products that include Intel X86 processors coupled with SATA storage."
     ],
-    "description": "Tests consistency in identifying processor manufacturer and interface standard combinations"
+    "description": "CON_09: Tests consistency in recognizing form factor, processor manufacturer, architecture, memory type, and storage type requirements"
   },
   {
-    "prompt": "Find Single Board Computers with a form factor smaller than 100mm x 100mm and RAM more 256 MB",
+    "prompt": "Locate COM Express modules that use NXP ARM processors and integrate NVMe storage.",
     "variations": [
-      "Find Single Board Computers with a form factor smaller than 100mm x 100mm and RAM more 256 MB",
-      "List SBCs smaller than 100x100mm with over 256MB of memory",
-      "Show compact Single Board Computers (sub-100x100mm) featuring more than 256MB RAM",
-      "Display SBCs with form factors under 100mm x 100mm and memory exceeding 256MB",
-      "Enumerate Single Board Computers smaller than 100x100mm that have 256MB+ RAM"
+      "Seeking COM Express systems powered by NXP ARM CPUs with NVMe storage.",
+      "Looking for COM Express solutions that utilize NXP ARM processors and support NVMe memory.",
+      "Find COM Express boards equipped with NXP ARM processors and featuring NVMe storage.",
+      "Searching for COM Express products that include NXP ARM CPUs and have NVMe storage solutions.",
+      "Identify COM Express mounted boards incorporating NXP ARM processors alongside NVMe storage."
     ],
-    "description": "Tests consistency in handling physical dimensions and memory capacity specifications"
+    "description": "CON_10: Ensures consistent extraction of form factor, processor manufacturer, architecture, and storage type from varied phrasings"
   },
   {
-    "prompt": "Show products that include an Intel Xeon Processor D and support Embedded Software API.",
+    "prompt": "Discover DIN RAIL systems with Intel X86 processors and support for Linux operating systems.",
     "variations": [
-      "Show products that include an Intel Xeon Processor D and support Embedded Software API.",
-      "List devices featuring Intel Xeon D CPUs with Embedded Software API compatibility",
-      "Enumerate products using Intel Xeon Processor D and offering Embedded Software API support",
-      "Display hardware with Intel Xeon D chips that are compatible with Embedded Software API",
-      "Provide a list of Intel Xeon D-based products supporting Embedded Software API"
+      "Looking for DIN RAIL devices that include Intel X86 CPUs and are compatible with Linux OS.",
+      "Seeking DIN RAIL modules powered by Intel X86 processors and running Linux operating systems.",
+      "Find DIN RAIL solutions integrating Intel X86 processors with Linux OS support.",
+      "Need DIN RAIL mounted boards equipped with Intel X86 CPUs and supporting Linux OS.",
+      "Identify DIN RAIL products that utilize Intel X86 processors and are compatible with Linux operating systems."
     ],
-    "description": "Tests consistency in recognizing specific processor models and software compatibility"
+    "description": "CON_11: Tests consistency in recognizing form factor, processor manufacturer, architecture, operating system requirements"
   },
   {
-    "prompt": "Which products offer a high-performance FPGA feature and are suitable for embedded development?",
+    "prompt": "Type DIN RAIL mounted boards utilizing NXP X86 processors and featuring eMMC storage.",
     "variations": [
-      "Which products offer a high-performance FPGA feature and are suitable for embedded development?",
-      "List high-performance FPGA products designed for embedded systems development",
-      "Show devices with powerful FPGAs tailored for embedded development",
-      "Display products combining high-performance FPGAs with embedded development capabilities",
-      "Enumerate FPGA-based hardware suitable for high-performance embedded development"
+      "Looking for DIN RAIL systems with NXP X86 CPUs and eMMC storage support.",
+      "Seeking DIN RAIL modules powered by NXP X86 processors and integrating eMMC storage.",
+      "Find DIN RAIL solutions that include NXP X86 processors and feature eMMC memory.",
+      "Need DIN RAIL devices equipped with NXP X86 CPUs and eMMC storage solutions.",
+      "Identify DIN RAIL mounted boards that utilize NXP X86 processors and support eMMC storage."
     ],
-    "description": "Tests consistency in identifying FPGA capabilities and development environment requirements"
+    "description": "CON_12: Ensures consistent extraction of form factor, processor manufacturer, architecture, and storage type from varied phrasings"
   },
   {
-    "prompt": "Provide a list of Single Board Computers that can operate at a frequency up to 2.7 GHz with MiniITX form factor.",
+    "prompt": "Coordinate acquisition of MINI-ITX boards with Intel X86 processors and LPDDR4 memory modules.",
     "variations": [
-      "Provide a list of Single Board Computers that can operate at a frequency up to 2.7 GHz with MiniITX form factor.",
-      "Show Mini-ITX SBCs capable of running at frequencies up to 2.7 GHz",
-      "List Single Board Computers in Mini-ITX form factor with max 2.7 GHz processor speed",
-      "Display Mini-ITX format SBCs that can reach 2.7 GHz operating frequency",
-      "Enumerate Mini-ITX Single Board Computers with processors up to 2.7 GHz"
+      "Arrange procurement of MINI-ITX systems that include Intel X86 CPUs and have LPDDR4 memory.",
+      "Organize MINI-ITX modules powered by Intel X86 processors and supporting LPDDR4 memory.",
+      "Manage purchase of MINI-ITX solutions integrating Intel X86 processors with LPDDR4 RAM.",
+      "Plan to acquire MINI-ITX mounted boards equipped with Intel X86 CPUs and LPDDR4 memory modules.",
+      "Seek MINI-ITX products that utilize Intel X86 processors and feature LPDDR4 memory support."
     ],
-    "description": "Tests consistency in handling processor speed and form factor specifications"
+    "description": "CON_13: Tests consistency in recognizing form factor, processor manufacturer, architecture, and memory type requirements"
   },
   {
-    "prompt": "Identify all products with a \"Customizable System-on-Chip (cSoC)\" type with ARM Cortex processor.",
+    "prompt": "Arrange for DIN RAIL mounted systems with Intel X86 processors, SATA storage, and operating on Windows OS.",
     "variations": [
-      "Identify all products with a \"Customizable System-on-Chip (cSoC)\" type with ARM Cortex processor.",
-      "List ARM Cortex-based Customizable System-on-Chip (cSoC) offerings",
-      "Show cSoC products featuring ARM Cortex processors",
-      "Display all ARM Cortex-powered Customizable System-on-Chip solutions",
-      "Enumerate Customizable SoC devices with ARM Cortex CPU architecture"
+      "Organize DIN RAIL devices that include Intel X86 CPUs, SATA storage, and run Windows OS.",
+      "Seek DIN RAIL modules powered by Intel X86 processors, featuring SATA storage, and supporting Windows operating systems.",
+      "Find DIN RAIL solutions integrating Intel X86 processors with SATA storage and Windows OS compatibility.",
+      "Plan to acquire DIN RAIL mounted boards equipped with Intel X86 CPUs, SATA storage, and running Windows OS.",
+      "Look for DIN RAIL products that utilize Intel X86 processors, incorporate SATA storage, and support Windows operating systems."
     ],
-    "description": "Tests consistency in recognizing specialized processor architectures and customizable features"
+    "description": "CON_14: Ensures consistent extraction of form factor, processor manufacturer, architecture, storage type, and operating system from varied phrasings"
   },
   {
-    "prompt": "Top 5 Single Board Computers products that support dual Gigabit Ethernet and SATA.",
+    "prompt": "Identify embedded systems that come with COM Express form factor, NXP ARM processors, and dual Ethernet ports.",
     "variations": [
-      "Top 5 Single Board Computers products that support dual Gigabit Ethernet and SATA.",
-      "List best 5 SBCs featuring both dual Gigabit Ethernet and SATA interfaces",
-      "Show top 5 Single Board Computers with dual GbE and SATA support",
-      "Display 5 premium SBCs offering dual Gigabit Ethernet and SATA connectivity",
-      "Enumerate 5 leading Single Board Computers equipped with dual GbE and SATA"
+      "Seeking embedded devices with COM Express form factor, featuring NXP ARM CPUs and dual Ethernet interfaces.",
+      "Looking for COM Express mounted systems equipped with NXP ARM processors and two Ethernet ports.",
+      "Find COM Express solutions that include NXP ARM CPUs and support dual Ethernet connectivity.",
+      "Need embedded boards that utilize COM Express form factor, integrate NXP ARM processors, and have dual Ethernet ports.",
+      "Search for COM Express products featuring NXP ARM processors and offering two Ethernet interfaces."
     ],
-    "description": "Tests consistency in ranking products with multiple interface requirements"
+    "description": "CON_15: Tests consistency in recognizing form factor, processor manufacturer, architecture, and I/O interface requirements"
   },
   {
-    "prompt": "Which products offer up to 16 cores and 2.3 GHz frequency in their processors?",
+    "prompt": "Discover systems using MINI-ITX form factor, Intel X86 processors, and NVMe storage support.",
     "variations": [
-      "Which products offer up to 16 cores and 2.3 GHz frequency in their processors?",
-      "List devices featuring processors with up to 16 cores and 2.3 GHz clock speed",
-      "Show products with CPUs offering maximum 16 cores and 2.3 GHz frequency",
-      "Display items with processors supporting up to 16 cores and 2.3 GHz clock rate",
-      "Enumerate hardware using processors that have up to 16 cores and 2.3 GHz speed"
+      "Looking for MINI-ITX modules that include Intel X86 CPUs and support NVMe storage.",
+      "Seeking MINI-ITX solutions featuring Intel X86 processors and NVMe memory support.",
+      "Find MINI-ITX mounted boards equipped with Intel X86 processors and NVMe storage solutions.",
+      "Need MINI-ITX devices that utilize Intel X86 CPUs and integrate NVMe storage.",
+      "Identify MINI-ITX products with Intel X86 processors and featuring NVMe storage support."
     ],
-    "description": "Tests consistency in handling processor core count and frequency specifications"
+    "description": "CON_16: Ensures consistent extraction of form factor, processor manufacturer, architecture, and storage type from varied phrasings"
   },
   {
-    "prompt": "Find Kontron products that include both ECC and non-ECC memory options.",
+    "prompt": "Locate COM Express systems that integrate NXP ARM processors, support for LINUX OS, and operate temperatures down to -40°C.",
     "variations": [
-      "Find Kontron products that include both ECC and non-ECC memory options.",
-      "List Kontron devices supporting both ECC and non-ECC RAM",
-      "Show Kontron hardware with ECC and non-ECC memory compatibility",
-      "Display Kontron products that provide ECC and non-ECC memory choices",
-      "Enumerate Kontron offerings featuring both ECC and non-ECC memory support"
+      "Seeking COM Express devices with NXP ARM CPUs, compatible with Linux OS, and capable of -40°C operation.",
+      "Looking for COM Express modules that include NXP ARM processors, support Linux systems, and have a minimum operating temperature of -40°C.",
+      "Find COM Express solutions featuring NXP ARM processors, LINUX OS compatibility, and operating at -40°C.",
+      "Need COM Express mounted boards equipped with NXP ARM CPUs, running Linux, and supporting -40°C operation.",
+      "Identify COM Express products that utilize NXP ARM processors, support Linux OS, and can operate at -40°C."
     ],
-    "description": "Tests consistency in identifying manufacturer-specific memory technology options"
+    "description": "CON_17: Tests consistency in recognizing form factor, processor manufacturer, architecture, operating system, and temperature requirements"
   },
   {
-    "prompt": "List all hardware platforms with on-chip frame memory and supports a TFT-LCD controller.",
+    "prompt": "Redeploy DIN RAIL devices utilizing Intel X86 processors and NVMe storage support.",
     "variations": [
-      "List all hardware platforms with on-chip frame memory and supports a TFT-LCD controller.",
-      "Show devices featuring on-chip frame memory and TFT-LCD controller support",
-      "Display hardware solutions with integrated frame memory and TFT-LCD controller",
-      "Enumerate platforms that include on-chip frame memory and TFT-LCD controller capabilities",
-      "Find products combining on-chip frame memory with TFT-LCD controller functionality"
+      "Seeking DIN RAIL systems equipped with Intel X86 CPUs and NVMe storage capabilities.",
+      "Looking for DIN RAIL-mounted boards that incorporate Intel X86 processors and support NVMe storage.",
+      "Need DIN RAIL devices that utilize Intel X86 architecture and offer NVMe storage solutions.",
+      "Searching for DIN RAIL form factor systems with Intel X86 processors and integrated NVMe storage.",
+      "Require DIN RAIL modules featuring Intel X86 CPUs and compatible with NVMe storage."
     ],
-    "description": "Tests consistency in recognizing integrated display controller and memory features"
+    "description": "CON_18: Ensures consistent extraction of form factor, processor manufacturer, architecture, and storage type from varied phrasings"
   },
   {
-    "prompt": "Provide a list of Single Board Computers manufactured by Advantech that include USB 3.0 support.",
+    "prompt": "Seek MINI-ITX boards featuring NXP ARM processors with LPDDR4 memory and eMMC storage capabilities.",
     "variations": [
-      "Provide a list of Single Board Computers manufactured by Advantech that include USB 3.0 support.",
-      "Show Advantech-made SBCs featuring USB 3.0 interfaces",
-      "List Advantech Single Board Computers with USB 3.0 compatibility",
-      "Display Advantech-manufactured SBCs equipped with USB 3.0 ports",
-      "Enumerate Advantech Single Board Computers offering USB 3.0 support"
+      "Looking for MINI-ITX modules that include NXP ARM CPUs, support LPDDR4 memory, and have eMMC storage.",
+      "Seeking MINI-ITX systems equipped with NXP ARM processors, LPDDR4 memory, and eMMC storage support.",
+      "Find MINI-ITX solutions that utilize NXP ARM CPUs, feature LPDDR4 memory, and incorporate eMMC storage.",
+      "Need MINI-ITX mounted boards with NXP ARM processors, LPDDR4 memory, and eMMC storage solutions.",
+      "Identify MINI-ITX products that include NXP ARM processors, support LPDDR4 memory, and offer eMMC storage."
     ],
-    "description": "Tests consistency in recognizing manufacturer-specific interface standards"
+    "description": "CON_19: Tests consistency in recognizing form factor, processor manufacturer, architecture, memory type, and storage type requirements"
   },
   {
-    "prompt": "Which devices support Intel Hyper-Threading Technology with mATX form factor?",
+    "prompt": "Redeploy COM EXPRESS devices with INTEL X86 processors and NVMe storage.",
     "variations": [
-      "Which devices support Intel Hyper-Threading Technology with mATX form factor?",
-      "List mATX form factor products featuring Intel Hyper-Threading Technology",
-      "Show hardware in mATX format that includes Intel Hyper-Threading support",
-      "Display mATX devices compatible with Intel Hyper-Threading Technology",
-      "Enumerate mATX form factor items offering Intel Hyper-Threading capabilities"
+      "Looking for COM EXPRESS systems that include INTEL X86 CPUs and support NVMe storage.",
+      "Seeking COM EXPRESS modules featuring INTEL X86 processors and NVMe storage solutions.",
+      "Find COM EXPRESS solutions that use INTEL X86 processors and incorporate NVMe storage.",
+      "Need COM EXPRESS mounted boards with INTEL X86 CPUs and NVMe storage support.",
+      "Identify COM EXPRESS products that utilize INTEL X86 processors and offer NVMe storage."
     ],
-    "description": "Tests consistency in recognizing multiple processor technology features"
-  },
-  {
-    "prompt": "Identify products that include programmable analog components and embedded nonvolatile memory.",
-    "variations": [
-      "Identify products that include programmable analog components and embedded nonvolatile memory.",
-      "List devices featuring both programmable analog elements and embedded nonvolatile memory",
-      "Show hardware solutions combining programmable analog capabilities with embedded nonvolatile memory",
-      "Display products that offer programmable analog components alongside embedded nonvolatile memory",
-      "Enumerate items integrating programmable analog features and embedded nonvolatile memory"
-    ],
-    "description": "Tests consistency in identifying specialized analog components and memory features"
-  },
-  {
-    "prompt": "What are the available hardware platforms with Intel Turbo Boost Technology and Hyper-Threading Technology?",
-    "variations": [
-      "What are the available hardware platforms with Intel Turbo Boost Technology and Hyper-Threading Technology?",
-      "List devices featuring both Intel Turbo Boost and Hyper-Threading Technologies",
-      "Show hardware solutions that incorporate Intel Turbo Boost and Hyper-Threading capabilities",
-      "Display products offering built-in support for Intel Turbo Boost and Hyper-Threading",
-      "Enumerate platforms equipped with Intel Turbo Boost and Hyper-Threading Technologies"
-    ],
-    "description": "Tests consistency in recognizing multiple processor technology features"
-  },
-  {
-    "prompt": "Show all SBCs supporting Verilog and C with detailed specifications for FPGA integration.",
-    "variations": [
-      "List Single Board Computers compatible with Verilog and C for FPGA development",
-      "Display SBCs that support both Verilog and C languages for FPGA integration",
-      "Enumerate Single Board Computers offering Verilog and C compatibility for FPGA projects",
-      "Find SBCs with FPGA integration capabilities supporting Verilog and C programming"
-    ],
-    "description": "Tests consistency in handling programming language support and FPGA integration requirements"
+    "description": "CON_20a: Ensures consistent extraction of form factor, processor manufacturer, architecture, and storage type from varied phrasings"
   }
 ]

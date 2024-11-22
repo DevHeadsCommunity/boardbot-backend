@@ -307,6 +307,34 @@ const TestExecutionCard: React.FC = () => {
         totalCost = contextMetrics.totalCost;
         break;
       }
+
+      case "robustness": {
+        const robustnessMetrics = data.testResults.reduce(
+          (accuracy, result) => {
+            const robustnessResult = result as RobustnessTestResult;
+            const metadata = robustnessResult.response.message.metadata;
+            const responseTime = metadata?.timeTaken ? Object.values(metadata.timeTaken).reduce((sum, time) => sum + time, 0) : 0;
+            const cost = calculateCost(metadata);
+            totalCost += cost;
+
+            return {
+              filterAccuracy: accuracy.filterAccuracy + robustnessResult.filterAccuracy,
+              noiseFiltering: accuracy.noiseFiltering + robustnessResult.noiseFiltering,
+              responseTime: accuracy.responseTime + responseTime,
+              cost: accuracy.cost + cost,
+            };
+          },
+          { filterAccuracy: 0, noiseFiltering: 0, responseTime: 0, cost: 0 }
+        );
+
+        metrics = {
+          "Average Filter Accuracy": robustnessMetrics.filterAccuracy / data.testResults.length,
+          "Average Noise Filtering": robustnessMetrics.noiseFiltering / data.testResults.length,
+          "Average Response Time": robustnessMetrics.responseTime / data.testResults.length,
+          "Average Cost": robustnessMetrics.cost / data.testResults.length,
+        };
+        break;
+      }
     }
 
     return { metrics, totalCost };

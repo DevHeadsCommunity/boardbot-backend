@@ -128,13 +128,13 @@ export const testMachine = setup({
                 return [...context.tests, newTest];
               },
             }),
-            emit({
-              type: "notification",
-              data: {
-                type: "success",
-                message: "Test created successfully",
-              },
-            }),
+            // emit({
+            //   type: "notification",
+            //   data: {
+            //     type: "success",
+            //     message: "Test created successfullyZ344",
+            //   },
+            // }),
           ],
         },
         "user.selectTest": {

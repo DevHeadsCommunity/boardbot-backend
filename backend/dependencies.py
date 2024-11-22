@@ -1,5 +1,6 @@
 from config import Config
 from containers import Container
+from services.anthropic_service import AnthropicService
 
 container = Container()
 container.config.from_dict(Config().model_dump())
@@ -31,3 +32,7 @@ def get_batch_feature_extraction_service():
 
 def get_openai_service():
     return container.openai_service()
+
+
+def get_anthropic_service() -> AnthropicService:
+    return container.anthropic_service()

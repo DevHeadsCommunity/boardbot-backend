@@ -4,6 +4,8 @@ from dateutil.parser import isoparse
 from core.models.message import RequestMessage, ResponseMessage
 from core import SessionManager, MessageProcessor
 import datetime
+from config import config
+
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +20,7 @@ class SocketIOHandler:
             async_mode="asgi",
             cors_allowed_origins=[
                 "http://localhost:3000",
-                "http://192.168.248.104:3000",
+                f"http://{config.IP_ADDRESS}:3000",
                 "https://api.boardbot.ai",
                 "https://boardbot.ai",
             ],
@@ -61,15 +63,33 @@ class SocketIOHandler:
     async def process_message(self, sid, data):
         logger.info(f"\n\n ===:> Received message from {sid}: {data}\n\n")
 
+        # Validate model choice
+        model = data.get("model")
+        if not model:
+            await self.sio.emit(
+                "error",
+                {"message": "Model choice is required"},
+                room=sid
+            )
+            return
+
+        if not (model.startswith(("gpt-", "text-", "claude-"))):
+            await self.sio.emit(
+                "error",
+                {"message": f"Unsupported model: {model}"},
+                room=sid
+            )
+            return
+
         message = RequestMessage(
             id=data.get("message_id"),
             message=data.get("message"),
             timestamp=self.get_timestamp(data.get("timestamp", None)),
             session_id=data.get("session_id"),
-            model=data.get("model"),
+            model=model,
             architecture_choice=data.get("architecture_choice"),
             history_management_choice=data.get("history_management_choice"),
-            is_user_message=True,  # Add this line
+            is_user_message=True,
         )
         response = await self.message_processor.process_message(message)
         response_dict = response.to_dict()
