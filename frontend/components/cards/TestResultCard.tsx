@@ -57,6 +57,10 @@ export type TransformedData = {
   }[];
   description: string;
   extractedFilters?: Record<string, any>;
+  // Fields for defensibility test
+  boundaryMaintenance?: number;
+  // Fields for conversational flow test
+  topicTransitionAccuracy?: number;
 };
 
 const TestResultCard: React.FC = () => {
@@ -312,6 +316,50 @@ const getColumns = (): TableColumn[] => {
       cell: (value: number | undefined) => <div className={`font-medium ${getScoreColor(value)}`}>{value !== undefined ? `${(value * 100).toFixed(2)}%` : "-"}</div>,
       showIf: (row: TransformedData) => row.testType === "robustness",
     },
+    {
+      header: "Boundary Maintenance",
+      accessor: "boundaryMaintenance",
+      sortable: true,
+      cell: (value: number | undefined) => (
+        <div className={`font-medium ${getScoreColor(value)}`}>
+          {value !== undefined ? `${(value * 100).toFixed(2)}%` : "-"}
+        </div>
+      ),
+      showIf: (row: TransformedData) => row.testType === "defensibility",
+    },
+    {
+      header: "Appropriate Response",
+      accessor: "appropriateResponse",
+      sortable: true,
+      cell: (value: boolean | undefined) => (
+        <div className={`font-medium ${value ? "text-green-600" : "text-red-600"}`}>
+          {value !== undefined ? (value ? "Yes" : "No") : "-"}
+        </div>
+      ),
+      showIf: (row: TransformedData) => row.testType === "defensibility",
+    },
+    {
+      header: "Flow Coherence",
+      accessor: "flowCoherence",
+      sortable: true,
+      cell: (value: number | undefined) => (
+        <div className={`font-medium ${getScoreColor(value)}`}>
+          {value !== undefined ? `${(value * 100).toFixed(2)}%` : "-"}
+        </div>
+      ),
+      showIf: (row: TransformedData) => row.testType === "conversational_flow",
+    },
+    {
+      header: "Topic Transition",
+      accessor: "topicTransitionAccuracy",
+      sortable: true,
+      cell: (value: number | undefined) => (
+        <div className={`font-medium ${getScoreColor(value)}`}>
+          {value !== undefined ? `${(value * 100).toFixed(2)}%` : "-"}
+        </div>
+      ),
+      showIf: (row: TransformedData) => row.testType === "conversational_flow",
+    },
   ];
 
   return [...baseColumns, ...scoreColumns];
@@ -397,18 +445,21 @@ const getAllColumns = (testType: string | undefined): TableColumn[] => {
           header: "Flow Coherence",
           accessor: "flowCoherence",
           sortable: true,
-          cell: (value: number | undefined) => <div className={`font-medium ${getScoreColor(value)}`}>{value !== undefined ? `${(value * 100).toFixed(2)}%` : "-"}</div>,
+          cell: (value: number | undefined) => (
+            <div className={`font-medium ${getScoreColor(value)}`}>
+              {value !== undefined ? `${(value * 100).toFixed(2)}%` : "-"}
+            </div>
+          ),
         },
         {
           header: "Topic Transition",
           accessor: "topicTransitionAccuracy",
           sortable: true,
-          cell: (value: number | undefined) => <div className={`font-medium ${getScoreColor(value)}`}>{value !== undefined ? `${(value * 100).toFixed(2)}%` : "-"}</div>,
-        },
-        {
-          header: "Conversation Turns",
-          accessor: "conversation",
-          cell: (value: ResponseMessage[] | undefined) => (value ? value.length : "-"),
+          cell: (value: number | undefined) => (
+            <div className={`font-medium ${getScoreColor(value)}`}>
+              {value !== undefined ? `${(value * 100).toFixed(2)}%` : "-"}
+            </div>
+          ),
         }
       );
       break;
@@ -416,15 +467,24 @@ const getAllColumns = (testType: string | undefined): TableColumn[] => {
     case "defensibility":
       baseColumns.push(
         {
-          header: "Boundary Score",
+          header: "Boundary Maintenance",
           accessor: "boundaryMaintenance",
           sortable: true,
-          cell: (value: number | undefined) => <div className={`font-medium ${getScoreColor(value)}`}>{value !== undefined ? `${(value * 100).toFixed(2)}%` : "-"}</div>,
+          cell: (value: number | undefined) => (
+            <div className={`font-medium ${getScoreColor(value)}`}>
+              {value !== undefined ? `${(value * 100).toFixed(2)}%` : "-"}
+            </div>
+          ),
         },
         {
           header: "Appropriate Response",
           accessor: "appropriateResponse",
-          cell: (value: boolean | undefined) => <Badge variant={value ? "success" : "destructive"}>{value ? "Yes" : "No"}</Badge>,
+          sortable: true,
+          cell: (value: boolean | undefined) => (
+            <div className={`font-medium ${value ? "text-green-600" : "text-red-600"}`}>
+              {value !== undefined ? (value ? "Yes" : "No") : "-"}
+            </div>
+          ),
         }
       );
       break;

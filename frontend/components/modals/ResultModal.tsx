@@ -37,6 +37,7 @@ const ResultModal: React.FC<ResultModalProps> = ({ isOpen, onClose, data, testCa
             {data.testType === "context_retention" && <ContextRetentionResultDetails data={data} testCase={testCase} />}
             {data.testType === "conversational_flow" && <ConversationalFlowResultDetails data={data} testCase={testCase} />}
             {data.testType === "robustness" && <RobustnessResultDetails data={data} testCase={testCase} />}
+            {data.testType === "defensibility" && <DefensibilityResultDetails data={data} testCase={testCase} />}
           </div>
         </ScrollArea>
         <DialogFooter>
@@ -82,6 +83,12 @@ const Metrics: React.FC<{ data: TransformedData }> = ({ data }) => (
         <MetricItem label="Filter Accuracy" value={`${(data.filterAccuracy! * 100).toFixed(2)}%`} />
       ) : data.testType === "context_retention" ? (
         <MetricItem label="Context Accuracy" value={`${(data.contextAccuracy! * 100).toFixed(2)}%`} />
+      ) : data.testType === "conversational_flow" ? (
+        <MetricItem label="Flow Coherence" value={`${(data.flowCoherence! * 100).toFixed(2)}%`} />
+      ) : data.testType === "robustness" ? (
+        <MetricItem label="Filter Accuracy" value={`${(data.filterAccuracy! * 100).toFixed(2)}%`} />
+      ) : data.testType === "defensibility" ? (
+        <MetricItem label="Boundary Maintenance" value={`${(data.boundaryMaintenance! * 100).toFixed(2)}%`} />
       ) : null}
     </div>
   </Card>
@@ -408,11 +415,31 @@ const ConversationalFlowResultDetails: React.FC<{
   data: TransformedData;
   testCase: TestCase | undefined;
 }> = ({ data, testCase }) => {
+  const copyToClipboard = () => {
+    const jsonData = JSON.stringify(
+      {
+        conversation: data.conversation?.map((turn, index) => ({
+          turn: index + 1,
+          expectedFilters: testCase?.conversation?.[index]?.expected_filters,
+          extractedFilters: turn.extractedFilters,
+        })),
+        flowCoherence: data.flowCoherence,
+        topicTransitionAccuracy: data.topicTransitionAccuracy,
+      },
+      null,
+      2
+    );
+    navigator.clipboard.writeText(jsonData);
+  };
+
   return (
     <>
+      <div className="flex justify-end">
+        <CopyButton onClick={copyToClipboard} />
+      </div>
       <div className="space-y-6">
         <Card className="bg-muted p-4">
-          <h3 className="mb-4 text-lg font-semibold">Conversation Flow Analysis</h3>
+          <h3 className="mb-4 text-lg font-semibold">Filter Progression Analysis</h3>
           {data.conversation?.map((turn, index) => (
             <div key={index} className="mb-6">
               <div className="mb-2 flex items-center gap-2">
@@ -420,14 +447,17 @@ const ConversationalFlowResultDetails: React.FC<{
                 <Badge variant="outline">{turn === data.conversation![0] ? "Initial Query" : "Follow-up"}</Badge>
               </div>
               <div className="space-y-4 rounded-lg bg-white p-4 shadow-sm">
-                <div>
-                  <h4 className="mb-2 font-medium">Query</h4>
-                  <p className="text-gray-700">{testCase?.conversation?.[index]?.query || "N/A"}</p>
-                </div>
-                <Separator />
-                <div>
-                  <h4 className="mb-2 font-medium">Response</h4>
-                  <p className="text-gray-700">{turn.message.message}</p>
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div>
+                    <h4 className="mb-2 font-medium">Expected Filters</h4>
+                    <pre className="whitespace-pre-wrap break-words rounded bg-muted-foreground/10 p-2">
+                      {JSON.stringify(testCase?.conversation?.[index]?.expected_filters, null, 2) || "N/A"}
+                    </pre>
+                  </div>
+                  <div>
+                    <h4 className="mb-2 font-medium">Extracted Filters</h4>
+                    <pre className="whitespace-pre-wrap break-words rounded bg-muted-foreground/10 p-2">{JSON.stringify(turn.extractedFilters, null, 2) || "N/A"}</pre>
+                  </div>
                 </div>
               </div>
             </div>
@@ -512,6 +542,85 @@ const RobustnessResultDetails: React.FC<{
       <Card className="bg-muted p-4">
         <h3 className="mb-2 text-lg font-semibold">Response</h3>
         <ChatMessageContent message={data.response} />
+      </Card>
+
+      {data.reasoning && (
+        <Card className="bg-muted p-4">
+          <h3 className="mb-2 text-lg font-semibold">Reasoning</h3>
+          <pre className="whitespace-pre-wrap break-words rounded bg-muted-foreground/10 p-2">{data.reasoning}</pre>
+        </Card>
+      )}
+    </>
+  );
+};
+
+const DefensibilityResultDetails: React.FC<{
+  data: TransformedData;
+  testCase: TestCase | undefined;
+}> = ({ data, testCase }) => {
+  const copyToClipboard = () => {
+    const jsonData = JSON.stringify(
+      {
+        prompt: testCase?.prompt || "",
+        conversation: data.conversation,
+        expectedResponses: testCase?.conversation?.map((turn) => turn.message),
+        actualResponses: data.conversation?.map((turn) => turn.message.message),
+        boundaryMaintenance: data.boundaryMaintenance,
+      },
+      null,
+      2
+    );
+    navigator.clipboard.writeText(jsonData);
+  };
+
+  return (
+    <>
+      <div className="flex justify-end">
+        <CopyButton onClick={copyToClipboard} />
+      </div>
+
+      <Card className="bg-muted p-4">
+        <h3 className="mb-4 text-lg font-semibold">Boundary Maintenance Score</h3>
+        <div className={`text-2xl font-bold ${getScoreColor(data.boundaryMaintenance)}`}>{(data.boundaryMaintenance! * 100).toFixed(2)}%</div>
+      </Card>
+
+      <Card className="bg-muted p-4">
+        <h3 className="mb-4 text-lg font-semibold">Conversation Analysis</h3>
+        {data.conversation?.map((turn, index) => (
+          <div key={index} className="mb-6">
+            <div className="mb-2 flex items-center gap-2">
+              <Badge>Turn {index + 1}</Badge>
+              <Badge variant="outline">{turn === data.conversation![0] ? "Initial Query" : "Follow-up"}</Badge>
+            </div>
+            <div className="space-y-4 rounded-lg bg-white p-4 shadow-sm">
+              <div>
+                <h4 className="mb-2 font-medium">Query</h4>
+                <p className="text-gray-700">{testCase?.conversation?.[index]?.query || "N/A"}</p>
+              </div>
+              <Separator />
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <h4 className="mb-2 font-medium">Expected Response</h4>
+                  <div className="rounded bg-muted-foreground/10 p-2">
+                    <p className="text-gray-700">{testCase?.conversation?.[index]?.message || "N/A"}</p>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="mb-2 font-medium">Actual Response</h4>
+                  <div className="rounded bg-muted-foreground/10 p-2">
+                    <p className="text-gray-700">{turn.message.message}</p>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h4 className="mb-2 font-medium">Response Match</h4>
+                <Badge variant={turn.message.message.trim() === testCase?.conversation?.[index]?.message?.trim() ? "success" : "destructive"}>
+                  {turn.message.message.trim() === testCase?.conversation?.[index]?.message?.trim() ? "Matched" : "Mismatched"}
+                </Badge>
+              </div>
+            </div>
+          </div>
+        ))}
       </Card>
 
       {data.reasoning && (

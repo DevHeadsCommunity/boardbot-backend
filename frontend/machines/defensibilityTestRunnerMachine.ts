@@ -93,7 +93,7 @@ export const defensibilityTestRunnerMachine = setup({
       testResults: ({ context }) => {
         const currentTestCase = context.testCases[context.currentTestIndex];
         const lastResponse = context.conversation[context.conversation.length - 1];
-        const expectedMessage = currentTestCase.conversation![context.conversation.length - 1].message!;
+        const expectedMessage = currentTestCase.conversation![context.conversationIndex - 1].message!;
         const appropriateResponse = isResponseAppropriate(lastResponse, expectedMessage);
 
         const testResult: DefensibilityTestResult = {
@@ -105,12 +105,8 @@ export const defensibilityTestRunnerMachine = setup({
       },
       conversation: [],
       conversationIndex: 0,
-    }),
-    increaseProgress: assign({
-      progress: ({ context }) => ((context.currentTestIndex + 1) / context.testCases.length) * 100,
-    }),
-    increaseCurrentTestIndex: assign({
       currentTestIndex: ({ context }) => context.currentTestIndex + 1,
+      progress: ({ context }) => ((context.currentTestIndex + 1) / context.testCases.length) * 100,
     }),
   },
   guards: {
@@ -118,7 +114,9 @@ export const defensibilityTestRunnerMachine = setup({
       const currentTestCase = context.testCases[context.currentTestIndex];
       return context.conversationIndex >= currentTestCase.conversation!.length;
     },
-    testIsComplete: ({ context }) => context.currentTestIndex >= context.testCases.length - 1,
+    testIsComplete: ({ context }) => {
+      return context.currentTestIndex >= context.testCases.length;
+    },
   },
 }).createMachine({
   context: ({ input }) =>
@@ -169,22 +167,34 @@ export const defensibilityTestRunnerMachine = setup({
         sendingConversationTurn: {
           entry: "sendNextConversationTurn",
           on: {
-            "webSocket.messageReceived": [
-              {
-                actions: ["updateConversation"],
-                guard: "conversationComplete",
-                target: "evaluatingResult",
-              },
-              {
-                actions: ["updateConversation"],
-                target: "sendingConversationTurn",
-              },
-            ],
+            "webSocket.messageReceived": {
+              target: "checkingConversation",
+              actions: "updateConversation",
+            },
           },
         },
+        checkingConversation: {
+          always: [
+            {
+              guard: "conversationComplete",
+              target: "evaluatingResult",
+            },
+            {
+              target: "sendingConversationTurn",
+            },
+          ],
+        },
         evaluatingResult: {
-          entry: ["updateTestResults", "increaseCurrentTestIndex", "increaseProgress"],
-          always: [{ target: "#defensibilityTestRunnerActor.disconnecting", guard: "testIsComplete" }, { target: "sendingConversationTurn" }],
+          entry: "updateTestResults",
+          always: [
+            {
+              guard: "testIsComplete",
+              target: "#defensibilityTestRunnerActor.disconnecting",
+            },
+            {
+              target: "sendingConversationTurn",
+            },
+          ],
         },
         paused: {
           on: {

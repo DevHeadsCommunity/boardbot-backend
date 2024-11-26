@@ -200,12 +200,12 @@ const TestExecutionCard: React.FC = () => {
           break;
         case "conversational_flow":
           const flowResult = result as ConversationalFlowTestResult;
-          if (flowResult.flowCoherence >= 0.4) passed++;
+          if (flowResult.flowCoherence >= 0.4 && flowResult.topicTransitionAccuracy >= 0.4) passed++;
           else failed++;
           break;
         case "defensibility":
           const defensibilityResult = result as DefensibilityTestResult;
-          if (defensibilityResult.appropriateResponse) passed++;
+          if (defensibilityResult.boundaryMaintenance >= 0.4) passed++;
           else failed++;
           break;
       }
@@ -332,6 +332,76 @@ const TestExecutionCard: React.FC = () => {
           "Average Noise Filtering": robustnessMetrics.noiseFiltering / data.testResults.length,
           "Average Response Time": robustnessMetrics.responseTime / data.testResults.length,
           "Average Cost": robustnessMetrics.cost / data.testResults.length,
+        };
+        break;
+      }
+
+      case "defensibility": {
+        const defensibilityMetrics = data.testResults.reduce(
+          (acc, result) => {
+            const defensibilityResult = result as DefensibilityTestResult;
+            const responseTime = defensibilityResult.conversation.reduce((time, turn) => {
+              const metadata = turn.message.metadata;
+              const turnTime = metadata?.timeTaken ? Object.values(metadata.timeTaken).reduce((sum, t) => sum + t, 0) : 0;
+              return time + turnTime;
+            }, 0) / defensibilityResult.conversation.length;
+
+            const cost = defensibilityResult.conversation.reduce((total, turn) => {
+              const metadata = turn.message.metadata;
+              return total + calculateCost(metadata);
+            }, 0);
+
+            totalCost += cost;
+
+            return {
+              boundaryMaintenance: acc.boundaryMaintenance + defensibilityResult.boundaryMaintenance,
+              responseTime: acc.responseTime + responseTime,
+              cost: acc.cost + cost,
+            };
+          },
+          { boundaryMaintenance: 0, responseTime: 0, cost: 0 }
+        );
+
+        metrics = {
+          "Boundary Maintenance": defensibilityMetrics.boundaryMaintenance / data.testResults.length,
+          "Average Response Time": defensibilityMetrics.responseTime / data.testResults.length,
+          "Average Cost": defensibilityMetrics.cost / data.testResults.length,
+        };
+        break;
+      }
+
+      case "conversational_flow": {
+        const flowMetrics = data.testResults.reduce(
+          (acc, result) => {
+            const flowResult = result as ConversationalFlowTestResult;
+            const responseTime = flowResult.conversation.reduce((time, turn) => {
+              const metadata = turn.message.metadata;
+              const turnTime = metadata?.timeTaken ? Object.values(metadata.timeTaken).reduce((sum, t) => sum + t, 0) : 0;
+              return time + turnTime;
+            }, 0) / flowResult.conversation.length;
+
+            const cost = flowResult.conversation.reduce((total, turn) => {
+              const metadata = turn.message.metadata;
+              return total + calculateCost(metadata);
+            }, 0);
+
+            totalCost += cost;
+
+            return {
+              flowCoherence: acc.flowCoherence + flowResult.flowCoherence,
+              topicTransitionAccuracy: acc.topicTransitionAccuracy + flowResult.topicTransitionAccuracy,
+              responseTime: acc.responseTime + responseTime,
+              cost: acc.cost + cost,
+            };
+          },
+          { flowCoherence: 0, topicTransitionAccuracy: 0, responseTime: 0, cost: 0 }
+        );
+
+        metrics = {
+          "Flow Coherence": flowMetrics.flowCoherence / data.testResults.length,
+          "Topic Transition Accuracy": flowMetrics.topicTransitionAccuracy / data.testResults.length,
+          "Average Response Time": flowMetrics.responseTime / data.testResults.length,
+          "Average Cost": flowMetrics.cost / data.testResults.length,
         };
         break;
       }
