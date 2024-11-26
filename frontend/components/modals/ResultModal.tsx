@@ -415,11 +415,31 @@ const ConversationalFlowResultDetails: React.FC<{
   data: TransformedData;
   testCase: TestCase | undefined;
 }> = ({ data, testCase }) => {
+  const copyToClipboard = () => {
+    const jsonData = JSON.stringify(
+      {
+        conversation: data.conversation?.map((turn, index) => ({
+          turn: index + 1,
+          expectedFilters: testCase?.conversation?.[index]?.expected_filters,
+          extractedFilters: turn.extractedFilters,
+        })),
+        flowCoherence: data.flowCoherence,
+        topicTransitionAccuracy: data.topicTransitionAccuracy,
+      },
+      null,
+      2
+    );
+    navigator.clipboard.writeText(jsonData);
+  };
+
   return (
     <>
+      <div className="flex justify-end">
+        <CopyButton onClick={copyToClipboard} />
+      </div>
       <div className="space-y-6">
         <Card className="bg-muted p-4">
-          <h3 className="mb-4 text-lg font-semibold">Conversation Flow Analysis</h3>
+          <h3 className="mb-4 text-lg font-semibold">Filter Progression Analysis</h3>
           {data.conversation?.map((turn, index) => (
             <div key={index} className="mb-6">
               <div className="mb-2 flex items-center gap-2">
@@ -427,14 +447,17 @@ const ConversationalFlowResultDetails: React.FC<{
                 <Badge variant="outline">{turn === data.conversation![0] ? "Initial Query" : "Follow-up"}</Badge>
               </div>
               <div className="space-y-4 rounded-lg bg-white p-4 shadow-sm">
-                <div>
-                  <h4 className="mb-2 font-medium">Query</h4>
-                  <p className="text-gray-700">{testCase?.conversation?.[index]?.query || "N/A"}</p>
-                </div>
-                <Separator />
-                <div>
-                  <h4 className="mb-2 font-medium">Response</h4>
-                  <p className="text-gray-700">{turn.message.message}</p>
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div>
+                    <h4 className="mb-2 font-medium">Expected Filters</h4>
+                    <pre className="whitespace-pre-wrap break-words rounded bg-muted-foreground/10 p-2">
+                      {JSON.stringify(testCase?.conversation?.[index]?.expected_filters, null, 2) || "N/A"}
+                    </pre>
+                  </div>
+                  <div>
+                    <h4 className="mb-2 font-medium">Extracted Filters</h4>
+                    <pre className="whitespace-pre-wrap break-words rounded bg-muted-foreground/10 p-2">{JSON.stringify(turn.extractedFilters, null, 2) || "N/A"}</pre>
+                  </div>
                 </div>
               </div>
             </div>
