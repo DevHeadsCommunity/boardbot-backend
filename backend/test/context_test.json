@@ -1,6 +1,6 @@
 [
   {
-    "description": "Tests progressive feature refinement for industrial applications, maintaining processor and environmental requirements while adding connectivity specs",
+    "description": "CTR_01: Tests progressive feature refinement for industrial applications, maintaining processor and environmental requirements while adding connectivity specs",
     "conversation": [
       {
         "turn": 1,
@@ -31,18 +31,18 @@
     ]
   },
   {
-    "description": "Tests context retention for OS compatibility and memory specifications while adding wireless capabilities",
+    "description": "CTR_02: Tests context retention for OS compatibility and memory specifications while adding wireless capabilities",
     "conversation": [
       {
         "turn": 1,
-        "query": "Find boards that support both Windows and Linux",
+        "query": "Find boards that supports both Windows and Linux operating systems",
         "expected_filters": {
           "operating_system_bsp": ["WINDOWS", "LINUX"]
         }
       },
       {
         "turn": 2,
-        "query": "Which ones have at least 32GB RAM?",
+        "query": "Which of those boards have at least 32GB RAM?",
         "expected_filters": {
           "operating_system_bsp": ["WINDOWS", "LINUX"],
           "memory": "32.0GB DDR4"
@@ -50,7 +50,7 @@
       },
       {
         "turn": 3,
-        "query": "And support WiFi 6?",
+        "query": "And have WiFi 6 support?",
         "expected_filters": {
           "operating_system_bsp": ["WINDOWS", "LINUX"],
           "memory": "32.0GB DDR4",
@@ -60,7 +60,7 @@
     ]
   },
   {
-    "description": "Tests manufacturer-specific context retention while adding storage and certification requirements",
+    "description": "CTR_03: Tests manufacturer-specific context retention while adding storage and certification requirements",
     "conversation": [
       {
         "turn": 1,
@@ -71,7 +71,7 @@
       },
       {
         "turn": 2,
-        "query": "Which ones have NVMe storage?",
+        "query": "Which one of those products has NVMe storage?",
         "expected_filters": {
           "manufacturer": "ADVANTECH",
           "onboard_storage": "NVME SSD"
@@ -79,7 +79,7 @@
       },
       {
         "turn": 3,
-        "query": "From those, which ones are military certified?",
+        "query": "From those, which one is military certified?",
         "expected_filters": {
           "manufacturer": "ADVANTECH",
           "onboard_storage": "NVME SSD",
@@ -89,7 +89,7 @@
     ]
   },
   {
-    "description": "Tests form factor context retention while adding processor and power requirements",
+    "description": "CTR_04: Tests form factor context retention while adding processor and power requirements",
     "conversation": [
       {
         "turn": 1,
@@ -100,7 +100,7 @@
       },
       {
         "turn": 2,
-        "query": "Which ones use Intel Core processors?",
+        "query": "Which one of those models uses Intel Core processors?",
         "expected_filters": {
           "form_factor": "COM EXPRESS",
           "processor_architecture": "INTEL CORE"
@@ -108,7 +108,7 @@
       },
       {
         "turn": 3,
-        "query": "Show me the ones with TDP under 15W",
+        "query": "From the results show me the ones with a TDP under 15W?",
         "expected_filters": {
           "form_factor": "COM EXPRESS",
           "processor_architecture": "INTEL CORE",
@@ -118,7 +118,7 @@
     ]
   },
   {
-    "description": "Tests context retention for temperature requirements while adding interface specifications",
+    "description": "CTR_05: Tests context retention for temperature requirements while adding interface specifications",
     "conversation": [
       {
         "turn": 1,
@@ -130,7 +130,7 @@
       },
       {
         "turn": 2,
-        "query": "Which ones have USB 3.0?",
+        "query": "Which ones support USB 3.0?",
         "expected_filters": {
           "operating_temperature_min": "-40°C",
           "operating_temperature_max": "85°C",
@@ -141,7 +141,7 @@
       },
       {
         "turn": 3,
-        "query": "And also support SATA 3.0?",
+        "query": "And also SATA 3.0?",
         "expected_filters": {
           "operating_temperature_min": "-40°C",
           "operating_temperature_max": "85°C",
@@ -154,28 +154,28 @@
     ]
   },
   {
-    "description": "Tests wireless capability context while adding memory and storage specifications",
+    "description": "CTR_06: Tests wireless capability context while adding memory and storage specifications",
     "conversation": [
       {
         "turn": 1,
-        "query": "Show boards with WiFi 6 and Bluetooth 5",
+        "query": "Show me boards that supports WiFi 6 and Bluetooth 5",
         "expected_filters": {
-          "wireless": ["WI-FI 6", "BLUETOOTH 5+"]
+          "wireless": ["WI-FI 6", "BLUETOOTH 5"]
         }
       },
       {
         "turn": 2,
-        "query": "Which ones have DDR4 memory?",
+        "query": "Do any of them come with DDR4 memory?",
         "expected_filters": {
-          "wireless": ["WI-FI 6", "BLUETOOTH 5+"],
+          "wireless": ["WI-FI 6", "BLUETOOTH 5"],
           "memory": "DDR4"
         }
       },
       {
         "turn": 3,
-        "query": "And include eMMC storage?",
+        "query": "Great, and what about eMMC storage options?",
         "expected_filters": {
-          "wireless": ["WI-FI 6", "BLUETOOTH 5+"],
+          "wireless": ["WI-FI 6", "BLUETOOTH 5"],
           "memory": "DDR4",
           "onboard_storage": "EMMC"
         }
@@ -183,7 +183,7 @@
     ]
   },
   {
-    "description": "Tests context retention for specialized industrial requirements",
+    "description": "CTR_07: Tests context retention for specialized industrial requirements",
     "conversation": [
       {
         "turn": 1,
@@ -194,7 +194,7 @@
       },
       {
         "turn": 2,
-        "query": "Which ones accept 24V input?",
+        "query": "I need 24V input compatibility - what are my options?",
         "expected_filters": {
           "form_factor": "DIN RAIL",
           "input_voltage": "24.0V"
@@ -202,7 +202,7 @@
       },
       {
         "turn": 3,
-        "query": "From those, which ones have CAN bus support?",
+        "query": "Perfect, now how about CAN bus support?",
         "expected_filters": {
           "form_factor": "DIN RAIL",
           "input_voltage": "24.0V",
@@ -214,18 +214,18 @@
     ]
   },
   {
-    "description": "Tests context retention for processor specifications while adding connectivity requirements",
+    "description": "CTR_08: Tests context retention for processor specifications while adding connectivity requirements",
     "conversation": [
       {
         "turn": 1,
-        "query": "Show me boards with 8 or more CPU cores",
+        "query": "Give me computers with 8 CPU cores",
         "expected_filters": {
           "processor_core_count": 8
         }
       },
       {
         "turn": 2,
-        "query": "Which ones are made by Intel?",
+        "query": "I prefer Intel - what are my options?",
         "expected_filters": {
           "processor_core_count": 8,
           "processor_manufacturer": "INTEL"
@@ -233,7 +233,7 @@
       },
       {
         "turn": 3,
-        "query": "And support PCIe Gen 4?",
+        "query": "Do any of them support PCIe Gen 4?",
         "expected_filters": {
           "processor_core_count": 8,
           "processor_manufacturer": "INTEL",
@@ -245,26 +245,28 @@
     ]
   },
   {
-    "description": "Tests context retention for certification requirements while adding environmental specifications",
+    "description": "CTR_09: Tests context retention for processor architecture and certification requirements while adding environmental specifications",
     "conversation": [
       {
         "turn": 1,
-        "query": "Find CE certified boards",
+        "query": "Find computers that operates in X86 architecture",
         "expected_filters": {
-          "certifications": ["CE"]
+          "processor_architecture": "X86"
         }
       },
       {
         "turn": 2,
-        "query": "Which ones are also UL certified?",
+        "query": "I also need UL certification - what's available?",
         "expected_filters": {
+          "processor_architecture": "X86",
           "certifications": ["CE", "UL"]
         }
       },
       {
         "turn": 3,
-        "query": "From those, which can operate in high temperatures up to 85°C?",
+        "query": "Great, can any of them handle up to 85°C?",
         "expected_filters": {
+          "processor_architecture": "X86",
           "certifications": ["CE", "UL"],
           "operating_temperature_max": "85°C"
         }
@@ -272,29 +274,29 @@
     ]
   },
   {
-    "description": "Tests context retention for form factor while adding OS and wireless requirements",
+    "description": "CTR_10: Tests context retention for OS and wireless capabilities while adding form factor requirements",
     "conversation": [
       {
         "turn": 1,
-        "query": "Show Mini-ITX boards",
+        "query": "Show me boards with windows operating system",
         "expected_filters": {
-          "form_factor": "MINI-ITX"
+          "operating_system_bsp": "WINDOWS"
         }
       },
       {
         "turn": 2,
-        "query": "Which ones run Windows IoT?",
+        "query": "I also need them to have form factor of MINI-ITX",
         "expected_filters": {
           "form_factor": "MINI-ITX",
-          "operating_system_bsp": "WINDOWS IOT"
+          "operating_system_bsp": "WINDOWS"
         }
       },
       {
         "turn": 3,
-        "query": "And have cellular connectivity?",
+        "query": "Make sure they have cellular support",
         "expected_filters": {
           "form_factor": "MINI-ITX",
-          "operating_system_bsp": "WINDOWS IOT",
+          "operating_system_bsp": "WINDOWS",
           "wireless": ["CELLULAR", "4G/LTE"]
         }
       }
