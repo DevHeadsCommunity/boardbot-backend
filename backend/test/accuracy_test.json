@@ -1,115 +1,263 @@
 [
   {
+    "turn": 1,
     "prompt": "Find all products with USB 3.0 interface and support for Windows 10 operating system",
-    "description": "AC_01: Tests recognition of industry-standard interfaces and OS compatibility, including common technical terminology variations",
-    "variations": [
-      "List devices with USB 3.0 ports that run Windows 10 OS",
-      "Show hardware offering USB 3 connectivity and Windows Ten compatibility",
-      "What products include USB 3.0 interfaces and work with Win 10?",
-      "Display items featuring USB 3.0 and support for Windows 10 operating sistem"
-    ],
+    "description": "AC_01: Tests recognition of industry-standard interfaces and OS compatibility",
+    "variations": [],
     "products": [
-      {
-        "name": "PCM"
-      },
-      {
-        "name": "INTELLIGENT INSPECTION"
-      },
-      {
-        "name": "MIOUUA"
-      },
-      {
-        "name": "IBFI"
-      },
-      {
-        "name": "CONGATC"
-      }
+      {"name": "PCM"},
+      {"name": "INTELLIGENT INSPECTION"},
+      {"name": "MIOUUA"},
+      {"name": "IBFI"},
+      {"name": "CONGATC"}
     ]
   },
   {
+    "turn": 1.1,
+    "prompt": "List devices with USB 3.0 ports that run Windows 10 OS",
+    "description": "AC_01.1: Variation of main prompt - Tests recognition of industry-standard interfaces and OS compatibility",
+    "variations": [
+    ],
+    "products": [
+      {"name": "PCM"},
+      {"name": "INTELLIGENT INSPECTION"},
+      {"name": "MIOUUA"},
+      {"name": "IBFI"},
+      {"name": "CONGATC"}
+    ]
+  },  
+  {
+    "turn": 1.2,
+    "prompt": "Show hardware offering USB 3 connectivity and Windows Ten compatibility",
+    "description": "AC_01.2: Variation of main prompt - Tests recognition of industry-standard interfaces and OS compatibility",
+    "variations": [
+    ],
+    "products": [
+      {"name": "PCM"},
+      {"name": "INTELLIGENT INSPECTION"},
+      {"name": "MIOUUA"},
+      {"name": "IBFI"},
+      {"name": "CONGATC"}
+    ]
+  },  
+  {
+    "turn": 1.3,
+    "prompt": "What products include USB 3.0 interfaces and work with Win 10?",
+    "description": "AC_01.3: Variation of main prompt - Tests recognition of industry-standard interfaces and OS compatibility",
+    "variations": [
+    ],
+    "products": [
+      {"name": "PCM"},
+      {"name": "INTELLIGENT INSPECTION"},
+      {"name": "MIOUUA"},
+      {"name": "IBFI"},
+      {"name": "CONGATC"}
+    ]
+  },  
+  {
+    "turn": 1.4,
+    "prompt": "Display items featuring USB 3.0 and support for Windows 10 operating sistem",
+    "description": "AC_01.4: Variation of main prompt - Tests recognition of industry-standard interfaces and OS compatibility",
+    "variations": [
+    ],
+    "products": [
+      {"name": "PCM"},
+      {"name": "INTELLIGENT INSPECTION"},
+      {"name": "MIOUUA"},
+      {"name": "IBFI"},
+      {"name": "CONGATC"}
+    ]
+  },
+  {
+    "turn": 2,
     "prompt": "Find COM Express modules with Intel processors and DDR4 memory support",
     "description": "AC_02: Tests understanding of form factor specifications, processor manufacturers, and memory types",
-    "variations": [
-      "List COM Express boards with Intel CPUs and DDR4 RAM compatibility",
-      "Show Computer-On-Module solutions featuring Intel architecture and DDR4 memory",
-      "What COM Express products have Intel chips and support DDR4?",
-      "Display COM Expres modules with Intel processer and DDR-4 memry suport"
-    ],
+    "variations": [],
     "products": [
-      {
-        "name": "COM-EXPRESS COMPACT"
-      },
-      {
-        "name": "COM-EXPRESS COMPACT"
-      },
-      {
-        "name": "EXPRESSADP"
-      },
-      {
-        "name": "COM-EXPRESS R TYPE"
-      },
-      {
-        "name": "SOM COM-EXPRESS COMPACT"
-      }
+      {"name": "COM-EXPRESS COMPACT"},
+      {"name": "COM-EXPRESS COMPACT"},
+      {"name": "EXPRESSADP"},
+      {"name": "COM-EXPRESS R TYPE"},
+      {"name": "SOM"}
     ]
   },
   {
+    "turn": 2.1,
+    "prompt": "List COM Express boards with Intel CPUs and DDR4 RAM compatibility",
+    "description": "AC_02.1: Variation of main prompt - Tests understanding of form factor specifications, processor manufacturers, and memory types",
+    "variations": [],
+    "products": [
+      {"name": "COM-EXPRESS COMPACT"},
+      {"name": "COM-EXPRESS COMPACT"},
+      {"name": "EXPRESSADP"},
+      {"name": "COM-EXPRESS R TYPE"},
+      {"name": "SOM"}
+    ]
+  },
+  {
+    "turn": 2.2,
+    "prompt": "Show Computer-On-Module express solutions featuring Intel processor and DDR4 memory",
+    "description": "AC_02.2: Variation of main prompt - Tests understanding of form factor specifications, processor manufacturers, and memory types",
+    "variations": [],
+    "products": [
+      {"name": "COM-EXPRESS COMPACT"},
+      {"name": "COM-EXPRESS COMPACT"},
+      {"name": "EXPRESSADP"},
+      {"name": "COM-EXPRESS R TYPE"},
+      {"name": "SOM"}
+    ]
+  },
+  {
+    "turn": 2.3,
+    "prompt": "What COM Express products have Intel chips and support DDR4?",
+    "description": "AC_02.3: Variation of main prompt - Tests understanding of form factor specifications, processor manufacturers, and memory types",
+    "variations": [],
+    "products": [
+      {"name": "COM-EXPRESS COMPACT"},
+      {"name": "COM-EXPRESS COMPACT"},
+      {"name": "EXPRESSADP"},
+      {"name": "COM-EXPRESS R TYPE"},
+      {"name": "SOM"}
+    ]
+  },
+  {
+    "turn": 2.4,
+    "prompt": "Display COM Expres modules with Intel processer and DDR-4 memry suport",
+    "description": "AC_02.4: Variation of main prompt - Tests understanding of form factor specifications, processor manufacturers, and memory types",
+    "variations": [],
+    "products": [
+      {"name": "COM-EXPRESS COMPACT"},
+      {"name": "COM-EXPRESS COMPACT"},
+      {"name": "EXPRESSADP"},
+      {"name": "COM-EXPRESS R TYPE"},
+      {"name": "SOM"}
+    ]
+  },
+  {
+    "turn": 3,
     "prompt": "Show me fanless embedded systems that support Windows 10 and have a minimum operating temperature of -20°C or lower",
     "description": "AC_03: Tests recognition of cooling specifications, environmental requirements, and OS compatibility",
-    "variations": [
-      "List fanless systems compatible with Windows 10 and -20°C minimum temperature",
-      "Show passive-cooled embedded solutions supporting Windows 10 and sub -20 degree operation",
-      "What fanless computers run Windows 10 and work in -20°C or colder?",
-      "Display embeded fanles systems with Windows 10 and opeating at minus 20 celcius"
-    ],
+    "variations": [],
     "products": [
-      {
-        "name": "ARK-1123H"
-      },
-      {
-        "name": "ARK INTEL CELERON N FANLESS EMBEDDED BOX PC"
-      },
-      {
-        "name": "ARKP"
-      },
-      {
-        "name": "ARKFSAE"
-      },
-      {
-        "name": "PCM"
-      }
+      {"name": "ARK-1123H"},
+      {"name": "ARK INTEL CELERON N FANLESS EMBEDDED BOX PC"},
+      {"name": "ARKP"},
+      {"name": "ARKFSAE"},
+      {"name": "PCM"}
     ]
   },
   {
+    "turn": 3.1,
+    "prompt": "List fanless systems compatible with Windows 10 and a minimum of -20°C or lower",
+    "description": "AC_03.1: Variation of main prompt - Tests recognition of cooling specifications, environmental requirements, and OS compatibility",
+    "variations": [],
+    "products": [
+      {"name": "ARK-1123H"},
+      {"name": "ARK INTEL CELERON N FANLESS EMBEDDED BOX PC"},
+      {"name": "ARKP"},
+      {"name": "ARKFSAE"},
+      {"name": "PCM"}
+    ]
+  },
+  {
+    "turn": 3.2,
+    "prompt": "Show passive-cooled embedded solutions supporting Windows 10 and sub -20 degree operation",
+    "description": "AC_03.2: Variation of main prompt - Tests recognition of cooling specifications, environmental requirements, and OS compatibility",
+    "variations": [],
+    "products": [
+      {"name": "ARK-1123H"},
+      {"name": "ARK INTEL CELERON N FANLESS EMBEDDED BOX PC"},
+      {"name": "ARKP"},
+      {"name": "ARKFSAE"},
+      {"name": "PCM"}
+    ]
+  },
+  {
+    "turn": 3.3,
+    "prompt": "What fanless computers run Windows 10 and work in -20°C or less temprature?",
+    "description": "AC_03.3: Variation of main prompt - Tests recognition of cooling specifications, environmental requirements, and OS compatibility",
+    "variations": [],
+    "products": [
+      {"name": "ARK-1123H"},
+      {"name": "ARK INTEL CELERON N FANLESS EMBEDDED BOX PC"},
+      {"name": "ARKP"},
+      {"name": "ARKFSAE"},
+      {"name": "PCM"}
+    ]
+  },
+  {
+    "turn": 3.4,
+    "prompt": "Display embeded fanles systems with Windows 10 and opeating at minus 20 celcius or less temprature",
+    "description": "AC_03.4: Variation of main prompt - Tests recognition of cooling specifications, environmental requirements, and OS compatibility",
+    "variations": [],
+    "products": [
+      {"name": "ARK-1123H"},
+      {"name": "ARK INTEL CELERON N FANLESS EMBEDDED BOX PC"},
+      {"name": "ARKP"},
+      {"name": "ARKFSAE"},
+      {"name": "PCM"}
+    ]
+  },
+  {
+    "turn": 4,
     "prompt": "List SoMs (System on Modules) with Wi-Fi capability and at least 32GB of onboard storage",
     "description": "AC_04: Tests recognition of wireless connectivity features and storage capacity specifications",
-    "variations": [
-      "List SoM devices with Wi-Fi and 32GB minimum storage capacity",
-      "Show System-on-Module solutions featuring wireless connectivity and 32GB+ storage",
-      "What SoMs include Wi-Fi and offer 32GB or more memory?",
-      "Display sistems on module with wifi and 32 gigabyte storage minimum"
-    ],
+    "variations": [],
     "products": [
-      {
-        "name": "RASPBERRY-PI COMPUTE"
-      },
-      {
-        "name": "FETC SOM"
-      },
-      {
-        "name": "RASPBERRY-PI COMPUTE"
-      }
+      {"name": "RASPBERRY-PI COMPUTE"},
+      {"name": "FETC SOM"},
+      {"name": "RASPBERRY-PI COMPUTE"}
     ]
   },
   {
+    "turn": 4.1,
+    "prompt": "List SoM devices with Wi-Fi and 32GB minimum storage capacity",
+    "description": "AC_04.1: Variation of main prompt - Tests recognition of wireless connectivity features and storage capacity specifications",
+    "variations": [],
+    "products": [
+      {"name": "RASPBERRY-PI COMPUTE"},
+      {"name": "FETC SOM"},
+      {"name": "RASPBERRY-PI COMPUTE"}
+    ]
+  },
+  {
+    "turn": 4.2,
+    "prompt": "Show System-on-Module solutions featuring wifi connectivity and 32GB+ storage",
+    "description": "AC_04.2: Variation of main prompt - Tests recognition of wireless connectivity features and storage capacity specifications",
+    "variations": [],
+    "products": [
+      {"name": "RASPBERRY-PI COMPUTE"},
+      {"name": "FETC SOM"},
+      {"name": "RASPBERRY-PI COMPUTE"}
+    ]
+  },
+  {
+    "turn": 4.3,
+    "prompt": "Display SoM solutions that include Wi-Fi and offer 32GB or more onboard storage?",
+    "description": "AC_04.3: Variation of main prompt - Tests recognition of wireless connectivity features and storage capacity specifications",
+    "variations": [],
+    "products": [
+      {"name": "RASPBERRY-PI COMPUTE"},
+      {"name": "FETC SOM"},
+      {"name": "RASPBERRY-PI COMPUTE"}
+    ]
+  },
+  {
+    "turn": 4.4,
+    "prompt": "Display sistems on module with wifi and 32 gigabyte storage minimum",
+    "description": "AC_04.4: Variation of main prompt - Tests recognition of wireless connectivity features and storage capacity specifications",
+    "variations": [],
+    "products": [
+      {"name": "RASPBERRY-PI COMPUTE"},
+      {"name": "FETC SOM"},
+      {"name": "RASPBERRY-PI COMPUTE"}
+    ]
+  },
+  {
+    "turn": 5,
     "prompt": "Find products that have both Ethernet and serial ports, and are designed for DIN rail mounting",
     "description": "AC_05: Tests recognition of multiple interface types and mounting specifications",
-    "variations": [
-      "List devices with Ethernet & serial interfaces, made for DIN-rail installation",
-      "Show items featuring Ethernet and serial ports, compatible with DIN rail mounts",
-      "What products include Ethernet and serial connections, suited for DIN rail attachment?",
-      "Display hadware with Ethernet/serial ports desined to be DIN rail mounted"
-    ],
+    "variations": [],
     "products": [
       {
         "name": "ARKCCH"
@@ -123,32 +271,116 @@
     ]
   },
   {
-    "prompt": "Show me industrial computers with at least 8 processor cores and support for ECC memory",
-    "description": "AC_06: Tests recognition of processor specifications and advanced memory features",
-    "variations": [
-      "List PCs with 8+ CPU cores that work with Error-Correcting Code memory",
-      "What machines have a minimum of eight cores and ECC RAM support?",
-      "Display systems featuring 8 or more processor cores and ECC memory compatibility",
-      "Find compters with no less than 8 cores and ECC memory support"
-    ],
+    "turn": 5.1,
+    "prompt": "List devices with Ethernet & serial interfaces, made for DIN-rail installation",
+    "description": "AC_05.1: Variation of main prompt - Tests recognition of multiple interface types and mounting specifications",
+    "variations": [],
     "products": [
-      {
-        "name": "AIMB-275"
-      },
-      {
-        "name": "ASMB"
-      }
+      {"name": "ARKCCH"},
+      {"name": "HAIIC MICA USB"},
+      {"name": "EDIPC"}
     ]
   },
   {
+    "turn": 5.2,
+    "prompt": "Show items featuring Ethernet and serial ports, compatible with DIN rail mounts",
+    "description": "AC_05.2: Variation of main prompt - Tests recognition of multiple interface types and mounting specifications",
+    "variations": [],
+    "products": [
+      {"name": "ARKCCH"},
+      {"name": "HAIIC MICA USB"},
+      {"name": "EDIPC"}
+    ]
+  },
+  {
+    "turn": 5.3,
+    "prompt": "What products include Ethernet and serial connections, suited for DIN rail attachment?",
+    "description": "AC_05.3: Variation of main prompt - Tests recognition of multiple interface types and mounting specifications",
+    "variations": [],
+    "products": [
+      {"name": "ARKCCH"},
+      {"name": "HAIIC MICA USB"},
+      {"name": "EDIPC"}
+    ]
+  },
+  {
+    "turn": 5.4,
+    "prompt": "Display hadware with Ethernet/serial ports desined to be DIN rail mounted",
+    "description": "AC_05.4: Variation of main prompt - Tests recognition of multiple interface types and mounting specifications",
+    "variations": [],
+    "products": [
+      {"name": "ARKCCH"},
+      {"name": "HAIIC MICA USB"},
+      {"name": "EDIPC"}
+    ]
+  },
+  {
+    "turn": 6,
+    "prompt": "Show me industrial computers with at least 8 processor cores and support for ECC memory",
+    "description": "AC_06: Tests recognition of processor specifications and advanced memory features",
+    "variations": [],
+    "products": [
+      {"name": "COMEBBD"},
+      {"name": "ASMB"},
+      {"name": "ASMBA"},
+      {"name": "AMD RYZEN EMBEDDED V SERIES MINIITX"},
+      {"name": "MIC"}
+    ]
+  },
+  {
+    "turn": 6.1,
+    "prompt": "List computers with ECC memory and 8+ CPU cores",
+    "description": "AC_06.1: Variation of main prompt - Tests recognition of processor specifications and advanced memory features",
+    "variations": [],
+    "products": [
+      {"name": "COMEBBD"},
+      {"name": "ASMB"},
+      {"name": "ASMBA"},
+      {"name": "AMD RYZEN EMBEDDED V SERIES MINIITX"},
+      {"name": "MIC"}
+    ]
+  },
+  {
+    "turn": 6.2,
+    "prompt": "What computers do have ECC memory and a minimum of eight cores?",
+    "description": "AC_06.2: Variation of main prompt - Tests recognition of processor specifications and advanced memory features",
+    "variations": [],
+    "products": [
+      {"name": "COMEBBD"},
+      {"name": "ASMB"},
+      {"name": "ASMBA"},
+      {"name": "AMD RYZEN EMBEDDED V SERIES MINIITX"},
+      {"name": "MIC"}
+    ]
+  },
+  {
+    "turn": 6.3,
+    "prompt": "Display systems featuring ECC memory and 8 or more processor cores",
+    "description": "AC_06.3: Variation of main prompt - Tests recognition of processor specifications and advanced memory features",
+    "variations": [],
+    "products": [
+      {"name": "COMEBBD"},
+      {"name": "ASMB"},
+      {"name": "ASMBA"},
+      {"name": "AMD RYZEN EMBEDDED V SERIES MINIITX"},
+      {"name": "MIC"}
+    ]
+  },
+  {
+    "turn": 6.4,
+    "prompt": "Find compters with ECC memory and 8 or more cores",
+    "description": "AC_06.4: Variation of main prompt - Tests recognition of processor specifications and advanced memory features",
+    "variations": [],
+    "products": [
+      {"name": "AIMB-275"},
+      {"name": "ASMB"}
+    ]
+  },
+  {
+    "turn": 7,
     "prompt": "Which devices support Windows IoT and have a maximum operating temperature of 70°C or higher?",
     "description": "AC_07: Tests recognition of specialized OS support and high-temperature operation capabilities",
-    "variations": [
-      "List products compatible with Windows IOT and operable up to at least 70 degrees Celsius",
-      "Show devices running Windows Internet of Things with max temps of 70°C or above",
-      "What hardware works with Windows IoT and functions at 70 Celsius or hotter?",
-      "Find items supporting Windows IoT OS and maximum operating temperatures of 70°C+"
-    ],
+    "variations": [],
     "products": [
       {
         "name": "EAGLE EYES AIHD"
@@ -168,35 +400,127 @@
     ]
   },
   {
-    "prompt": "List devices that support both Linux and Android operating systems and have eMMC storage",
-    "description": "AC_08: Tests recognition of multi-OS support and specific storage type requirements",
-    "variations": [
-      "Show products compatible with Linux and Andriod OS, featuring eMMC memory",
-      "What devices run both Linux and Android and include eMMC storage?",
-      "Find hardware supporting Linux & Android operating systems with eMMC",
-      "Display items that work with Linux/Android OS and have eMMC storge options"
-    ],
+    "turn": 7.1,
+    "prompt": "List products compatible with Windows IOT and operable up to at least 70 degrees Celsius",
+    "description": "AC_07.1: Variation of main prompt - Tests recognition of specialized OS support and high-temperature operation capabilities",
+    "variations": [],
     "products": [
-      {
-        "name": "PCM"
-      },
-      {
-        "name": "ROM NXP IMX-M CORTEXA SMARC COMPUTERONMODULE"
-      },
-      {
-        "name": "ROM B"
-      }
+      {"name": "EAGLE EYES AIHD"},
+      {"name": "ARK-1550VSAE"},
+      {"name": "TREK"},
+      {"name": "CPU MINIITX SBC"},
+      {"name": "AMAX COMPACT SBC"}
     ]
   },
   {
+    "turn": 7.2,
+    "prompt": "Show devices running Windows Internet of Things with max temps of 70°C or above",
+    "description": "AC_07.2: Variation of main prompt - Tests recognition of specialized OS support and high-temperature operation capabilities",
+    "variations": [],
+    "products": [
+      {"name": "EAGLE EYES AIHD"},
+      {"name": "ARK-1550VSAE"},
+      {"name": "TREK"},
+      {"name": "CPU MINIITX SBC"},
+      {"name": "AMAX COMPACT SBC"}
+    ]
+  },
+  {
+    "turn": 7.3,
+    "prompt": "What hardware works with Windows IoT and functions at 70 Celsius or hotter?",
+    "description": "AC_07.3: Variation of main prompt - Tests recognition of specialized OS support and high-temperature operation capabilities",
+    "variations": [],
+    "products": [
+      {"name": "EAGLE EYES AIHD"},
+      {"name": "ARK-1550VSAE"},
+      {"name": "TREK"},
+      {"name": "CPU MINIITX SBC"},
+      {"name": "AMAX COMPACT SBC"}
+    ]
+  },
+  {
+    "turn": 7.4,
+    "prompt": "Find items supporting Windows IoT OS and maximum operating temperatures of 70°C+",
+    "description": "AC_07.4: Variation of main prompt - Tests recognition of specialized OS support and high-temperature operation capabilities",
+    "variations": [],
+    "products": [
+      {"name": "EAGLE EYES AIHD"},
+      {"name": "ARK-1550VSAE"},
+      {"name": "TREK"},
+      {"name": "CPU MINIITX SBC"},
+      {"name": "AMAX COMPACT SBC"}
+    ]
+  },
+  {
+    "turn": 8,
+    "prompt": "List devices that support both Linux and Android operating systems and have eMMC storage",
+    "description": "AC_08: Tests recognition of multi-OS support and specific storage type requirements",
+    "variations": [],
+    "products": [
+      {"name": "PCM"},
+      {"name": "ROM SERIES SMARC"},
+      {"name": "ROM NXP IMX-M CORTEXA SMARC COMPUTERONMODULE"},
+      {"name": "TINKER BOARD S"},
+      {"name": "DRAGONBOARD EMBEDDED"}
+    ]
+  },
+  {
+    "turn": 8.1,
+    "prompt": "Show products compatible with Linux and Andriod OS, featuring eMMC memory",
+    "description": "AC_08.1: Variation of main prompt - Tests recognition of multi-OS support and specific storage type requirements",
+    "variations": [],
+    "products": [
+      {"name": "PCM"},
+      {"name": "ROM SERIES SMARC"},
+      {"name": "ROM NXP IMX-M CORTEXA SMARC COMPUTERONMODULE"},
+      {"name": "TINKER BOARD S"},
+      {"name": "DRAGONBOARD EMBEDDED"}
+    ]
+  },
+  {
+    "turn": 8.2,
+    "prompt": "What devices run both Linux and Android and include eMMC storage?",
+    "description": "AC_08.2: Variation of main prompt - Tests recognition of multi-OS support and specific storage type requirements",
+    "variations": [],
+    "products": [
+      {"name": "PCM"},
+      {"name": "ROM SERIES SMARC"},
+      {"name": "ROM NXP IMX-M CORTEXA SMARC COMPUTERONMODULE"},
+      {"name": "TINKER BOARD S"},
+      {"name": "DRAGONBOARD EMBEDDED"}
+    ]
+  },
+  {
+    "turn": 8.3,
+    "prompt": "Find hardware supporting Linux & Android operating systems with eMMC",
+    "description": "AC_08.3: Variation of main prompt - Tests recognition of multi-OS support and specific storage type requirements",
+    "variations": [],
+    "products": [
+      {"name": "PCM"},
+      {"name": "ROM SERIES SMARC"},
+      {"name": "ROM NXP IMX-M CORTEXA SMARC COMPUTERONMODULE"},
+      {"name": "TINKER BOARD S"},
+      {"name": "DRAGONBOARD EMBEDDED"}
+    ]
+  },
+  {
+    "turn": 8.4,
+    "prompt": "Display items that work with Linux/Android OS and have eMMC storge options",
+    "description": "AC_08.4: Variation of main prompt - Tests recognition of multi-OS support and specific storage type requirements",
+    "variations": [],
+    "products": [
+      {"name": "PCM"},
+      {"name": "ROM SERIES SMARC"},
+      {"name": "ROM NXP IMX-M CORTEXA SMARC COMPUTERONMODULE"},
+      {"name": "TINKER BOARD S"},
+      {"name": "DRAGONBOARD EMBEDDED"}
+    ]
+  },
+  {
+    "turn": 9,
     "prompt": "What options are available for modules with Bluetooth connectivity and LPDDR4 memory?",
     "description": "AC_09: Tests recognition of wireless standards and specific memory type requirements",
-    "variations": [
-      "Show modules featuring Bluetooth and Low-Power DDR4 RAM",
-      "List devices with Bluetooth capability and LPDDR4 memory type",
-      "What products offer Bluetooth conectivity and LPDDR4 memory?",
-      "Find modules supprting Bluetooth and has with LPDDR4 memry"
-    ],
+    "variations": [],
     "products": [
       {
         "name": "CONGASA"
@@ -207,26 +531,62 @@
     ]
   },
   {
+    "turn": 9.1,
+    "prompt": "Show modules featuring Bluetooth and LPDDR4 RAM",
+    "description": "AC_09.1: Variation of main prompt - Tests recognition of wireless standards and specific memory type requirements",
+    "variations": [],
+    "products": [
+      {"name": "CONGASA"},
+      {"name": "ROM RTX"}
+    ]
+  },
+  {
+    "turn": 9.2,
+    "prompt": "List devices with Bluetooth capability and LPDDR4 memory type",
+    "description": "AC_09.2: Variation of main prompt - Tests recognition of wireless standards and specific memory type requirements",
+    "variations": [],
+    "products": [
+      {"name": "CONGASA"},
+      {"name": "ROM RTX"}
+    ]
+  },
+  {
+    "turn": 9.3,
+    "prompt": "What products offer Bluetooth conectivity and LPDDR4 memory?",
+    "description": "AC_09.3: Variation of main prompt - Tests recognition of wireless standards and specific memory type requirements",
+    "variations": [],
+    "products": [
+      {"name": "CONGASA"},
+      {"name": "ROM RTX"}
+    ]
+  },
+  {
+    "turn": 9.4,
+    "prompt": "Find modules supprting Bluetooth and has with LPDDR4 memry",
+    "description": "AC_09.4: Variation of main prompt - Tests recognition of wireless standards and specific memory type requirements",
+    "variations": [],
+    "products": [
+      {"name": "CONGASA"},
+      {"name": "ROM RTX"}
+    ]
+  },
+  {
+    "turn": 10,
     "prompt": "Find products that support Wi-Fi connectivity and have an input voltage range that includes 24V",
     "description": "AC_10: Tests recognition of wireless connectivity and power supply specifications",
-    "variations": [
-      "List devices with Wi-Fi support and power input covering 24 volts",
-      "Show items featuring wireless connectivity and 24V-compatible power input",
-      "What hardware includes Wi-Fi capability and accepts 24V input voltage?",
-      "Display products supporting WiFi and operable with 24-volt power supply"
-    ],
+    "variations": [],
     "products": [
       {
         "name": "BL BPC EWW"
       },
       {
-        "name": "TPCB MODULAR TPC COMPUTING BOX"
+        "name": "REVPI CONNECT SE"
       },
       {
         "name": "REVPI CONNECT"
       },
       {
-        "name": "TREK"
+        "name": "BL BPC EW BOX PC"
       },
       {
         "name": "ARKFSAE"
@@ -234,255 +594,675 @@
     ]
   },
   {
+    "turn": 10.1,
+    "prompt": "List devices with Wi-Fi support and power input covering 24 volts",
+    "description": "AC_10.1: Variation of main prompt - Tests recognition of wireless connectivity and power supply specifications",
+    "variations": [],
+    "products": [
+      {"name": "BL BPC EWW"},
+      {"name": "REVPI CONNECT SE"},
+      {"name": "REVPI CONNECT"},
+      {"name": "BL BPC EW BOX PC"},
+      {"name": "ARKFSAE"}
+    ]
+  },
+  {
+    "turn": 10.2,
+    "prompt": "Show items featuring wifi connectivity and 24V-compatible power input",
+    "description": "AC_10.2: Variation of main prompt - Tests recognition of wireless connectivity and power supply specifications",
+    "variations": [],
+    "products": [
+      {"name": "BL BPC EWW"},
+      {"name": "REVPI CONNECT SE"},
+      {"name": "REVPI CONNECT"},
+      {"name": "BL BPC EW BOX PC"},
+      {"name": "ARKFSAE"}
+    ]
+  },
+  {
+    "turn": 10.3,
+    "prompt": "What hardware includes Wi-Fi capability and accepts 24V input voltage?",
+    "description": "AC_10.3: Variation of main prompt - Tests recognition of wireless connectivity and power supply specifications",
+    "variations": [],
+    "products": [
+      {"name": "BL BPC EWW"},
+      {"name": "REVPI CONNECT SE"},
+      {"name": "REVPI CONNECT"},
+      {"name": "BL BPC EW BOX PC"},
+      {"name": "ARKFSAE"}
+    ]
+  },
+  {
+    "turn": 10.4,
+    "prompt": "Display products supporting WiFi and operable with 24-volt power supply",
+    "description": "AC_10.4: Variation of main prompt - Tests recognition of wireless connectivity and power supply specifications",
+    "variations": [],
+    "products": [
+      {"name": "BL BPC EWW"},
+      {"name": "REVPI CONNECT SE"},
+      {"name": "REVPI CONNECT"},
+      {"name": "BL BPC EW BOX PC"},
+      {"name": "ARKFSAE"}
+    ]
+  },
+  {
+    "turn": 11,
     "prompt": "Which devices have DisplayPort output and are powered by AMD processors?",
     "description": "AC_11: Tests recognition of display interface standards and specific processor manufacturers",
-    "variations": [
-      "Show products with Display Port interface using AMD CPUs",
-      "List hardware featuring DisplayPort and AMD processor",
-      "What items offer DispleyPort output and run on AMD chips?",
-      "Find devices with AMD prosessors that include a DisplayPort connction"
-    ],
+    "variations": [],
     "products": [
-      {
-        "name": "PCM"
-      },
-      {
-        "name": "GEODE NX SBC"
-      },
-      {
-        "name": "PCM"
-      },
-      {
-        "name": "AIMB"
-      },
-      {
-        "name": "AIMB-225"
-      }
+      {"name": "PCM"},
+      {"name": "GEODE NX SBC"},
+      {"name": "PCM"},
+      {"name": "AIMB"},
+      {"name": "MIODVSAE"}
     ]
   },
   {
-    "prompt": "Show me all ARM-based devices that have wireless capabilities",
-    "description": "AC_12: Tests recognition of processor architecture and wireless connectivity features",
-    "variations": [
-      "List devices with ARM processors and wireless connectivity options",
-      "Show systems featuring ARM architecture and radio communication capabilities",
-      "What products use ARM chips and include wireless features?",
-      "Display items with ARM processer and wirelss conectivity suport"
-    ],
+    "turn": 11.1,
+    "prompt": "Show products with Display Port interface using AMD CPUs",
+    "description": "AC_11.1: Variation of main prompt - Tests recognition of display interface standards and specific processor manufacturers",
+    "variations": [],
     "products": [
-      {
-        "name": "RASPBERRY-PI COMPUTE"
-      },
-      {
-        "name": "RASPBERRY-PI MODEL B"
-      },
-      {
-        "name": "IMX-M PLUS SOM"
-      },
-      {
-        "name": "RASPBERRY-PI PICO W"
-      },
-      {
-        "name": "IMX OSM LGA"
-      }
+      {"name": "PCM"},
+      {"name": "GEODE NX SBC"},
+      {"name": "PCM"},
+      {"name": "AIMB"},
+      {"name": "MIODVSAE"}
     ]
   },
   {
+    "turn": 11.2,
+    "prompt": "List hardware featuring DisplayPort and AMD processor",
+    "description": "AC_11.2: Variation of main prompt - Tests recognition of display interface standards and specific processor manufacturers",
+    "variations": [],
+    "products": [
+      {"name": "PCM"},
+      {"name": "GEODE NX SBC"},
+      {"name": "PCM"},
+      {"name": "AIMB"},
+      {"name": "MIODVSAE"}
+    ]
+  },
+  {
+    "turn": 11.3,
+    "prompt": "What items offer DispleyPort output and run on AMD chips?",
+    "description": "AC_11.3: Variation of main prompt - Tests recognition of display interface standards and specific processor manufacturers",
+    "variations": [],
+    "products": [
+      {"name": "PCM"},
+      {"name": "GEODE NX SBC"},
+      {"name": "PCM"},
+      {"name": "AIMB"},
+      {"name": "MIODVSAE"}
+    ]
+  },
+  {
+    "turn": 11.4,
+    "prompt": "Find devices with AMD prosessors that include a DisplayPort connction",
+    "description": "AC_11.4: Variation of main prompt - Tests recognition of display interface standards and specific processor manufacturers",
+    "variations": [],
+    "products": [
+      {"name": "PCM"},
+      {"name": "GEODE NX SBC"},
+      {"name": "PCM"},
+      {"name": "AIMB"},
+      {"name": "MIODVSAE"}
+    ]
+  },
+  {
+    "turn": 12,
+    "prompt": "Show me all ARM processors that support wifi connection",
+    "description": "AC_12: Tests recognition of processor architecture and wifi connectivity features",
+    "variations": [],
+    "products": [
+      {"name": "RASPBERRY-PI COMPUTE"},
+      {"name": "RASPBERRY-PI MODEL B"},
+      {"name": "IMX-M PLUS SOM"},
+      {"name": "ARMADA SOM A"},
+      {"name": "CPU ULTRA LOW POWER SBCCOM"}
+    ]
+  },
+  {
+    "turn": 12.1,
+    "prompt": "List devices with ARM processors and wifi connectivity options",
+    "description": "AC_12.1: Variation of main prompt - Tests recognition of processor architecture and wifi connectivity features",
+    "variations": [],
+    "products": [
+      {"name": "RASPBERRY-PI COMPUTE"},
+      {"name": "RASPBERRY-PI MODEL B"},
+      {"name": "IMX-M PLUS SOM"},
+      {"name": "ARMADA SOM A"},
+      {"name": "CPU ULTRA LOW POWER SBCCOM"}
+    ]
+  },
+  {
+    "turn": 12.2,
+    "prompt": "Show systems featuring ARM architecture and wifi communication capabilities",
+    "description": "AC_12.2: Variation of main prompt - Tests recognition of processor architecture and wifi connectivity features",
+    "variations": [],
+    "products": [
+      {"name": "RASPBERRY-PI COMPUTE"},
+      {"name": "RASPBERRY-PI MODEL B"},
+      {"name": "IMX-M PLUS SOM"},
+      {"name": "ARMADA SOM A"},
+      {"name": "CPU ULTRA LOW POWER SBCCOM"}
+    ]
+  },
+  {
+    "turn": 12.3,
+    "prompt": "What products use ARM chips and include wifi features?",
+    "description": "AC_12.3: Variation of main prompt - Tests recognition of processor architecture and wifi connectivity features",
+    "variations": [],
+    "products": [
+      {"name": "RASPBERRY-PI COMPUTE"},
+      {"name": "RASPBERRY-PI MODEL B"},
+      {"name": "IMX-M PLUS SOM"},
+      {"name": "ARMADA SOM A"},
+      {"name": "CPU ULTRA LOW POWER SBCCOM"}
+    ]
+  },
+  {
+    "turn": 12.4,
+    "prompt": "Display items with ARM processer and wifi conectivity suport",
+    "description": "AC_12.4: Variation of main prompt - Tests recognition of processor architecture and wifi connectivity features",
+    "variations": [],
+    "products": [
+      {"name": "RASPBERRY-PI COMPUTE"},
+      {"name": "RASPBERRY-PI MODEL B"},
+      {"name": "IMX-M PLUS SOM"},
+      {"name": "ARMADA SOM A"},
+      {"name": "CPU ULTRA LOW POWER SBCCOM"}
+    ]
+  },
+  {
+    "turn": 13,
     "prompt": "Which products offer both M.2 and mSATA storage options with X86 architecture?",
     "description": "AC_13: Tests recognition of multiple storage interfaces and specific processor architecture",
-    "variations": [
-      "List devices with M.2 & mSATA storage interfaces using X86 processors",
-      "Show items featuring M.2 and mini-SATA storage with X86 architecture",
-      "What products include M.2/mSATA storage options and X86 chips?",
-      "Find items offering both M.2 and mSATA storage with X86 compatibility"
-    ],
+    "variations": [],
     "products": [
-      {
-        "name": "AIMB-275"
-      },
-      {
-        "name": "AIMB-275"
-      }
+      {"name": "AIMB-275"},
+      {"name": "AIMB-275"}
     ]
   },
   {
+    "turn": 13.1,
+    "prompt": "List devices with M.2 & mSATA storage interfaces using X86 processors",
+    "description": "AC_13.1: Variation of main prompt - Tests recognition of multiple storage interfaces and specific processor architecture",
+    "variations": [],
+    "products": [
+      {"name": "AIMB-275"},
+      {"name": "AIMB-275"}
+    ]
+  },
+  {
+    "turn": 13.2,
+    "prompt": "Show items featuring M.2 and mini-SATA storage with X86 architecture",
+    "description": "AC_13.2: Variation of main prompt - Tests recognition of multiple storage interfaces and specific processor architecture",
+    "variations": [],
+    "products": [
+      {"name": "AIMB-275"},
+      {"name": "AIMB-275"}
+    ]
+  },
+  {
+    "turn": 13.3,
+    "prompt": "What products include M.2/mSATA storage options and X86 chips?",
+    "description": "AC_13.3: Variation of main prompt - Tests recognition of multiple storage interfaces and specific processor architecture",
+    "variations": [],
+    "products": [
+      {"name": "AIMB-275"},
+      {"name": "AIMB-275"}
+    ]
+  },
+  {
+    "turn": 13.4,
+    "prompt": "Find items offering both M.2 and mSATA storage with X86 compatibility",
+    "description": "AC_13.4: Variation of main prompt - Tests recognition of multiple storage interfaces and specific processor architecture",
+    "variations": [],
+    "products": [
+      {"name": "AIMB-275"},
+      {"name": "AIMB-275"}
+    ]
+  },
+  {
+    "turn": 14,
     "prompt": "Find all products manufactured by Advantech with ETX form factor",
     "description": "AC_14: Tests recognition of specific manufacturers and legacy form factors",
-    "variations": [
-      "List Advantech-made products with ETX form-factor",
-      "Show me ETX devices produced by Advantec",
-      "What Advantech hardware comes in the ETX format?",
-      "Find Advantech-manufactured items with Embedded Technology eXtended form factor"
-    ],
+    "variations": [],
     "products": [
-      {
-        "name": "COM MODULES"
-      },
-      {
-        "name": "SOM A"
-      }
+      {"name": "COM MODULES"},
+      {"name": "SOM A"}
     ]
   },
   {
+    "turn": 14.1,
+    "prompt": "List Advantech-made products with ETX form-factor",
+    "description": "AC_14.1: Variation of main prompt - Tests recognition of specific manufacturers and legacy form factors",
+    "variations": [],
+    "products": [
+      {"name": "COM MODULES"},
+      {"name": "SOM A"}
+    ]
+  },
+  {
+    "turn": 14.2,
+    "prompt": "Show me ETX devices produced by Advantec",
+    "description": "AC_14.2: Variation of main prompt - Tests recognition of specific manufacturers and legacy form factors",
+    "variations": [],
+    "products": [
+      {"name": "COM MODULES"},
+      {"name": "SOM A"}
+    ]
+  },
+  {
+    "turn": 14.3,
+    "prompt": "What Advantech hardware comes in the ETX format?",
+    "description": "AC_14.3: Variation of main prompt - Tests recognition of specific manufacturers and legacy form factors",
+    "variations": [],
+    "products": [
+      {"name": "COM MODULES"},
+      {"name": "SOM A"}
+    ]
+  },
+  {
+    "turn": 14.4,
+    "prompt": "Find Advantech-manufactured items with Embedded Technology eXtended form factor",
+    "description": "AC_14.4: Variation of main prompt - Tests recognition of specific manufacturers and legacy form factors",
+    "variations": [],
+    "products": [
+      {"name": "COM MODULES"},
+      {"name": "SOM A"}
+    ]
+  },
+  {
+    "turn": 15,
     "prompt": "Show products that support Wi-Fi 5 and run on Ubuntu operating system",
     "description": "AC_15: Tests recognition of wireless standards and specific OS requirements",
-    "variations": [
-      "List devices supporting Wi-Fi 5 and running on Ubuntu OS",
-      "Show me products with Wi-Fi 5 and Ubuntu OS",
-      "What hardware supports Wi-Fi 5 and runs on Ubuntu?",
-      "Find items with Wi-Fi 5 and Ubuntu OS compatibility"
-    ],
+    "variations": [],
     "products": [
-      {
-        "name": "EMNANOAM"
-      },
-      {
-        "name": "UP CORE PLUS"
-      },
-      {
-        "name": "VENICE GW"
-      },
-      {
-        "name": "EMQIN"
-      },
-      {
-        "name": "MIOUSAE"
-      }
+      {"name": "EMNANOAM"},
+      {"name": "UP CORE PLUS"},
+      {"name": "VENICE GW"},
+      {"name": "EMQIN"},
+      {"name": "MIOUSAE"}
     ]
   },
   {
+    "turn": 15.1,
+    "prompt": "List devices supporting Wi-Fi 5 and running on Ubuntu OS",
+    "description": "AC_15.1: Variation of main prompt - Tests recognition of wireless standards and specific OS requirements",
+    "variations": [],
+    "products": [
+      {"name": "EMNANOAM"},
+      {"name": "UP CORE PLUS"},
+      {"name": "VENICE GW"},
+      {"name": "EMQIN"},
+      {"name": "MIOUSAE"}
+    ]
+  },
+  {
+    "turn": 15.2,
+    "prompt": "Show me products with Wi-Fi 5 and Ubuntu OS",
+    "description": "AC_15.2: Variation of main prompt - Tests recognition of wireless standards and specific OS requirements",
+    "variations": [],
+    "products": [
+      {"name": "EMNANOAM"},
+      {"name": "UP CORE PLUS"},
+      {"name": "VENICE GW"},
+      {"name": "EMQIN"},
+      {"name": "MIOUSAE"}
+    ]
+  },
+  {
+    "turn": 15.3,
+    "prompt": "What hardware supports Wi-Fi 5 and runs on Ubuntu?",
+    "description": "AC_15.3: Variation of main prompt - Tests recognition of wireless standards and specific OS requirements",
+    "variations": [],
+    "products": [
+      {"name": "EMNANOAM"},
+      {"name": "UP CORE PLUS"},
+      {"name": "VENICE GW"},
+      {"name": "EMQIN"},
+      {"name": "MIOUSAE"}
+    ]
+  },
+  {
+    "turn": 15.4,
+    "prompt": "Find items with Wi-Fi 5 and Ubuntu OS compatibility",
+    "description": "AC_15.4: Variation of main prompt - Tests recognition of wireless standards and specific OS requirements",
+    "variations": [],
+    "products": [
+      {"name": "EMNANOAM"},
+      {"name": "UP CORE PLUS"},
+      {"name": "VENICE GW"},
+      {"name": "EMQIN"},
+      {"name": "MIOUSAE"}
+    ]
+  },
+  {
+    "turn": 16,
     "prompt": "List devices with ARM architecture and at least 4GB of memory",
     "description": "AC_16: Tests recognition of processor architecture and memory capacity specifications",
-    "variations": [
-      "Show me products with ARM architechture and 4 gigabytes or more RAM",
-      "What devices use ARM chips and have minimum 4GB memory?",
-      "List items with ARM-based processors and at least 4GB of RAM",
-      "Find gadgets with ARM architecture and 4000MB or higher memory"
-    ],
+    "variations": [],
     "products": [
-      {
-        "name": "SMARCSAMX"
-      },
-      {
-        "name": "SMARCSAL SMARC"
-      },
-      {
-        "name": "ARMADA SOM A"
-      },
-      {
-        "name": "NITROGENM PLUS SMARC"
-      },
-      {
-        "name": "IBASE IBR-QI"
-      }
+      {"name": "SMARCSAMX"},
+      {"name": "SMARCSAL SMARC"},
+      {"name": "ARMADA SOM A"},
+      {"name": "NITROGENM PLUS SMARC"},
+      {"name": "IBASE IBR-QI"}
     ]
   },
   {
-    "prompt": "Show me embedded systems with dual Ethernet ports and support for extended temperature ranges",
+    "turn": 16.1,
+    "prompt": "Show me products with ARM architechture and 4 gigabytes or more RAM",
+    "description": "AC_16.1: Variation of main prompt - Tests recognition of processor architecture and memory capacity specifications",
+    "variations": [],
+    "products": [
+      {"name": "SMARCSAMX"},
+      {"name": "SMARCSAL SMARC"},
+      {"name": "ARMADA SOM A"},
+      {"name": "NITROGENM PLUS SMARC"},
+      {"name": "IBASE IBR-QI"}
+    ]
+  },
+  {
+    "turn": 16.2,
+    "prompt": "What devices use ARM chips and have minimum 4GB memory?",
+    "description": "AC_16.2: Variation of main prompt - Tests recognition of processor architecture and memory capacity specifications",
+    "variations": [],
+    "products": [
+      {"name": "SMARCSAMX"},
+      {"name": "SMARCSAL SMARC"},
+      {"name": "ARMADA SOM A"},
+      {"name": "NITROGENM PLUS SMARC"},
+      {"name": "IBASE IBR-QI"}
+    ]
+  },
+  {
+    "turn": 16.3,
+    "prompt": "List items with ARM-based processors and at least 4GB of RAM",
+    "description": "AC_16.3: Variation of main prompt - Tests recognition of processor architecture and memory capacity specifications",
+    "variations": [],
+    "products": [
+      {"name": "SMARCSAMX"},
+      {"name": "SMARCSAL SMARC"},
+      {"name": "ARMADA SOM A"},
+      {"name": "NITROGENM PLUS SMARC"},
+      {"name": "IBASE IBR-QI"}
+    ]
+  },
+  {
+    "turn": 16.4,
+    "prompt": "Find gadgets with ARM architecture and 4000MB or higher memory",
+    "description": "AC_16.4: Variation of main prompt - Tests recognition of processor architecture and memory capacity specifications",
+    "variations": [],
+    "products": [
+      {"name": "SMARCSAMX"},
+      {"name": "SMARCSAL SMARC"},
+      {"name": "ARMADA SOM A"},
+      {"name": "NITROGENM PLUS SMARC"},
+      {"name": "IBASE IBR-QI"}
+    ]
+  },
+  {
+    "turn": 17,
+    "prompt": "Find products with dual Ethernet ports where minimum operating temperature is less than or equal to -40°C AND maximum operating temperature is greater than or equal to 85°C",
     "description": "AC_17: Tests recognition of networking interfaces and environmental operating specifications",
-    "variations": [
-      "List embedded devices featuring two Ethernet interfaces and wide temp range capability",
-      "What embedded products have dual LAN ports and operate in extreme temperatures?",
-      "Display embedded systems with 2 Ethernet connections supporting extended temp ranges",
-      "Find embedded hardware offering twin Ethernet ports and broad temperature tolerance"
-    ],
+    "variations": [],
     "products": [
-      {
-        "name": "COM-EXPRESS BASIC"
-      },
-      {
-        "name": "COUGAR"
-      },
-      {
-        "name": "EXPRESSBD"
-      },
-      {
-        "name": "EMQI"
-      },
-      {
-        "name": "VIPER EBX SINGLE BOARD"
-      }
+      {"name": "COM-EXPRESS BASIC"},
+      {"name": "COUGAR"},
+      {"name": "EXPRESSBD"},
+      {"name": "SANDCAT"},
+      {"name": "CONGAHPCC-TLU"}
     ]
   },
   {
-    "prompt": "List all products with a minimum operating temperature of -40°C and SATA storage interface",
+    "turn": 17.1,
+    "prompt": "List devices with two Ethernet interfaces where operating temperature range is: lowest temperature must be -40°C or below AND highest temperature must be 85°C or above",
+    "description": "AC_17.1: Variation of main prompt - Tests recognition of networking interfaces and environmental operating specifications",
+    "variations": [],
+    "products": [
+      {"name": "COM-EXPRESS BASIC"},
+      {"name": "COUGAR"},
+      {"name": "EXPRESSBD"},
+      {"name": "SANDCAT"},
+      {"name": "CONGAHPCC-TLU"}
+    ]
+  },
+  {
+    "turn": 17.2,
+    "prompt": "What products have Ethernet ports and can handle temperatures from -40°C or colder up to at least 85°C?",
+    "description": "AC_17.2: Variation of main prompt - Tests recognition of networking interfaces and environmental operating specifications",
+    "variations": [],
+    "products": [
+      {"name": "COM-EXPRESS BASIC"},
+      {"name": "COUGAR"},
+      {"name": "EXPRESSBD"},
+      {"name": "SANDCAT"},
+      {"name": "CONGAHPCC-TLU"}
+    ]
+  },
+  {
+    "turn": 17.3,
+    "prompt": "Display systems with 2 Ethernet connections that support minimum operating temperature <= -40°C and maximum operating temperature >= 85°C",
+    "description": "AC_17.3: Variation of main prompt - Tests recognition of networking interfaces and environmental operating specifications",
+    "variations": [],
+    "products": [
+      {"name": "COM-EXPRESS BASIC"},
+      {"name": "COUGAR"},
+      {"name": "EXPRESSBD"},
+      {"name": "SANDCAT"},
+      {"name": "CONGAHPCC-TLU"}
+    ]
+  },
+  {
+    "turn": 17.4,
+    "prompt": "Find hardware with twin Ethernet ports that can operate in temperatures of -40°C or lower AND survive in heat of 85°C or higher",
+    "description": "AC_17.4: Variation of main prompt - Tests recognition of networking interfaces and environmental operating specifications",
+    "variations": [],
+    "products": [
+      {"name": "COM-EXPRESS BASIC"},
+      {"name": "COUGAR"},
+      {"name": "EXPRESSBD"},
+      {"name": "SANDCAT"},
+      {"name": "CONGAHPCC-TLU"}
+    ]
+  },
+  {
+    "turn": 18,
+    "prompt": "List all products with a minimum operating temperature less or equal to -40°C and SATA onboard storage",
     "description": "AC_18: Tests recognition of extreme temperature requirements and storage interface specifications",
-    "variations": [
-      "Show devices that operate at -40 degrees Celsius or lower and have SATA storage",
-      "What hardware functions in -40°C environments and includes a SATA interface?",
-      "Find products with SATA storage that can withstand temperatures of negative 40 Celsius or colder",
-      "Display items featuring SATA connectivity and operable at minimum -40 degrees C"
-    ],
+    "variations": [],
     "products": [
-      {
-        "name": "CPU MINIITX SBC"
-      },
-      {
-        "name": "CPCI HLM"
-      },
-      {
-        "name": "SBCCPITX"
-      },
-      {
-        "name": "SBC-AP-ITX"
-      },
-      {
-        "name": "CPU LOW POWER SBC NXP IMX"
-      }
+      {"name": "CPU MINIITX SBC"},
+      {"name": "CPCI HLM"},
+      {"name": "SBCCPITX"},
+      {"name": "SBC-AP-ITX"},
+      {"name": "CPU LOW POWER SBC NXP IMX"}
     ]
   },
   {
+    "turn": 18.1,
+    "prompt": "Show devices that operate at -40 degrees Celsius or lower and have SATA storage",
+    "description": "AC_18.1: Variation of main prompt - Tests recognition of extreme temperature requirements and storage interface specifications",
+    "variations": [],
+    "products": [
+      {"name": "CPU MINIITX SBC"},
+      {"name": "CPCI HLM"},
+      {"name": "SBCCPITX"},
+      {"name": "SBC-AP-ITX"},
+      {"name": "CPU LOW POWER SBC NXP IMX"}
+    ]
+  },
+  {
+    "turn": 18.2,
+    "prompt": "What hardware functions in -40°C or lower temprature environments and includes a SATA onboard storage?",
+    "description": "AC_18.2: Variation of main prompt - Tests recognition of extreme temperature requirements and storage interface specifications",
+    "variations": [],
+    "products": [
+      {"name": "CPU MINIITX SBC"},
+      {"name": "CPCI HLM"},
+      {"name": "SBCCPITX"},
+      {"name": "SBC-AP-ITX"},
+      {"name": "CPU LOW POWER SBC NXP IMX"}
+    ]
+  },
+  {
+    "turn": 18.3,
+    "prompt": "Find products with SATA storage that can withstand temperatures of negative 40 Celsius",
+    "description": "AC_18.3: Variation of main prompt - Tests recognition of extreme temperature requirements and storage interface specifications",
+    "variations": [],
+    "products": [
+      {"name": "CPU MINIITX SBC"},
+      {"name": "CPCI HLM"},
+      {"name": "SBCCPITX"},
+      {"name": "SBC-AP-ITX"},
+      {"name": "CPU LOW POWER SBC NXP IMX"}
+    ]
+  },
+  {
+    "turn": 18.4,
+    "prompt": "Display items featuring SATA storage and operable at minimum of -40 degree",
+    "description": "AC_18.4: Variation of main prompt - Tests recognition of extreme temperature requirements and storage interface specifications",
+    "variations": [],
+    "products": [
+      {"name": "CPU MINIITX SBC"},
+      {"name": "CPCI HLM"},
+      {"name": "SBCCPITX"},
+      {"name": "SBC-AP-ITX"},
+      {"name": "CPU LOW POWER SBC NXP IMX"}
+    ]
+  },
+  {
+    "turn": 19,
     "prompt": "Find all products with USB 3.0 interface and support for Windows 10 operating system",
     "description": "AC_19: Tests recognition of USB interface standards and specific OS compatibility",
-    "variations": [
-      "List devices with USB 3.0 ports that run Windows 10 OS",
-      "Show hardware offering USB 3 connectivity and Windows Ten compatibility",
-      "What products include USB 3.0 interfaces and work with Win 10?",
-      "Display items featuring USB 3.0 and support for Windows 10 operating sistem"
-    ],
+    "variations": [],
     "products": [
-      {
-        "name": "PCM"
-      },
-      {
-        "name": "INTELLIGENT INSPECTION"
-      },
-      {
-        "name": "MIOUUA"
-      },
-      {
-        "name": "IBFI"
-      },
-      {
-        "name": "CONGATC"
-      }
+      {"name": "PCM"},
+      {"name": "INTELLIGENT INSPECTION"},
+      {"name": "MIOUUA"},
+      {"name": "IBFI"},
+      {"name": "CONGATC"}
     ]
   },
   {
+    "turn": 19.1,
+    "prompt": "List devices with USB 3.0 ports that run Windows 10 OS",
+    "description": "AC_19.1: Variation of main prompt - Tests recognition of USB interface standards and specific OS compatibility",
+    "variations": [],
+    "products": [
+      {"name": "PCM"},
+      {"name": "INTELLIGENT INSPECTION"},
+      {"name": "MIOUUA"},
+      {"name": "IBFI"},
+      {"name": "CONGATC"}
+    ]
+  },
+  {
+    "turn": 19.2,
+    "prompt": "Show hardware offering USB 3 connectivity and Windows Ten compatibility",
+    "description": "AC_19.2: Variation of main prompt - Tests recognition of USB interface standards and specific OS compatibility",
+    "variations": [],
+    "products": [
+      {"name": "PCM"},
+      {"name": "INTELLIGENT INSPECTION"},
+      {"name": "MIOUUA"},
+      {"name": "IBFI"},
+      {"name": "CONGATC"}
+    ]
+  },
+  {
+    "turn": 19.3,
+    "prompt": "What products include USB 3.0 interfaces and work with Win 10?",
+    "description": "AC_19.3: Variation of main prompt - Tests recognition of USB interface standards and specific OS compatibility",
+    "variations": [],
+    "products": [
+      {"name": "PCM"},
+      {"name": "INTELLIGENT INSPECTION"},
+      {"name": "MIOUUA"},
+      {"name": "IBFI"},
+      {"name": "CONGATC"}
+    ]
+  },
+  {
+    "turn": 19.4,
+    "prompt": "Display items featuring USB 3.0 and support for Windows 10 operating sistem",
+    "description": "AC_19.4: Variation of main prompt - Tests recognition of USB interface standards and specific OS compatibility",
+    "variations": [],
+    "products": [
+      {"name": "PCM"},
+      {"name": "INTELLIGENT INSPECTION"},
+      {"name": "MIOUUA"},
+      {"name": "IBFI"},
+      {"name": "CONGATC"}
+    ]
+  },
+  {
+    "turn": 20,
     "prompt": "Which devices have USB bus connectivity and accept 24V input voltage?",
     "description": "AC_20: Tests recognition of industrial communication protocols and power input specifications",
-    "variations": [
-      "List devices with USB bus support and 24V power input",
-      "Show products featuring USB interface and 24-volt power compatibility",
-      "What hardware includes USB bus and works with 24V power?",
-      "Find items supporting USB protocol and 24V input voltage"
-    ],
+    "variations": [],
     "products": [
-      {
-        "name": "CONGAIC"
-      },
-      {
-        "name": "HAIIC MICA USB"
-      },
-      {
-        "name": "SNMPB"
-      },
-      {
-        "name": "BL PPC W"
-      },
-      {
-        "name": "EDGEBOXRPI"
-      }
+      {"name": "CONGAIC"},
+      {"name": "HAIIC MICA USB"},
+      {"name": "BL BPC EWW"},
+      {"name": "REVPI CONNECT SE"},
+      {"name": "EDGEBOXRPI"}
+    ]
+  },
+  {
+    "turn": 20.1,
+    "prompt": "List devices with USB bus support and 24V power input",
+    "description": "AC_20.1: Variation of main prompt - Tests recognition of industrial communication protocols and power input specifications",
+    "variations": [],
+    "products": [
+      {"name": "CONGAIC"},
+      {"name": "HAIIC MICA USB"},
+      {"name": "BL BPC EWW"},
+      {"name": "REVPI CONNECT SE"},
+      {"name": "EDGEBOXRPI"}
+    ]
+  },
+  {
+    "turn": 20.2,
+    "prompt": "Show products featuring USB interface and 24-volt power compatibility",
+    "description": "AC_20.2: Variation of main prompt - Tests recognition of industrial communication protocols and power input specifications",
+    "variations": [],
+    "products": [
+      {"name": "CONGAIC"},
+      {"name": "HAIIC MICA USB"},
+      {"name": "BL BPC EWW"},
+      {"name": "REVPI CONNECT SE"},
+      {"name": "EDGEBOXRPI"}
+    ]
+  },
+  {
+    "turn": 20.3,
+    "prompt": "What hardware includes USB bus and works with 24V power?",
+    "description": "AC_20.3: Variation of main prompt - Tests recognition of industrial communication protocols and power input specifications",
+    "variations": [],
+    "products": [
+      {"name": "CONGAIC"},
+      {"name": "HAIIC MICA USB"},
+      {"name": "BL BPC EWW"},
+      {"name": "REVPI CONNECT SE"},
+      {"name": "EDGEBOXRPI"}
+    ]
+  },
+  {
+    "turn": 20.4,
+    "prompt": "Find items supporting USB protocol and 24V input voltage",
+    "description": "AC_20.4: Variation of main prompt - Tests recognition of industrial communication protocols and power input specifications",
+    "variations": [],
+    "products": [
+      {"name": "CONGAIC"},
+      {"name": "HAIIC MICA USB"},
+      {"name": "BL BPC EWW"},
+      {"name": "REVPI CONNECT SE"},
+      {"name": "EDGEBOXRPI"}
     ]
   }
 ]
