@@ -87,7 +87,7 @@ export const accuracyTestRunnerMachine = setup({
           timestamp: new Date().toISOString(),
           model: context.model,
           architectureChoice: context.architecture,
-          historyManagementChoice: context.historyManagement,
+          historyManagementChoice: "keep-none",
         }),
       })
     ),
