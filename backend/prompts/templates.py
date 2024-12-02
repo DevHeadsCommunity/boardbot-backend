@@ -1,4 +1,3 @@
-import json
 import logging
 from typing import Dict, Any, List
 from .base import USER_FACING_BASE, PROCESSING_BASE
@@ -944,44 +943,48 @@ class DynamicResponsePrompt(BaseChatPrompt):
         system_template = (
             PROCESSING_BASE
             + """
-        Generate informative responses about hardware products with emphasis on accuracy, relevance, and natural conversation flow.
+        Generate concise, informative responses about hardware products with emphasis on accuracy and relevance.
 
         CORE REQUIREMENTS:
         1. Response Structure:
            - State total matching products found based on search filters
-           - If additional features were requested, acknowledge them separately
-           - Keep responses concise and informative
+           - If additional features were requested, acknowledge them briefly
+           - Keep responses under 2 sentences
            - Use natural, conversational language
            - Maintain professional tone
 
         2. Message Components:
            - Primary message: State matched products and core specifications
-           - Secondary message: Address any additional requested features
-           - Keep under 3 sentences total
+           - Secondary message (if needed): Briefly address any additional requested features
+           - Maximum 2 sentences total
 
         3. Result Handling:
            - ALWAYS include ALL products provided in results
-           - Mention additional requested features without filtering products
            - Maintain original sort order if provided
            - For no matches, explain only based on search filters
 
         4. Follow-up Suggestions:
-           - Frame as natural conversation prompts
+           - Frame suggestions to prompt natural user questions
            - Focus on related features or specifications
-           - Keep suggestions brief and focused
-           - Let users ask questions rather than asking directly
+           - Keep suggestions brief (5-7 words)
            - Suggest 2-3 relevant topics based on context
+           - Format as feature statements, not questions
+           - Examples of good suggestions:
+             • "Options with additional connectivity features..."
+             • "Models with extended temperature ranges..."
+             • "Variants with higher processing power..."
+             • "Alternative form factors for integration..."
 
         RESPONSE FORMAT:
         {{
-            "message": "Clear, natural response following structure",
+            "message": "Clear, concise response following structure",
             "products": [
                 {{"product_id": "as provided"}}
             ],
-            "reasoning": "Brief explanation of matches and additional features",
+            "reasoning": "Brief explanation in 1-2 sentences",
             "follow_up_suggestions": [
-                "Natural prompt about related feature...",
-                "Another relevant topic..."
+                "Brief feature statement...",
+                "Another feature statement..."
             ]
         }}
 
@@ -989,41 +992,41 @@ class DynamicResponsePrompt(BaseChatPrompt):
 
         1. Products with Additional Features:
         {{
-            "message": "Found 2 boards matching the Intel Core processor and 16GB RAM specifications. Additional features like fanless operation can be reviewed in the detailed specifications.",
+            "message": "Found 2 Intel Core boards with 16GB RAM that match your specifications.",
             "products": [
                 {{"product_id": "board1"}},
                 {{"product_id": "board2"}}
             ],
-            "reasoning": "Both products meet the core processor and memory requirements, with detailed cooling specifications available in the product documentation.",
+            "reasoning": "Both products meet the core processor and memory requirements.",
             "follow_up_suggestions": [
-                "Options with specific thermal design features...",
-                "Models optimized for low-noise environments..."
+                "Options with built-in wireless connectivity...",
+                "Models supporting extended temperature ranges..."
             ]
         }}
 
         2. No Matches:
         {{
-            "message": "No products currently available matching the Intel CPU and 128GB DDR4 specifications.",
+            "message": "No products currently available with Intel CPU and 128GB DDR4 specifications.",
             "products": [],
-            "reasoning": "Our current product range doesn't include combinations of these specific memory and processor requirements.",
+            "reasoning": "Current product range doesn't include these memory and processor combinations.",
             "follow_up_suggestions": [
-                "Systems with 64GB memory configurations...",
-                "Alternative processor options with high memory support..."
+                "Available memory configurations up to 64GB...",
+                "Alternative processor options..."
             ]
         }}
 
         3. Sorted Results:
         {{
-            "message": "Found 3 Intel-based boards with memory configurations ranging from 16GB to 64GB DDR4, sorted by capacity.",
+            "message": "Found 3 Intel-based boards with 16GB to 64GB DDR4, sorted by capacity.",
             "products": [
                 {{"product_id": "high-mem-board"}},
                 {{"product_id": "mid-mem-board"}},
                 {{"product_id": "low-mem-board"}}
             ],
-            "reasoning": "All products feature Intel processors with varying memory configurations to suit different requirements.",
+            "reasoning": "All products feature Intel processors with varying memory configurations.",
             "follow_up_suggestions": [
-                "Memory expansion capabilities and supported configurations...",
-                "Performance characteristics with different memory sizes..."
+                "Memory expansion capabilities...",
+                "Performance with different memory sizes..."
             ]
         }}
         """

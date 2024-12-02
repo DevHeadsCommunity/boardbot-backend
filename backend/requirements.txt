@@ -27,3 +27,4 @@ dependency-injector
 python-multipart
 pytest
 tqdm
+anthropic

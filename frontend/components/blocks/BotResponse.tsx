@@ -12,6 +12,9 @@ interface BotResponseProps {
 
 const BotResponse: React.FC<BotResponseProps> = memo(function BotResponse({ message }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  console.log("===:+> message", message);
+  console.log("===:+> message.message", message.message);
+  console.log("===:+> message.followUpQuestion", message.message.followUpQuestion);
 
   return (
     <div className="flex">
@@ -22,7 +25,16 @@ const BotResponse: React.FC<BotResponseProps> = memo(function BotResponse({ mess
           <strong>Reasoning:</strong> {message.message.reasoning}
         </div>
         <div className="mt-2 text-blue-600">
-          <strong>Follow-up:</strong> {message.message.followUpQuestion}
+          <strong>Follow-up:</strong>{" "}
+          {Array.isArray(message.message.followUpQuestion) ? (
+            <ul className="list-disc pl-5">
+              {message.message.followUpQuestion.map((question, index) => (
+                <li key={index}>{question}</li>
+              ))}
+            </ul>
+          ) : (
+            message.message.followUpQuestion
+          )}
         </div>
       </div>
       <div className="w-2/5 rounded-lg bg-gray-200 p-3 text-sm">

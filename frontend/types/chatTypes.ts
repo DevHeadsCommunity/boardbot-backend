@@ -38,7 +38,7 @@ const ResponseContentSchema = z.object({
   message: z.string(),
   products: z.array(ProductSchema).optional(),
   reasoning: z.string().optional(),
-  followUpQuestion: z.string().optional(),
+  followUpQuestion: z.union([z.string(), z.array(z.string())]).optional(),
   metadata: z.record(z.unknown()).optional(),
 });
 

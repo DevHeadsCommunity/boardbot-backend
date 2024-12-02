@@ -22,7 +22,7 @@ class ResponseFormatter:
             "response": llm_response.get("message", ""),
             "products": product_details,
             "reasoning": llm_response.get("reasoning", ""),
-            "follow_up_question": llm_response.get("follow_up_question", ""),
+            "follow_up_question": llm_response.get("follow_up_suggestions", ""),
             "metadata": metadata,
         }
 

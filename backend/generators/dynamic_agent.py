@@ -10,7 +10,6 @@ from services.openai_service import OpenAIService
 from services.weaviate_service import WeaviateService
 from services.anthropic_service import AnthropicService
 from .utils.response_formatter import ResponseFormatter
-from weaviate_interface.models.product import attribute_descriptions
 from typing import List, Dict, Any, Literal, Tuple, TypedDict, Optional, Annotated, Callable, Union
 from functools import wraps
 
@@ -195,17 +194,29 @@ class DynamicAgent:
 
     def route_by_analysis(self, state: DynamicAgentState) -> str:
         """Routes analysis results to appropriate handler"""
-        routing_map = {
-            "security_flag": "security_response",
-            "final_response": "direct_response",
-            "sort_context": "sorted_query",
-            "filters": "hybrid_search",
-            "entities": "semantic_search",
-        }
+        # Check security first
+        if state.get("security_flag"):
+            return "security_response"
 
-        for state_key, route in routing_map.items():
-            if state.get(state_key):
-                return route
+        # Check for direct response
+        if state.get("final_response"):
+            return "direct_response"
+
+        # Check for sort context
+        if state.get("sort_context") and isinstance(state["sort_context"], dict) and state["sort_context"]:
+            return "sorted_query"
+
+        # Check for filters
+        if state.get("filters") and isinstance(state["filters"], dict) and state["filters"]:
+            return "hybrid_search"
+
+        # Check for entities
+        if state.get("entities") and isinstance(state["entities"], dict) and state["entities"]:
+            return "semantic_search"
+
+        # Default to semantic search if only num_products_requested is present
+        if state.get("num_products_requested"):
+            return "semantic_search"
 
         raise ValueError("No valid routing option found")
 
@@ -323,30 +334,36 @@ class DynamicAgent:
             "time_taken": {"security": 0},
         }
 
-    def construct_semantic_context(self, entities: Dict[str, List[str]], filters: Dict[str, Any]) -> str:
+    def construct_semantic_context(
+        self, entities: Optional[Dict[str, List[str]]], filters: Optional[Dict[str, Any]]
+    ) -> str:
         """Construct deterministic semantic context"""
+        if not entities:
+            entities = {}
+        if not filters:
+            filters = {}
         context_parts = []
-        
+
         # Normalize and sort entities
         normalized_entities = {}
         for group, values in entities.items():
             normalized_values = [v.lower().strip() for v in values]
             normalized_entities[group.lower().strip()] = sorted(normalized_values)
-        
+
         # Build context with normalized values
         for entity_group in sorted(normalized_entities.keys()):
             values = normalized_entities[entity_group]
             context_parts.append(f"{entity_group}: {', '.join(values)}")
-        
+
         # Add normalized filters
         ordered_filters = self._order_filters(filters)
         for key, value in ordered_filters.items():
             if isinstance(value, list):
-                value_str = ', '.join(sorted(str(v) for v in value))
+                value_str = ", ".join(sorted(str(v) for v in value))
             else:
                 value_str = str(value)
             context_parts.append(f"{key}: {value_str}")
-        
+
         return ". ".join(context_parts)
 
     def _order_filters(self, filters: Dict[str, Any]) -> Dict[str, Any]:
@@ -601,28 +618,22 @@ class DynamicAgent:
 
     def _prepare_search_params(self, state: DynamicAgentState, search_type: str) -> Dict[str, Any]:
         """Prepare consistent search parameters"""
-        base_params = {
-            "limit": state["num_products_requested"],
-            "search_type": search_type
-        }
-        
+        base_params = {"limit": state["num_products_requested"], "search_type": search_type}
+
         if search_type in ["filtered", "hybrid"]:
             filters = self._order_filters(state.get("filters", {}))
             base_params["filters"] = filters
-            
+
         if search_type in ["hybrid", "semantic"]:
             entities = state.get("entities", {})
-            semantic_context = self.construct_semantic_context(
-                entities, 
-                filters if search_type == "hybrid" else {}
-            )
+            semantic_context = self.construct_semantic_context(entities, filters if search_type == "hybrid" else {})
             base_params["query"] = semantic_context
-            
+
         if search_type == "filtered" and state.get("sort_context"):
             base_params["sort"] = {
                 "field": state["sort_context"]["field"],
                 "order": state["sort_context"]["order"].lower(),
-                "weight": 1.0
+                "weight": 1.0,
             }
-            
+
         return base_params
