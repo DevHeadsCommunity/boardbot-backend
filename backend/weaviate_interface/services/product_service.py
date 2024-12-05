@@ -2,6 +2,9 @@ from typing import Any, Dict, List, Optional
 from weaviate_interface.services.base_service import BaseService
 from weaviate_interface.weaviate_client import WeaviateClient
 from weaviate.classes.query import Filter
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ProductService(BaseService):
@@ -86,3 +89,79 @@ class ProductService(BaseService):
         except Exception as e:
             logger.error(f"Error querying products: {e}")
             raise
+
+    async def semantic_search(
+        self,
+        query_text: str,
+        limit: int = 5,
+        filters: Optional[Filter] = None,
+        return_properties: Optional[List[str]] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Perform semantic search on products using near_text.
+
+        Args:
+            query_text: The search query text
+            limit: Maximum number of results to return
+            filters: Optional Weaviate filter
+            return_properties: List of properties to return in results
+
+        Returns:
+            List of matching products with metadata
+        """
+        try:
+            if return_properties is None:
+                return_properties = self.get_properties()
+
+            # Use the base service's search method which handles near_text
+            results = await self.search(
+                query_text=query_text,
+                limit=limit,
+                filters=filters,
+                return_properties=return_properties,
+                include_vector=False,
+            )
+
+            return results
+
+        except Exception as e:
+            logger.error(f"Error in semantic search: {e}")
+            return []
+
+    async def hybrid_search(
+        self,
+        query_text: str,
+        limit: int = 5,
+        filters: Optional[Filter] = None,
+        return_properties: Optional[List[str]] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Perform hybrid search combining semantic and filtered search.
+
+        Args:
+            query_text: The search query text
+            limit: Maximum number of results to return
+            filters: Optional Weaviate filter
+            return_properties: List of properties to return in results
+
+        Returns:
+            List of matching products with metadata
+        """
+        try:
+            if return_properties is None:
+                return_properties = self.get_properties()
+
+            # Use the base service's hybrid_search method
+            results = await super().hybrid_search(
+                query_text=query_text,
+                limit=limit,
+                filters=filters,
+                return_properties=return_properties,
+                alpha=0.5,  # Balance between keywords and vectors
+            )
+
+            return results
+
+        except Exception as e:
+            logger.error(f"Error in hybrid search: {e}")
+            return []
