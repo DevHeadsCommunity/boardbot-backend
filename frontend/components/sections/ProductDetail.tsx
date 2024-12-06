@@ -13,6 +13,7 @@ interface ProductDetailProps {
   state: DisplayProductState;
   product: Product | null;
   actions: ProductActions;
+  displayOnly?: boolean;
 }
 
 const formatLabel = (key: string): string => {
@@ -22,7 +23,7 @@ const formatLabel = (key: string): string => {
     .join(" ");
 };
 
-const ProductDetail = ({ state, product, actions }: ProductDetailProps) => {
+const ProductDetail = ({ state, product, actions, displayOnly = false }: ProductDetailProps) => {
   console.log(`ProductDetail state: ${state}`);
   const [editedProduct, setEditedProduct] = useState<Product | null>(product);
 
@@ -87,10 +88,14 @@ const ProductDetail = ({ state, product, actions }: ProductDetailProps) => {
         content = renderProductFields(false);
         footer = (
           <>
-            <Button onClick={actions.click.selectUpdateProduct}>Update Product</Button>
-            <Button variant="destructive" onClick={actions.click.selectDeleteProduct}>
-              Delete Product
-            </Button>
+            {!displayOnly && (
+              <>
+                <Button onClick={actions.click.selectUpdateProduct}>Update Product</Button>
+                <Button variant="destructive" onClick={actions.click.selectDeleteProduct}>
+                  Delete Product
+                </Button>
+              </>
+            )}
           </>
         );
         break;

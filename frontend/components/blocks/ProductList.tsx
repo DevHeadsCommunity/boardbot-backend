@@ -1,24 +1,17 @@
 import { Product } from "@/types";
 import React, { memo } from "react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 
 interface ProductListProps {
   products: Product[];
+  onProductSelect: (product: Product) => void;
 }
 
-const ProductList: React.FC<ProductListProps> = memo(function ProductList({ products }) {
+const ProductList: React.FC<ProductListProps> = memo(function ProductList({ products, onProductSelect }) {
   return (
     <ul className="mb-2 list-disc pl-5">
       {products.map((product) => (
-        <li key={product.id} className="mb-1">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger className="cursor-pointer text-blue-600 hover:underline">{product.name}</TooltipTrigger>
-              <TooltipContent>
-                <ProductDetails product={product} />
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+        <li key={product.id} className="cursor-pointer text-blue-600 hover:underline" onClick={() => onProductSelect(product)}>
+          {product.name}
         </li>
       ))}
     </ul>
