@@ -4,10 +4,10 @@ from typing import List, Dict, Any, Tuple
 from prompts.prompt_manager import PromptManager
 from services.openai_service import OpenAIService
 from weaviate_interface.models.product import attribute_descriptions
-
+from services.utils.enhanced_error_logger import create_error_logger
 
 logger = logging.getLogger(__name__)
-
+logger.error = create_error_logger(logger)
 
 class QueryProcessor:
 

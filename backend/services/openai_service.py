@@ -3,9 +3,10 @@ import logging
 from openai import AsyncOpenAI
 from typing import List, Optional, Tuple, Dict, Any
 from config import Config
+from services.utils.enhanced_error_logger import create_error_logger
 
 logger = logging.getLogger(__name__)
-
+logger.error = create_error_logger(logger)
 
 class OpenAIService:
 

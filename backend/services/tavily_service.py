@@ -4,9 +4,9 @@ from tavily import TavilyClient
 from urllib.parse import urlparse
 import asyncio
 from functools import partial
-
+from services.utils.enhanced_error_logger import create_error_logger
 logger = logging.getLogger(__name__)
-
+logger.error = create_error_logger(logger)
 
 class TavilyService:
     def __init__(self, api_key: str, max_retries: int = 3):
