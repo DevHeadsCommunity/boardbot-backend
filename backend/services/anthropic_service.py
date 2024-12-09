@@ -1,10 +1,11 @@
 import logging
 from anthropic import AsyncAnthropic
 from typing import List, Optional, Tuple, Dict, Any
+from services.utils.enhanced_error_logger import create_error_logger
 from config import Config
 
 logger = logging.getLogger(__name__)
-
+logger.error = create_error_logger(logger)
 
 class AnthropicService:
     def __init__(self, api_key: str, config: Config):

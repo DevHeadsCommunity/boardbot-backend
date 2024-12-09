@@ -6,10 +6,12 @@ from typing import List, Dict, Any
 from services import OpenAIService, TavilyService
 from services.weaviate_service import WeaviateService
 from feature_extraction import AgenticFeatureExtractor, ConfigSchema
+from services.utils.enhanced_error_logger import create_error_logger
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-logger = logging.getLogger(__name__)
 
+logger = logging.getLogger(__name__)
+logger.error = create_error_logger(logger)
 
 class FeatureExtractionService:
 

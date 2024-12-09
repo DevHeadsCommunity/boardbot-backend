@@ -1,0 +1,26 @@
+# Use an official Python runtime as a parent image
+FROM python:3.9-slim
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    python3-dev \
+    libc6-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a monitoring directory and copy requirements
+COPY monitoring/requirements.txt ./requirements.txt
+
+# Install Python dependencies
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir python-telegram-bot python-dotenv && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy the monitoring code
+COPY monitoring/ .
+
+# Run bot.py when the container launches
+CMD ["python", "bot.py"] 

@@ -42,6 +42,15 @@ services:
       # - REACT_APP_BACKEND_URL=http://localhost:6789
       - REACT_APP_BACKEND_URL=http://18.204.9.187:6789 # Ensure this is the correct IP and port for backend
 
+  monitoring:
+    build:
+      context: .
+      dockerfile: dockerfile.monitoring
+    environment:
+      - BOT_TOKEN=7010822438:AAG2DYHUtHSm_KoVVVqua6Oucee_eZEOa58
+      - TEST_GROUP_ID=-4670004307
+    restart: unless-stopped
+
 volumes:
   weaviate_data:
     driver: local
