@@ -28,3 +28,4 @@ python-multipart
 pytest
 tqdm
 anthropic
+requests

@@ -3,6 +3,7 @@ from enum import Enum
 import json
 import logging
 from typing import List, Dict, Any, Optional, Tuple, TypedDict, Union
+from services.utils.enhanced_error_logger import create_error_logger
 from services.utils.filter_parser import QueryBuilder
 from weaviate_interface import WeaviateInterface, route_descriptions
 from feature_extraction.product_data_preprocessor import ProductDataProcessor
@@ -10,7 +11,7 @@ from weaviate.classes.query import Filter
 from weaviate.classes.config import Property, DataType
 
 logger = logging.getLogger(__name__)
-
+logger.error = create_error_logger(logger)
 
 class SortOrder(str, Enum):
     ASC = "asc"
