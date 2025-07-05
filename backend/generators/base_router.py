@@ -32,7 +32,7 @@ class BaseRouter:
         self.prompt_manager = prompt_manager
         self.response_formatter = ResponseFormatter()
 
-    async def run(self, message: Message) -> Dict[str, Any]:
+    async def run(self, message: Message, sql_mode: bool = False) -> Dict[str, Any]:
         chat_history = self.session_manager.get_formatted_chat_history(
             message.session_id, message.history_management_choice, "message_only"
         )
@@ -40,7 +40,7 @@ class BaseRouter:
             message, chat_history  # Pass as list of dicts
         )
         response = await self.handle_route(
-            classification, message, chat_history, input_tokens, output_tokens, time_taken
+            classification, message, chat_history, input_tokens, output_tokens, time_taken, sql_mode=sql_mode
         )
         return response
 
@@ -59,6 +59,7 @@ class BaseRouter:
         input_tokens: int,
         output_tokens: int,
         time_taken: float,
+        sql_mode: bool = False,
     ) -> Dict[str, Any]:
         route = classification["category"]
         confidence = classification["confidence"]
@@ -69,6 +70,9 @@ class BaseRouter:
             "output_token_usage": {"classification": output_tokens},
             "time_taken": {"classification": time_taken},
         }
+        
+        if sql_mode:
+            base_metadata["sql_mode"] = True
 
         if confidence < 50:
             return await self.handle_low_confidence_query(message, chat_history, classification, base_metadata)
@@ -134,6 +138,7 @@ class BaseRouter:
             system_message=system_message,
             formatted_chat_history=chat_history,
             model=message.model,
+            sql_mode=base_metadata["sql_mode"] if "sql_mode" in base_metadata else False,
         )
 
         base_metadata["input_token_usage"]["generate"] = input_tokens

@@ -4,6 +4,7 @@ from openai import AsyncOpenAI
 from typing import List, Optional, Tuple, Dict, Any
 from config import Config
 from services.utils.enhanced_error_logger import create_error_logger
+import os
 
 logger = logging.getLogger(__name__)
 logger.error = create_error_logger(logger)
@@ -87,9 +88,27 @@ class OpenAIService:
         formatted_chat_history: Optional[List[Dict[str, str]]] = None,
         **kwargs,
     ) -> Tuple[str, int, int]:
-        messages = self._prepare_messages(user_message, system_message, formatted_chat_history)
-        logger.info(f"\n\n\nMessages: {messages}\n\n\n")
-        return await self.create_chat_completion(messages, **kwargs)
+        if kwargs.pop("sql_mode", False):
+        # Avoid circular imports if SQLQueryAgent is defined elsewhere
+            from services.sql_query_agent import SQLQueryAgent
+
+            db_uri = os.getenv("DATABASE_URI") or self.config.DATABASE_URI
+            if not db_uri:
+                raise ValueError("DATABASE_URI is not set in the environment or config.")
+            sql_agent = SQLQueryAgent(db_uri=db_uri, openai_service=self)
+            await sql_agent.initialize()
+
+            try:
+                sql_response = await sql_agent.query(user_message)
+                return sql_response, 0, 0  # Return dummy token counts or customize if needed
+            except Exception as e:
+                logger.error(f"SQL Agent failed: {e}")
+                raise
+        else:
+            # Default flow: chat completion
+            messages = self._prepare_messages(user_message, system_message, formatted_chat_history)
+            logger.info(f"\n\n\nMessages: {messages}\n\n\n")
+            return await self.create_chat_completion(messages, **kwargs)
 
     def _prepare_messages(
         self,

@@ -91,7 +91,7 @@ class SocketIOHandler:
             history_management_choice=data.get("history_management_choice"),
             is_user_message=True,
         )
-        response = await self.message_processor.process_message(message)
+        response = await self.message_processor.process_message(message, data.get("sql_mode", False))
         response_dict = response.to_dict()
         logger.info(f"Response sent to {sid}: {response_dict}")
         await self.sio.emit("text_response", response_dict, room=sid)

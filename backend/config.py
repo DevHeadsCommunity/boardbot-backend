@@ -16,6 +16,7 @@ class Config(BaseSettings):
     IP_ADDRESS: str = Field(..., env="IP_ADDRESS")
     ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
     DEFAULT_ANTHROPIC_MODEL: str = "claude-3-sonnet-20240229"
+    DATABASE_URI: str = Field("sqlite+aiosqlite:///./database.db", env="DATABASE_URI")
 
     class Config:
         env_file = ".env"
