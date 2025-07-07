@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import urllib.parse
 from typing import Any, Dict, List, Optional, Union
 from weaviate import WeaviateAsyncClient
 from weaviate.connect import ConnectionParams
@@ -12,12 +13,19 @@ logger = logging.getLogger(__name__)
 
 class WeaviateClient:
     def __init__(self, url: str, api_key: str, use_grpc: bool = True):
+        parsed_url = urllib.parse.urlparse(url)
+        host = parsed_url.hostname
+        port = parsed_url.port
+
+        if not host or not port:
+            raise ValueError(f"Invalid Weaviate URL: {url}. Ensure it includes a valid hostname and port.")
+        
         self.client = WeaviateAsyncClient(
             connection_params=ConnectionParams.from_params(
-                http_host=url,
-                http_port=8080,
+                http_host=host,
+                http_port=port,
                 http_secure=False,
-                grpc_host=url if use_grpc else None,
+                grpc_host=host if use_grpc else None,
                 grpc_port=50051 if use_grpc else None,
                 grpc_secure=False,
             ),
