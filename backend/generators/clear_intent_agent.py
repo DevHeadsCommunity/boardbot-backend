@@ -72,7 +72,7 @@ class ClearIntentAgent:
 
         return {
             "filters": query_result["filters"],
-            "query_context": query_result["query_context"],
+            "query_context": query_result.get("query_context", {}),
             "input_tokens": {"query_processing": input_tokens},
             "output_tokens": {"query_processing": output_tokens},
             "time_taken": {"query_processing": time.time() - start_time},

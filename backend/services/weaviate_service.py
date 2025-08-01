@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 import json
+import httpx
 import logging
 from typing import List, Dict, Any, Optional, Tuple, TypedDict, Union
 from services.utils.enhanced_error_logger import create_error_logger
@@ -67,23 +68,29 @@ class WeaviateService:
             if not self.connected:
                 await self.connect()
 
-            # if not (await self.wi.schema.is_valid()) or reset:
-            #     await self.wi.schema.reset_schema()
-            #     # Optionally load initial data
-            #     await self._load_product_data()
-            #     await self._load_semantic_routes()
+            async with httpx.AsyncClient() as client:
+                response = await client.get("http://localhost:8080/v1/objects?limit=1&class=Product")
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get("totalResults", 0) > 0:
+                        logger.info("Weaviate already contains Product data, skipping data load.")
+                        return
+                    else:
+                        logger.info("Weaviate is empty, loading product data.")
+                else:
+                    logger.warning(f"Unexpected response from Weaviate: {response.status_code}, loading data anyway.")
 
-            is_valid = await self.wi.schema.is_valid()
-            info = await self.wi.schema.info()
-            logger.info(f"Weaviate schema is valid: {is_valid}")
-            logger.info(f"Weaviate schema info: {info}")
+            await self.wi.schema.reset_schema()
+            await self._load_product_data()
+            await self._load_semantic_routes()
+
         except Exception as e:
             logger.error(f"Error initializing Weaviate: {e}", exc_info=True)
             raise
 
     async def _load_product_data(self):
         try:
-            processed_data = self.data_processor.load_and_preprocess_data("data/cleaned_data.csv")
+            processed_data = self.data_processor.load_and_preprocess_data("backend/data/cleaned_data.csv")
 
             for i in range(0, len(processed_data), 20):
                 batch = processed_data[i : i + 20]

@@ -32,13 +32,50 @@ class BaseRouter:
         self.prompt_manager = prompt_manager
         self.response_formatter = ResponseFormatter()
 
-    async def run(self, message: Message, sql_mode: bool = False) -> Dict[str, Any]:
+    def _validate_classification(self, classification: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate and fix classification response format"""
+        if not isinstance(classification, dict):
+            logger.warning(f"Classification is not a dict: {type(classification)}")
+            return {
+                "category": "clear_intent_product",
+                "confidence": 50,
+                "reasoning": "Defaulted due to invalid classification format"
+            }
+
+        if "category" not in classification:
+            logger.warning(f"Classification missing 'category' key: {classification}")
+            classification["category"] = "clear_intent_product"
+
+        if "confidence" not in classification:
+            logger.warning(f"Classification missing 'confidence' key: {classification}")
+            classification["confidence"] = 50
+
+        valid_categories = ["politics", "chitchat", "vague_intent_product", "clear_intent_product", "do_not_respond"]
+        if classification["category"] not in valid_categories:
+            logger.warning(f"Invalid category '{classification['category']}', defaulting to 'clear_intent_product'")
+            classification["category"] = "clear_intent_product"
+
+        return classification
+
+    async def run(self, message: Message, sql_mode: bool = True) -> Dict[str, Any]:
         chat_history = self.session_manager.get_formatted_chat_history(
             message.session_id, message.history_management_choice, "message_only"
         )
-        classification, input_tokens, output_tokens, time_taken = await self.determine_route(
-            message, chat_history  # Pass as list of dicts
-        )
+
+        try:
+            classification, input_tokens, output_tokens, time_taken = await self.determine_route(
+                message, chat_history  # Pass as list of dicts
+            )
+        except Exception as e:
+            logger.error(f"Error in determine_route: {str(e)}")
+            # Create a fallback classification
+            classification = {
+                "category": "clear_intent_product",
+                "confidence": 50,
+                "reasoning": f"Fallback due to error: {str(e)}"
+            }
+            input_tokens, output_tokens, time_taken = 0, 0, 0.0
+
         response = await self.handle_route(
             classification, message, chat_history, input_tokens, output_tokens, time_taken, sql_mode=sql_mode
         )
@@ -52,15 +89,18 @@ class BaseRouter:
         raise NotImplementedError("Subclasses must implement determine_route method")
 
     async def handle_route(
-        self,
-        classification: Dict[str, Any],
-        message: Message,
-        chat_history: List[Dict[str, str]],
-        input_tokens: int,
-        output_tokens: int,
-        time_taken: float,
-        sql_mode: bool = False,
+            self,
+            classification: Dict[str, Any],
+            message: Message,
+            chat_history: List[Dict[str, str]],
+            input_tokens: int,
+            output_tokens: int,
+            time_taken: float,
+            sql_mode: bool = True,
     ) -> Dict[str, Any]:
+        # # Validate classification before using it
+        classification = self._validate_classification(classification)
+
         route = classification["category"]
         confidence = classification["confidence"]
 
@@ -70,7 +110,7 @@ class BaseRouter:
             "output_token_usage": {"classification": output_tokens},
             "time_taken": {"classification": time_taken},
         }
-        
+
         if sql_mode:
             base_metadata["sql_mode"] = True
 
@@ -138,7 +178,7 @@ class BaseRouter:
             system_message=system_message,
             formatted_chat_history=chat_history,
             model=message.model,
-            sql_mode=base_metadata["sql_mode"] if "sql_mode" in base_metadata else False,
+            sql_mode=base_metadata["sql_mode"] if "sql_mode" in base_metadata else True,
         )
 
         base_metadata["input_token_usage"]["generate"] = input_tokens

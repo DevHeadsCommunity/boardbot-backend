@@ -88,7 +88,7 @@ class OpenAIService:
         formatted_chat_history: Optional[List[Dict[str, str]]] = None,
         **kwargs,
     ) -> Tuple[str, int, int]:
-        if kwargs.pop("sql_mode", False):
+        if kwargs.pop("sql_mode", True):
         # Avoid circular imports if SQLQueryAgent is defined elsewhere
             from services.sql_query_agent import SQLQueryAgent
 
