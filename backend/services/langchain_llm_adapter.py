@@ -6,6 +6,7 @@ from typing import List, Any
 import asyncio
 from .openai_service import OpenAIService
 
+
 class LangchainChatModelAdapter(BaseChatModel):
     def __init__(self, openai_service, **kwargs):
         super().__init__(**kwargs)
@@ -13,9 +14,11 @@ class LangchainChatModelAdapter(BaseChatModel):
 
     @property
     def _llm_type(self) -> str:
+        print("🧭 FUNCTION NAME: _llm_type, FILE_NAME: backend/services/langchain_llm_adapter.py")
         return "custom-openai-adapter"
 
     def _format_messages(self, messages: List[BaseMessage]) -> List[dict]:
+        print("🧭 FUNCTION NAME: _format_messages, FILE_NAME: backend/services/langchain_llm_adapter.py")
         formatted_msgs = []
         for msg in messages:
             if isinstance(msg, HumanMessage):
@@ -30,12 +33,13 @@ class LangchainChatModelAdapter(BaseChatModel):
         return formatted_msgs
 
     async def _agenerate(
-        self,
-        messages: List[BaseMessage],
-        stop: List[str] = None,
-        run_manager: Any = None,
-        **kwargs: Any,
+            self,
+            messages: List[BaseMessage],
+            stop: List[str] = None,
+            run_manager: Any = None,
+            **kwargs: Any,
     ) -> ChatResult:
+        print("🧭 FUNCTION NAME: _agenerate, FILE_NAME: backend/services/langchain_llm_adapter.py")
         formatted_msgs = self._format_messages(messages)
         content, input_tokens, output_tokens = await self.openai_service.create_chat_completion(
             messages=formatted_msgs,
@@ -62,13 +66,13 @@ class LangchainChatModelAdapter(BaseChatModel):
     #     )
 
     def _generate(
-        self,
-        messages: List[BaseMessage],
-        stop: List[str] = None,
-        run_manager: Any = None,
-        **kwargs: Any,
+            self,
+            messages: List[BaseMessage],
+            stop: List[str] = None,
+            run_manager: Any = None,
+            **kwargs: Any,
     ) -> ChatResult:
-        print("!!! _generate !!! FILE: service/langchain_llm_adapter")
+        print("🧭 FUNCTION NAME: _generate, FILE_NAME: backend/services/langchain_llm_adapter.py")
         formatted_msgs = self._format_messages(messages)
 
         loop = asyncio.get_event_loop()

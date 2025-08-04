@@ -13,6 +13,7 @@ class BaseService(ABC):
         self.class_name = class_name
 
     async def create(self, data: Dict[str, Any], unique_properties: Optional[List[str]] = None) -> str:
+        print("🧭 FUNCTION NAME: create, FILE_NAME: backend/weaviate_interface/service/base_service.py")
         try:
             return await self.client.insert_object(self.class_name, data, unique_properties)
         except Exception as e:
@@ -26,6 +27,7 @@ class BaseService(ABC):
         return_properties: Optional[List[str]] = None,
         return_references: Optional[QueryReference] = None,
     ) -> Optional[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: get, FILE_NAME: backend/weaviate_interface/service/base_service.py")
         try:
             if return_properties is None:
                 return_properties = self.get_properties()
@@ -46,6 +48,8 @@ class BaseService(ABC):
         return_properties: Optional[List[str]] = None,
         include_vector: bool = False,
     ) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: get_all, FILE_NAME: backend/weaviate_interface/service/base_service.py")
+
         try:
             if return_properties is None:
                 return_properties = self.get_properties()
@@ -57,6 +61,7 @@ class BaseService(ABC):
             return []
 
     async def update(self, uuid: str, data: Dict[str, Any]) -> None:
+        print("🧭 FUNCTION NAME: update, FILE_NAME: backend/weaviate_interface/service/base_service.py")
         try:
             await self.client.update_object(self.class_name, uuid, data)
         except Exception as e:
@@ -64,6 +69,7 @@ class BaseService(ABC):
             raise
 
     async def delete(self, uuid: str) -> None:
+        print("🧭 FUNCTION NAME: delete, FILE_NAME: backend/weaviate_interface/service/base_service.py")
         try:
             await self.client.delete_object(self.class_name, uuid)
         except Exception as e:
@@ -79,6 +85,7 @@ class BaseService(ABC):
         return_properties: Optional[List[str]] = None,
         include_vector: bool = False,
     ) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: get_sorted, FILE_NAME: backend/weaviate_interface/service/base_service.py")
         """
         Get objects with sorting capabilities
 
@@ -120,6 +127,7 @@ class BaseService(ABC):
         return_references: Optional[QueryReference] = None,
         include_vector: bool = False,
     ) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: search, FILE_NAME: backend/weaviate_interface/service/base_service.py")
         try:
             return await self.client.search(
                 self.class_name,
@@ -146,6 +154,7 @@ class BaseService(ABC):
         return_references: Optional[QueryReference] = None,
         include_vector: bool = False,
     ) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: hybrid_search, FILE_NAME: backend/weaviate_interface/service/base_service.py")
         try:
             return await self.client.hybrid_search(
                 self.class_name, query_text, limit, alpha, filters, return_properties, return_references, include_vector
@@ -155,6 +164,7 @@ class BaseService(ABC):
             return []
 
     async def count(self) -> int:
+        print("🧭 FUNCTION NAME: count, FILE_NAME: backend/weaviate_interface/service/base_service.py")
         try:
             result = await self.client.aggregate(self.class_name)
             logger.info(f"Count result: {result}")
@@ -166,6 +176,7 @@ class BaseService(ABC):
     async def batch_create_objects(
         self, objects: List[Dict[str, Any]], unique_properties: Optional[List[str]] = None, batch_size: int = 100
     ) -> List[str]:
+        print("🧭 FUNCTION NAME: batch_create_objects, FILE_NAME: backend/weaviate_interface/service/base_service.py")
         try:
             return await self.client.batch_insert_objects(self.class_name, objects, unique_properties, batch_size)
         except Exception as e:
@@ -175,6 +186,7 @@ class BaseService(ABC):
     async def batch_delete_objects(
         self, uuids: List[str], dry_run: bool = False, verbose: bool = False
     ) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: batch_delete_objects, FILE_NAME: backend/weaviate_interface/service/base_service.py")
         try:
             return await self.client.batch_delete_objects(self.class_name, uuids, dry_run, verbose)
         except Exception as e:
@@ -184,6 +196,7 @@ class BaseService(ABC):
     async def delete_objects_by_filter(
         self, filters: Filter, dry_run: bool = False, verbose: bool = False
     ) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: delete_objects_by_filter, FILE_NAME: backend/weaviate_interface/service/base_service.py")
         try:
             return await self.client.delete_objects_by_filter(self.class_name, filters, dry_run, verbose)
         except Exception as e:
@@ -193,6 +206,7 @@ class BaseService(ABC):
     async def aggregate(
         self, group_by: Optional[List[str]] = None, properties: Optional[List[str]] = None
     ) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: aggregate, FILE_NAME: backend/weaviate_interface/service/base_service.py")
         try:
             return await self.client.aggregate(self.class_name, group_by, properties)
         except Exception as e:
@@ -211,6 +225,7 @@ class BaseService(ABC):
         offset: int = 0,
         auto_limit: int = 3,
     ) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: keyword_search, FILE_NAME: backend/weaviate_interface/service/base_service.py")
         try:
             return await self.client.keyword_search(
                 self.class_name,
@@ -242,6 +257,7 @@ class BaseService(ABC):
         offset: int = 0,
         auto_limit: int = 3,
     ) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: vector_search, FILE_NAME: backend/weaviate_interface/service/base_service.py")
         try:
             return await self.client.vector_search(
                 self.class_name,
@@ -263,4 +279,5 @@ class BaseService(ABC):
 
     @abstractmethod
     def get_properties(self) -> List[str]:
+        print("🧭 FUNCTION NAME: get_properties, FILE_NAME: backend/weaviate_interface/service/base_service.py")
         pass

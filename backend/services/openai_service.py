@@ -18,6 +18,7 @@ class OpenAIService:
         self.encoders = {}
 
     async def initialize(self):
+        print("🧭 FUNCTION NAME: initialize, FILE_NAME: backend/services/openai_service.py")
         await self.connect()
 
     async def __aenter__(self):
@@ -28,17 +29,20 @@ class OpenAIService:
         await self.close()
 
     async def connect(self):
+        print("🧭 FUNCTION NAME: connect, FILE_NAME: backend/services/openai_service.py")
         if self.client is None:
             self.client = AsyncOpenAI(api_key=self.api_key)
         logger.debug("OpenAI client connected.")
 
     async def close(self):
+        print("🧭 FUNCTION NAME: close, FILE_NAME: backend/services/openai_service.py")
         if self.client is not None:
             await self.client.close()
             self.client = None
         logger.debug("OpenAI client closed.")
 
     def _get_encoder(self, model: str):
+        print("🧭 FUNCTION NAME: _get_encoder, FILE_NAME: backend/services/openai_service.py")
         if model not in self.encoders:
             self.encoders[model] = tiktoken.encoding_for_model(model)
         return self.encoders[model]
@@ -53,6 +57,7 @@ class OpenAIService:
         stream: bool = False,
         functions: Optional[List[Dict[str, Any]]] = None,
     ) -> Tuple[str, int, int]:
+        print("🧭 FUNCTION NAME: create_chat_completion, FILE_NAME: backend/services/openai_service.py")
         if self.client is None:
             await self.connect()
         try:
@@ -88,6 +93,7 @@ class OpenAIService:
         formatted_chat_history: Optional[List[Dict[str, str]]] = None,
         **kwargs,
     ) -> Tuple[str, int, int]:
+        print("🧭 FUNCTION NAME: generate_response, FILE_NAME: backend/services/openai_service.py")
         if kwargs.pop("sql_mode", True):
         # Avoid circular imports if SQLQueryAgent is defined elsewhere
             from services.sql_query_agent import SQLQueryAgent
@@ -116,6 +122,7 @@ class OpenAIService:
         system_message: Optional[str],
         formatted_chat_history: Optional[List[Dict[str, str]]] = None,
     ) -> List[Dict[str, str]]:
+        print("🧭 FUNCTION NAME: _prepare_messages, FILE_NAME: backend/services/openai_service.py")
         messages = []
 
         if system_message:
@@ -128,6 +135,7 @@ class OpenAIService:
         return messages
 
     async def create_embedding(self, text: str, model: str = "text-embedding-ada-002") -> List[float]:
+        print("🧭 FUNCTION NAME: create_embedding, FILE_NAME: backend/services/openai_service.py")
         try:
             response = await self.client.embeddings.create(input=[text], model=model)
             return response.data[0].embedding

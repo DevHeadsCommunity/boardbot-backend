@@ -6,6 +6,8 @@ logger = logging.getLogger(__name__)
 
 
 def get_missing_features(extracted_features: Dict[str, Any]) -> List[str]:
+    print("🧭 FUNCTION NAME: get_missing_features, FILE_NAME: backend/feature_extraction/utils/feature_utils.py")
+
     """
     Identify missing features in the extracted_features dictionary.
     A feature is considered missing if its confidence is 0 or its value is 'Not available'.
@@ -13,6 +15,7 @@ def get_missing_features(extracted_features: Dict[str, Any]) -> List[str]:
     missing = []
 
     def recurse(features, path=""):
+        print("🧭 FUNCTION NAME: recurse, FILE_NAME: backend/feature_extraction/utils/feature_utils.py")
         for key, value in features.items():
             current_path = f"{path}.{key}" if path else key
             if isinstance(value, dict):
@@ -29,6 +32,7 @@ def get_missing_features(extracted_features: Dict[str, Any]) -> List[str]:
 
 
 def get_low_confidence_features(features: Dict[str, Any], confidence_threshold: float) -> List[str]:
+    print("🧭 FUNCTION NAME: get_low_confidence_features, FILE_NAME: backend/feature_extraction/utils/feature_utils.py")
     """
     Identify low-confidence features in the feature dictionary.
     """
@@ -48,6 +52,7 @@ def get_low_confidence_features(features: Dict[str, Any], confidence_threshold: 
 
 
 def filter_features_by_confidence(features: Dict[str, Any], confidence_threshold: float) -> Dict[str, Any]:
+    print("🧭 FUNCTION NAME: filter_features_by_confidence, FILE_NAME: backend/feature_extraction/utils/feature_utils.py")
     """
     Filter features based on confidence threshold.
     """
@@ -74,6 +79,7 @@ def filter_features_by_confidence(features: Dict[str, Any], confidence_threshold
 def build_missing_features_structure(
     missing_features_list: List[str],
 ) -> Dict[str, Any]:
+    print("🧭 FUNCTION NAME: build_missing_features_structure, FILE_NAME: backend/feature_extraction/utils/feature_utils.py")
     """
     Build a nested dictionary structure of missing features based on the list of missing feature paths.
     """

@@ -26,6 +26,7 @@ class QueryProcessor:
         model: str = "gpt-4o",
         temperature: float = 0,
     ) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: process_query_comprehensive, FILE_NAME: backend/services/query_processor.py")
         system_message, user_message = self.prompt_manager.get_query_processor_prompt(
             query, attribute_descriptions=attribute_descriptions
         )
@@ -44,6 +45,7 @@ class QueryProcessor:
         return processed_response, input_tokens, output_tokens
 
     def post_process_filters(self, filters: Dict[str, Any]) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: post_process_filters, FILE_NAME: backend/services/query_processor.py")
         filters = self._validate_filters(filters)
 
         # Sort filters based on a predefined order
@@ -72,6 +74,7 @@ class QueryProcessor:
         return {k: filters[k] for k in ordered_attributes if k in filters}
 
     def _validate_filters(self, filters: Dict[str, Any]) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: _validate_filters, FILE_NAME: backend/services/query_processor.py")
         valid_filters = {}
         valid_attributes = set(attribute_descriptions.keys())
         for key, value in filters.items():
@@ -92,6 +95,7 @@ class QueryProcessor:
         model: str = "gpt-4o",
         temperature: float = 0,
     ) -> Tuple[Dict[str, Any], int, int]:
+        print("🧭 FUNCTION NAME: rerank_products, FILE_NAME: backend/services/query_processor.py")
         attribute_mapping_str = self._generate_attribute_mapping_str(products)
         system_message, user_message = self.prompt_manager.get_product_reranking_prompt(
             query, products, attribute_mapping_str, filters, query_context, top_k=top_k
@@ -109,6 +113,7 @@ class QueryProcessor:
         return response, input_tokens, output_tokens
 
     def _generate_attribute_mapping_str(self, products: List[Dict[str, Any]]) -> str:
+        print("🧭 FUNCTION NAME: _generate_attribute_mapping_str, FILE_NAME: backend/services/query_processor.py")
         attribute_mapping = {}
         for product in products:
             for key, value in product.items():
@@ -125,6 +130,7 @@ class QueryProcessor:
         model: str = "gpt-4o",
         temperature: float = 0.1,
     ) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: expanded_search, FILE_NAME: backend/services/query_processor.py")
         expanded_result, _, _ = await self.process_query_comprehensive(query, chat_history, model=model)
         expanded_queries = expanded_result["expanded_queries"]
 
@@ -144,6 +150,7 @@ class QueryProcessor:
         model: str = "gpt-4o",
         temperature: float = 0.1,
     ) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: generate_semantic_search_query, FILE_NAME: backend/services/query_processor.py")
         system_message, user_message = self.prompt_manager.get_semantic_search_query_prompt(
             query, attribute_descriptions
         )
@@ -161,6 +168,7 @@ class QueryProcessor:
 
     @staticmethod
     def _clean_response(response: str) -> Any:
+        print("🧭 FUNCTION NAME: _clean_response, FILE_NAME: backend/services/query_processor.py")
         try:
             response = response.replace("```", "").replace("json", "").replace("\n", "").strip()
             return json.loads(response)

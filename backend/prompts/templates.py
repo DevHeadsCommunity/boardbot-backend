@@ -17,6 +17,7 @@ class BaseChatPrompt:
         self.input_variables = input_variables
 
     def format(self, **kwargs: Any) -> List[Dict[str, str]]:
+        print("🧭 FUNCTION NAME: format, FILE_NAME: backend/prompts/templates.py")
         return self.template.format_messages(**kwargs)
 
 
@@ -57,6 +58,11 @@ class RouteClassificationPrompt(BaseChatPrompt):
         Examples:
         - Clear intent: "Find a board with an Intel processor and at least 8GB of RAM"
         - Vague intent: "Tell me about single board computers" or "List 5 microcontrollers"
+        
+        IMPORTANT: Your task is to generate machine-readable responses. 
+        Based on the provided data, create a JSON object. 
+        The response must be STRICTLY in JSON format.
+         Do not add any other text or explanations before or after the JSON object.
         """
         )
 
@@ -203,7 +209,10 @@ class QueryProcessorPrompt(BaseChatPrompt):
                 "sort_preference": null
             }}
         }}
-
+        IMPORTANT: Your task is to generate machine-readable responses. 
+        Based on the provided data, create a JSON object. 
+        The response must be STRICTLY in JSON format.
+         Do not add any other text or explanations before or after the JSON object.
         """
         )
         human_template = """
@@ -262,6 +271,10 @@ class ProductRerankingPrompt(BaseChatPrompt):
         - In the justification, explain the overall ranking and mention if some products only partially match the criteria.
         - If no products match any criteria, return an empty product list and explain why in the justification.
         - Completely disregard any criteria or attributes not present in the filters, even if they seem relevant to the query.
+        IMPORTANT: Your task is to generate machine-readable responses. 
+        Based on the provided data, create a JSON object. 
+        The response must be STRICTLY in JSON format.
+         Do not add any other text or explanations before or after the JSON object.
         """
         )
 
@@ -337,6 +350,10 @@ class SemanticSearchQueryPrompt(BaseChatPrompt):
             }},
             "product_count": 3
         }}
+        IMPORTANT: Your task is to generate machine-readable responses. 
+        Based on the provided data, create a JSON object. 
+        The response must be STRICTLY in JSON format.
+         Do not add any other text or explanations before or after the JSON object.
         """
         )
 
@@ -377,6 +394,10 @@ class ChitchatPrompt(BaseChatPrompt):
         - The follow-up question should aim to either continue the current topic of conversation or smoothly transition to product-related topics if appropriate.
         - If the user expresses interest in product-related topics, use that opportunity to transition into your area of expertise.
         - Be mindful of context and previous messages in the conversation if provided.
+        IMPORTANT: Your task is to generate machine-readable responses. 
+        Based on the provided data, create a JSON object. 
+        The response must be STRICTLY in JSON format.
+         Do not add any other text or explanations before or after the JSON object.
         """
         )
         human_template = """
@@ -406,6 +427,10 @@ class LowConfidencePrompt(BaseChatPrompt):
             "message": "Your response acknowledging the uncertainty and asking for clarification.",
             "follow_up_question": "A question to help clarify the user's intent."
         }}
+        IMPORTANT: Your task is to generate machine-readable responses. 
+        Based on the provided data, create a JSON object. 
+        The response must be STRICTLY in JSON format.
+         Do not add any other text or explanations before or after the JSON object.
         """
         )
         human_template = """
@@ -452,6 +477,10 @@ class VagueIntentResponsePrompt(BaseChatPrompt):
         - Maintain a helpful and informative tone, providing answers rather than suggestions.
         - Ensure that the response adheres strictly to the specified JSON format.
         - Frame the follow-up question as a curious inquiry to learn more about the user's needs or preferences.
+        IMPORTANT: Your task is to generate machine-readable responses. 
+        Based on the provided data, create a JSON object. 
+        The response must be STRICTLY in JSON format.
+         Do not add any other text or explanations before or after the JSON object.
         """
         )
         human_template = """
@@ -500,6 +529,10 @@ class ClearIntentResponsePrompt(BaseChatPrompt):
         - If no products perfectly match all criteria, acknowledge this in a positive way and focus on the closest matches.
         - Frame the follow-up question as a curious inquiry to learn more about the user's needs or preferences.
         - If fewer products are returned than requested, acknowledge this and explain potential reasons (e.g., specific requirements limiting the options).
+        IMPORTANT: Your task is to generate machine-readable responses. 
+        Based on the provided data, create a JSON object. 
+        The response must be STRICTLY in JSON format.
+         Do not add any other text or explanations before or after the JSON object.
         """
         )
         human_template = """
@@ -567,6 +600,10 @@ class DynamicAgentPrompt(BaseChatPrompt):
         - Sort products by relevance, mentioning the most relevant ones first in your response.
         - If some products only partially match the query, acknowledge this in your response.
         - Frame the follow-up question as a curious inquiry to learn more about the user's needs or preferences.
+        IMPORTANT: Your task is to generate machine-readable responses. 
+        Based on the provided data, create a JSON object. 
+        The response must be STRICTLY in JSON format.
+         Do not add any other text or explanations before or after the JSON object.
         """
         )
 
@@ -594,6 +631,10 @@ class SimpleDataExtractionPrompt(BaseChatPrompt):
         {attribute_descriptions}
 
         Ensure the extracted information is accurate, well-formatted, and provided in the exact JSON structure as shown above.
+        IMPORTANT: Your task is to generate machine-readable responses. 
+        Based on the provided data, create a JSON object. 
+        The response must be STRICTLY in JSON format.
+         Do not add any other text or explanations before or after the JSON object.
         """
         human_template = "Raw product data: {raw_data}"
         super().__init__(system_template, human_template, ["raw_data"])
@@ -622,6 +663,10 @@ class DataExtractionPrompt(BaseChatPrompt):
         {attribute_descriptions}
 
         Ensure the extracted information is accurate, well-formatted, and provided in the exact nested JSON structure as shown above, with confidence score for each attribute
+        IMPORTANT: Your task is to generate machine-readable responses. 
+        Based on the provided data, create a JSON object. 
+        The response must be STRICTLY in JSON format.
+         Do not add any other text or explanations before or after the JSON object.
         """
         human_template = "Raw product data: {raw_data}"
         super().__init__(system_template, human_template, ["raw_data", "attribute_descriptions"])
@@ -641,6 +686,10 @@ class MissingFeatureExtractionPrompt(BaseChatPrompt):
 
         Attributes to extract:
         {features_to_extract}
+        IMPORTANT: Your task is to generate machine-readable responses. 
+        Based on the provided data, create a JSON object. 
+        The response must be STRICTLY in JSON format.
+         Do not add any other text or explanations before or after the JSON object.
         """
         human_template = """
         Context:
@@ -673,6 +722,10 @@ class LowConfidenceFeatureRefinementPrompt(BaseChatPrompt):
 
         Attributes to refine:
         {features_to_refine}
+        IMPORTANT: Your task is to generate machine-readable responses. 
+        Based on the provided data, create a JSON object. 
+        The response must be STRICTLY in JSON format.
+         Do not add any other text or explanations before or after the JSON object.
         """
         human_template = """
         Context:
@@ -921,6 +974,10 @@ class DynamicAnalysisPrompt(BaseChatPrompt):
             "security_flags": ["exploit"]
         }}
         ```
+        IMPORTANT: Your task is to generate machine-readable responses. 
+        Based on the provided data, create a JSON object. 
+        The response must be STRICTLY in JSON format.
+         Do not add any other text or explanations before or after the JSON object.
         """
         )
 
@@ -1029,6 +1086,10 @@ class DynamicResponsePrompt(BaseChatPrompt):
                 "Performance with different memory sizes..."
             ]
         }}
+        IMPORTANT: Your task is to generate machine-readable responses. 
+        Based on the provided data, create a JSON object. 
+        The response must be STRICTLY in JSON format.
+         Do not add any other text or explanations before or after the JSON object.
         """
         )
 

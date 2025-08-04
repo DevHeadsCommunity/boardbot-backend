@@ -51,18 +51,21 @@ class WeaviateService:
         await self.close_connection()
 
     async def connect(self):
+        print("🧭 FUNCTION NAME: connect, FILE_NAME: backend/services/weaviate_service.py")
         if not self.connected:
             await self.wi.client.connect()
             self.connected = True
             logger.debug("Weaviate client connected.")
 
     async def close_connection(self):
+        print("🧭 FUNCTION NAME: close_connection, FILE_NAME: backend/services/weaviate_service.py")
         if self.connected:
             await self.wi.client.close()
             self.connected = False
             logger.debug("Weaviate client disconnected.")
 
     async def initialize_weaviate(self, reset: bool = False) -> None:
+        print("🧭 FUNCTION NAME: initialize_weaviate, FILE_NAME: backend/services/weaviate_service.py")
         logger.info("Initializing Weaviate...")
         try:
             if not self.connected:
@@ -89,11 +92,12 @@ class WeaviateService:
             raise
 
     async def _load_product_data(self):
+        print("🧭 FUNCTION NAME: _load_product_data, FILE_NAME: backend/services/weaviate_service.py")
         try:
             processed_data = self.data_processor.load_and_preprocess_data("backend/data/cleaned_data.csv")
 
             for i in range(0, len(processed_data), 20):
-                batch = processed_data[i : i + 20]
+                batch = processed_data[i: i + 20]
 
                 # Debug: Print out the first item in each batch
                 if batch:
@@ -111,6 +115,7 @@ class WeaviateService:
             raise
 
     async def _load_semantic_routes(self):
+        print("🧭 FUNCTION NAME: _load_semantic_routes, FILE_NAME: backend/services/weaviate_service.py")
         try:
             routes = await self.wi.route_service.get_all()
             if not routes:
@@ -120,6 +125,7 @@ class WeaviateService:
             raise
 
     async def search_routes(self, query: str) -> List[Tuple[str, float]]:
+        print("🧭 FUNCTION NAME: search_routes, FILE_NAME: backend/services/weaviate_service.py")
         try:
             routes = await self.wi.route_service.search(query_text=query, return_properties=["route"], limit=1)
             return [(route["route"], route["certainty"]) for route in routes]
@@ -128,6 +134,7 @@ class WeaviateService:
             raise
 
     async def get_all_products(self) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: get_all_products, FILE_NAME: backend/services/weaviate_service.py")
         try:
             return await self.wi.product_service.get_all()
         except Exception as e:
@@ -135,6 +142,7 @@ class WeaviateService:
             raise
 
     async def get_product(self, id: str) -> Optional[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: get_product, FILE_NAME: backend/services/weaviate_service.py")
         try:
             return await self.wi.product_service.get(id)
         except Exception as e:
@@ -142,6 +150,7 @@ class WeaviateService:
             return None
 
     async def add_product(self, product_data: Dict[str, Any]) -> str:
+        print("🧭 FUNCTION NAME: add_product, FILE_NAME: backend/services/weaviate_service.py")
         try:
             return await self.wi.product_service.create(product_data)
         except Exception as e:
@@ -149,6 +158,7 @@ class WeaviateService:
             raise
 
     async def update_product(self, id: str, product_data: Dict[str, Any]) -> None:
+        print("🧭 FUNCTION NAME: update_product, FILE_NAME: backend/services/weaviate_service.py")
         try:
             # Remove 'id' from product_data if it exists
             product_data_copy = product_data.copy()
@@ -160,6 +170,7 @@ class WeaviateService:
             raise
 
     async def delete_product(self, id: str) -> None:
+        print("🧭 FUNCTION NAME: delete_product, FILE_NAME: backend/services/weaviate_service.py")
         try:
             await self.wi.product_service.delete(id)
         except Exception as e:
@@ -169,6 +180,7 @@ class WeaviateService:
     async def get_products(
         self, limit: int = 10, offset: int = 0, filter_dict: Optional[Dict[str, Any]] = None
     ) -> Tuple[List[Dict[str, Any]], int]:
+        print("🧭 FUNCTION NAME: get_products, FILE_NAME: backend/services/weaviate_service.py")
         try:
             weaviate_filter = None
             if filter_dict:
@@ -187,6 +199,7 @@ class WeaviateService:
             raise
 
     async def store_raw_data(self, product_id: str, raw_data: str) -> str:
+        print("🧭 FUNCTION NAME: store_raw_data, FILE_NAME: backend/services/weaviate_service.py")
         try:
             # Store the raw data
             raw_data_id = await self.wi.raw_product_data_service.create(
@@ -206,6 +219,7 @@ class WeaviateService:
     async def store_search_results(
         self, product_id: str, search_query: str, search_result: str, data_source: str
     ) -> str:
+        print("🧭 FUNCTION NAME: store_search_results, FILE_NAME: backend/services/weaviate_service.py")
         try:
             # Store the search result
             search_result_id = await self.wi.product_search_result_service.create(
@@ -227,6 +241,7 @@ class WeaviateService:
             raise
 
     async def store_chunks(self, product_id: str, chunks: List[str], source_type: str, source_id: str) -> List[str]:
+        print("🧭 FUNCTION NAME: store_chunks, FILE_NAME: backend/services/weaviate_service.py")
         try:
             return await self.wi.product_data_chunk_service.create_chunks(chunks, product_id, source_type, source_id)
         except Exception as e:
@@ -234,6 +249,7 @@ class WeaviateService:
             raise
 
     async def get_raw_product_data(self, product_id: str) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: get_raw_product_data, FILE_NAME: backend/services/weaviate_service.py")
         try:
             return await self.wi.raw_product_data_service.get_by_product_id(product_id)
         except Exception as e:
@@ -241,6 +257,7 @@ class WeaviateService:
             raise
 
     async def get_search_results(self, product_id: str) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: get_search_results, FILE_NAME: backend/services/weaviate_service.py")
         try:
             return await self.wi.product_search_result_service.get_by_product_id(product_id)
         except Exception as e:
@@ -250,6 +267,7 @@ class WeaviateService:
     async def get_relevant_chunks(
         self, product_id: str, query: str, limit: int = 5, source_type: Optional[str] = None
     ) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: get_relevant_chunks, FILE_NAME: backend/services/weaviate_service.py")
         try:
             return await self.wi.product_data_chunk_service.semantic_search(
                 query=query, product_id=product_id, limit=limit, source_type=source_type
@@ -259,6 +277,7 @@ class WeaviateService:
             raise
 
     async def delete_product_data(self, product_id: str) -> None:
+        print("🧭 FUNCTION NAME: delete_product_data, FILE_NAME: backend/services/weaviate_service.py")
         try:
             await self.wi.raw_product_data_service.delete_by_product_id(product_id)
             await self.wi.product_search_result_service.delete_by_product_id(product_id)
@@ -268,6 +287,7 @@ class WeaviateService:
             raise
 
     async def search_products(self, search_params: SearchParams) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: search_products, FILE_NAME: backend/services/weaviate_service.py")
         """
         Unified search function handling all search scenarios.
         """
@@ -338,6 +358,7 @@ class WeaviateService:
         sort_configs: Optional[List[SortConfig]] = None,
         limit: int = 5,
     ) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: _execute_sorted_query, FILE_NAME: backend/services/weaviate_service.py")
         """Execute query with sorting capabilities."""
         try:
             return_properties = self.wi.product_service.get_properties()
@@ -375,6 +396,7 @@ class WeaviateService:
     def _normalize_sort_config(
         self, sort_config: Optional[Union[SortConfig, List[SortConfig], Dict[str, Any]]]
     ) -> List[SortConfig]:
+        print("🧭 FUNCTION NAME: _normalize_sort_config, FILE_NAME: backend/services/weaviate_service.py")
         """Normalizes various sort config input formats into a list of SortConfig objects"""
         if not sort_config:
             return []
@@ -403,6 +425,7 @@ class WeaviateService:
     def _apply_multiple_sorts(
         self, results: List[Dict[str, Any]], sort_configs: List[SortConfig]
     ) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: _apply_multiple_sorts, FILE_NAME: backend/services/weaviate_service.py")
         """Applies multiple sort conditions with weights"""
 
         def sort_key(item):
@@ -421,6 +444,7 @@ class WeaviateService:
     def _post_process_results(
         self, results: List[Dict[str, Any]], sort_configs: List[SortConfig]
     ) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: _post_process_results, FILE_NAME: backend/services/weaviate_service.py")
         """Post-process results to include sort-related metadata"""
         if not results:
             return []

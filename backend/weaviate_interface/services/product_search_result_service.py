@@ -9,6 +9,7 @@ class ProductSearchResultService(BaseService):
         super().__init__(client, "ProductSearchResult")
 
     def get_properties(self) -> List[str]:
+        print("🧭 FUNCTION NAME: get_properties, FILE_NAME: backend/weaviate_interface/service/product_search_result_service.py")
         return [
             "product_id",
             "search_query",
@@ -17,6 +18,8 @@ class ProductSearchResultService(BaseService):
         ]
 
     async def get_by_product_id(self, product_id: str) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: get_by_product_id, FILE_NAME: backend/weaviate_interface/service/product_search_result_service.py")
+
         """
         Retrieve ProductSearchResult objects by product ID.
         """
@@ -24,6 +27,8 @@ class ProductSearchResultService(BaseService):
         return await self.client.get_objects(self.class_name, filters=filter)
 
     async def delete_by_product_id(self, product_id: str) -> None:
+        print("🧭 FUNCTION NAME: delete_by_product_id, FILE_NAME: backend/weaviate_interface/service/product_search_result_service.py")
+
         """
         Delete all ProductSearchResult objects associated with a product ID.
         """

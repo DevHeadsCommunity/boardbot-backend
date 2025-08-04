@@ -44,6 +44,7 @@ class PromptManager:
         }
 
     def get_prompt(self, prompt_type: str, **kwargs) -> Tuple[str, str]:
+        print("🧭 FUNCTION NAME: get_prompt, FILE_NAME: backend/prompts/prompt_manager.py")
         if prompt_type not in self.prompts:
             raise ValueError(f"Unknown prompt type: {prompt_type}")
 
@@ -68,6 +69,7 @@ class PromptManager:
         return messages[0].content, messages[1].content
 
     def validate_kwargs(self, prompt_type: str, **kwargs) -> None:
+        print("🧭 FUNCTION NAME: validate_kwargs, FILE_NAME: backend/prompts/prompt_manager.py")
         expected_variables = set(self.prompts[prompt_type].input_variables)
         provided_variables = set(kwargs.keys())
 
@@ -83,9 +85,11 @@ class PromptManager:
 
     # Helper methods for specific prompt types
     def get_route_classification_prompt(self, query: str) -> Tuple[str, str]:
+        print("🧭 FUNCTION NAME: get_route_classification_prompt, FILE_NAME: backend/prompts/prompt_manager.py")
         return self.get_prompt("route_classification", query=query)
 
     def get_query_processor_prompt(self, query: str, attribute_descriptions: Dict[str, str]) -> Tuple[str, str]:
+        print("🧭 FUNCTION NAME: get_query_processor_prompt, FILE_NAME: backend/prompts/prompt_manager.py")
         return self.get_prompt(
             "query_processor",
             query=query,
@@ -101,6 +105,7 @@ class PromptManager:
         query_context: Dict[str, Any],
         top_k: int,
     ) -> Tuple[str, str]:
+        print("🧭 FUNCTION NAME: get_product_reranking_prompt, FILE_NAME: backend/prompts/prompt_manager.py")
         return self.get_prompt(
             "product_reranking",
             query=query,
@@ -116,19 +121,24 @@ class PromptManager:
         query: str,
         attribute_descriptions: str,
     ) -> Tuple[str, str]:
+        print("🧭 FUNCTION NAME: get_semantic_search_query_prompt, FILE_NAME: backend/prompts/prompt_manager.py")
         logger.info(f"Generating semantic search query prompt for query: {query}")
         return self.get_prompt("semantic_search_query", query=query, attribute_descriptions=attribute_descriptions)
 
     def get_chitchat_prompt(self, query: str) -> Tuple[str, str]:
+        print("🧭 FUNCTION NAME: get_chitchat_prompt, FILE_NAME: backend/prompts/prompt_manager.py")
         return self.get_prompt("chitchat", query=query)
 
     def get_low_confidence_prompt(self, query: str, classification: Dict[str, Any]) -> Tuple[str, str]:
+        print("🧭 FUNCTION NAME: get_low_confidence_prompt, FILE_NAME: backend/prompts/prompt_manager.py")
         return self.get_prompt("low_confidence", query=query, classification=classification)
 
     def get_vague_intent_response_prompt(self, query: str, products: str, product_count: int) -> Tuple[str, str]:
+        print("🧭 FUNCTION NAME: get_vague_intent_response_prompt, FILE_NAME: backend/prompts/prompt_manager.py")
         return self.get_prompt("vague_intent_response", query=query, products=products, product_count=product_count)
 
     def get_clear_intent_response_prompt(self, query: str, products: str, filters: str) -> Tuple[str, str]:
+        print("🧭 FUNCTION NAME: get_clear_intent_response_prompt, FILE_NAME: backend/prompts/prompt_manager.py")
         return self.get_prompt(
             "clear_intent_response",
             query=query,
@@ -137,15 +147,18 @@ class PromptManager:
         )
 
     def get_dynamic_agent_prompt(self, query: str) -> Tuple[str, str]:
+        print("🧭 FUNCTION NAME: get_dynamic_agent_prompt, FILE_NAME: backend/prompts/prompt_manager.py")
         logger.info(f"===:> Generating dynamic agent prompt for query: {query}")
         return self.get_prompt("dynamic_agent", query=query)
 
     def get_simple_data_extraction_prompt(self, raw_data: str) -> Tuple[str, str]:
+        print("🧭 FUNCTION NAME: get_simple_data_extraction_prompt, FILE_NAME: backend/prompts/prompt_manager.py")
         return self.get_prompt("simple_data_extraction", raw_data=raw_data)
 
     def get_missing_feature_extraction_prompt(
         self, context: str, extracted_features: Dict[str, Any], features_to_extract: Dict[str, Any]
     ) -> Tuple[str, str]:
+        print("🧭 FUNCTION NAME: get_missing_feature_extraction_prompt, FILE_NAME: backend/prompts/prompt_manager.py")
         return self.get_prompt(
             "missing_feature_extraction",
             context=context,
@@ -156,6 +169,7 @@ class PromptManager:
     def get_low_confidence_feature_refinement_prompt(
         self, context: str, extracted_features: Dict[str, Any], features_to_refine: Dict[str, Any]
     ) -> Tuple[str, str]:
+        print("🧭 FUNCTION NAME: get_low_confidence_feature_refinement_prompt, FILE_NAME: backend/prompts/prompt_manager.py")
         return self.get_prompt(
             "low_confidence_feature_refinement",
             context=context,
@@ -164,6 +178,7 @@ class PromptManager:
         )
 
     def get_data_extraction_prompt(self, raw_data: str) -> Tuple[str, str]:
+        print("🧭 FUNCTION NAME: get_data_extraction_prompt, FILE_NAME: backend/prompts/prompt_manager.py")
         return self.get_prompt(
             "data_extraction",
             raw_data=raw_data,
@@ -171,6 +186,7 @@ class PromptManager:
         )
 
     def get_dynamic_analysis_prompt(self, query: str, chat_history: List[Dict[str, str]]) -> Tuple[str, str]:
+        print("🧭 FUNCTION NAME: get_dynamic_analysis_prompt, FILE_NAME: backend/prompts/prompt_manager.py")
         return self.get_prompt(
             "dynamic_analysis",
             query=query,
@@ -181,6 +197,7 @@ class PromptManager:
     def get_dynamic_response_prompt(
         self, query: str, products: str, filters: str, search_method: str, sort: str, entities: str
     ) -> Tuple[str, str]:
+        print("🧭 FUNCTION NAME: get_dynamic_response_prompt, FILE_NAME: backend/prompts/prompt_manager.py")
         return self.get_prompt(
             "dynamic_response",
             query=query,

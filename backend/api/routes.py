@@ -50,6 +50,7 @@ class BatchProductInput(BaseModel):
 
 
 def filter_internal_fields(product_dict):
+    print("🧭 FUNCTION NAME: filter_internal_fields, FILE_NAME: backend/api/routes.py")
     internal_fields = ["short_summary", "full_summary", "full_product_description", "target_applications"]
     return {k: v for k, v in product_dict.items() if k not in internal_fields}
 
@@ -59,6 +60,7 @@ async def get_products(
     params: FilterParams = Depends(),
     weaviate_service: WeaviateService = Depends(get_weaviate_service),
 ):
+    print("🧭 FUNCTION NAME: get_products, FILE_NAME: backend/api/routes.py")
     logger.info(f"Getting products with params: {params}")
     offset = (params.page - 1) * params.page_size
 
@@ -73,6 +75,7 @@ async def get_products(
 
 @api_router.get("/products/{id}")
 async def get_product(id: str, weaviate_service: WeaviateService = Depends(get_weaviate_service)):
+    print("🧭 FUNCTION NAME: get_product, FILE_NAME: backend/api/routes.py")
     product = await weaviate_service.get_product(id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -83,6 +86,7 @@ async def get_product(id: str, weaviate_service: WeaviateService = Depends(get_w
 
 @api_router.post("/products")
 async def add_product(product: NewProduct, weaviate_service: WeaviateService = Depends(get_weaviate_service)):
+    print("🧭 FUNCTION NAME: add_product, FILE_NAME: backend/api/routes.py")
     try:
         logger.info(f"Adding product: {filter_internal_fields(product.dict())}")
         product_id = await weaviate_service.add_product(product.dict())
@@ -94,6 +98,7 @@ async def add_product(product: NewProduct, weaviate_service: WeaviateService = D
 
 @api_router.put("/products/{id}")
 async def update_product(id: str, product: Product, weaviate_service: WeaviateService = Depends(get_weaviate_service)):
+    print("🧭 FUNCTION NAME: update_product, FILE_NAME: backend/api/routes.py")
     try:
         await weaviate_service.update_product(id, product.dict())
         return {"message": "Product updated successfully"}
@@ -104,6 +109,7 @@ async def update_product(id: str, product: Product, weaviate_service: WeaviateSe
 
 @api_router.delete("/products/{id}")
 async def delete_product(id: str, weaviate_service: WeaviateService = Depends(get_weaviate_service)):
+    print("🧭 FUNCTION NAME: delete_product, FILE_NAME: backend/api/routes.py")
     try:
         await weaviate_service.delete_product(id)
         return {"message": "Product deleted successfully"}
@@ -118,6 +124,7 @@ async def add_raw_product(
     weaviate_service: WeaviateService = Depends(get_weaviate_service),
     feature_extraction_service: FeatureExtractionService = Depends(get_feature_extraction_service),
 ):
+    print("🧭 FUNCTION NAME: add_raw_product, FILE_NAME: backend/api/routes.py")
     try:
         extractor_config = ConfigSchema(
             max_missing_feature_attempts=input_data.max_missing_feature_attempts,
@@ -156,6 +163,7 @@ async def add_products_batch_raw(
     weaviate_service: WeaviateService = Depends(get_weaviate_service),
     batch_feature_extraction_service: BatchFeatureExtractionService = Depends(get_batch_feature_extraction_service),
 ):
+    print("🧭 FUNCTION NAME: add_products_batch_raw, FILE_NAME: backend/api/routes.py")
     try:
         extractor_config = ConfigSchema(
             max_missing_feature_attempts=input_data.max_missing_feature_attempts,

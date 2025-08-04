@@ -240,6 +240,7 @@ class FeatureValues:
 
     @classmethod
     def _get_nearest_valid_values(cls, value: float, valid_set: Set[float], operator: str) -> List[float]:
+        print("🧭 FUNCTION NAME: _get_nearest_valid_values, FILE_NAME: backend/services/utils/filter_perser.py")
         """Get nearest valid values based on operator."""
         if operator == ">=":
             return sorted([v for v in valid_set if v >= value])
@@ -248,6 +249,7 @@ class FeatureValues:
 
     @classmethod
     def _format_numeric_values(cls, values: List[float]) -> List[str]:
+        print("🧭 FUNCTION NAME: _format_numeric_values, FILE_NAME: backend/services/utils/filter_perser.py")
         """Format numeric values to include both integer and float representations when applicable."""
         result = []
         for v in values:
@@ -260,6 +262,7 @@ class FeatureValues:
 
     @classmethod
     def get_valid_values(cls, feature_name: str, value: str) -> List[str]:
+        print("🧭 FUNCTION NAME: get_valid_values, FILE_NAME: backend/services/utils/filter_perser.py")
         """Get valid values for a given feature based on its type."""
         feature_type = cls.FEATURE_TYPE_MAP.get(feature_name)
         if not feature_type:
@@ -295,6 +298,7 @@ class QueryBuilder:
         self._valid_values_cache: Dict[str, Dict[str, Set[Union[int, float]]]] = {}
 
     def build_weaviate_filter(self, filters: Optional[Dict[str, Any]]) -> Optional[Filter]:
+        print("🧭 FUNCTION NAME: build_weaviate_filter, FILE_NAME: backend/services/utils/filter_perser.py")
         """
         Converts dictionary filters into Weaviate Filter objects with generalized handling.
         """
@@ -329,6 +333,7 @@ class QueryBuilder:
         return Filter.all_of(filter_conditions) if len(filter_conditions) > 1 else filter_conditions[0]
 
     def _split_value_and_unit(self, value: str) -> Tuple[str, str]:
+        print("🧭 FUNCTION NAME: _split_value_and_unit, FILE_NAME: backend/services/utils/filter_perser.py")
         """Split a value into its numeric part and unit."""
         # Match number (including decimals) followed by any non-numeric characters
         match = re.match(r"^([-+]?\d*\.?\d+)([A-Za-z°℃\s]*)?$", value.strip())
@@ -337,6 +342,7 @@ class QueryBuilder:
         return value, ""
 
     def _get_valid_values(self, field: str) -> Dict[str, Set[Union[int, float]]]:
+        print("🧭 FUNCTION NAME: _get_valid_values, FILE_NAME: backend/services/utils/filter_perser.py")
         """
         Extracts and categorizes valid numeric values from attribute descriptions.
         Returns a dict with 'singles' and 'ranges' for the field.
@@ -373,10 +379,12 @@ class QueryBuilder:
         return result
 
     def _create_numeric_values(self, field: str, value: str) -> List[str]:
+        print("🧭 FUNCTION NAME: _create_numeric_values, FILE_NAME: backend/services/utils/filter_perser.py")
         """Creates list of possible numeric values based on comparison operator and field type."""
         return FeatureValues.get_valid_values(field, value)
 
     def _get_example_values(self, field: str) -> List[str]:
+        print("🧭 FUNCTION NAME: _get_example_values, FILE_NAME: backend/services/utils/filter_perser.py")
         """Extract example values from attribute descriptions."""
         from weaviate_interface.models.product import attribute_descriptions
 
@@ -394,6 +402,7 @@ class QueryBuilder:
         return [ex for ex in examples if ex and not ex.startswith("e.g")]
 
     def _extract_number(self, text: str) -> Optional[Union[int, float]]:
+        print("🧭 FUNCTION NAME: _extract_number, FILE_NAME: backend/services/utils/filter_perser.py")
         """Extract the first number from a text string."""
         match = re.search(r"([-+]?\d*\.?\d+)", text)
         if match:
@@ -405,6 +414,7 @@ class QueryBuilder:
         return None
 
     def _extract_range_numbers(self, text: str) -> Optional[Tuple[Union[int, float], Union[int, float]]]:
+        print("🧭 FUNCTION NAME: _extract_range_numbers, FILE_NAME: backend/services/utils/filter_perser.py")
         """Extract two numbers from a range format."""
         # First split by any non-numeric characters that might separate the range
         numeric_part, _ = self._split_value_and_unit(text)

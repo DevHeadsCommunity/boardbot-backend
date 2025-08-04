@@ -16,6 +16,7 @@ class ProductService(BaseService):
         super().__init__(client, "Product")
 
     def get_properties(self) -> List[str]:
+        print("🧭 FUNCTION NAME: get_properties, FILE_NAME: backend/weaviate_interface/service/product_service.py")
         return [
             "product_id",
             "name",
@@ -52,6 +53,7 @@ class ProductService(BaseService):
         sort_order: str = "desc",
         limit: int = 5,
     ) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: query_products, FILE_NAME: backend/weaviate_interface/service/product_service.py")
         """
         Query products with filtering and sorting capabilities.
 
@@ -97,6 +99,7 @@ class ProductService(BaseService):
         filters: Optional[Filter] = None,
         return_properties: Optional[List[str]] = None,
     ) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: semantic_search, FILE_NAME: backend/weaviate_interface/service/product_service.py")
         """
         Perform semantic search on products using near_text.
 
@@ -135,6 +138,7 @@ class ProductService(BaseService):
         filters: Optional[Filter] = None,
         return_properties: Optional[List[str]] = None,
     ) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: hybrid_search, FILE_NAME: backend/weaviate_interface/service/product_service.py")
         """
         Perform hybrid search combining semantic and filtered search.
 

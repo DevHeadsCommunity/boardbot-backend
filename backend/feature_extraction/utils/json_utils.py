@@ -3,6 +3,7 @@ from typing import Dict, Any
 
 
 def parse_json_response(response: str) -> Dict[str, Any]:
+    print("🧭 FUNCTION NAME: parse_json_response, FILE_NAME: backend/feature_extraction/utils/json_utils.py")
     """
     Parse a JSON string response into a nested Python dictionary.
     """
@@ -15,6 +16,7 @@ def parse_json_response(response: str) -> Dict[str, Any]:
 
 
 def merge_dicts(dict1: Dict[str, Any], dict2: Dict[str, Any]) -> Dict[str, Any]:
+    print("🧭 FUNCTION NAME: merge_dicts, FILE_NAME: backend/feature_extraction/utils/json_utils.py")
     """
     Merge two nested dictionaries recursively, updating values based on confidence scores.
     """

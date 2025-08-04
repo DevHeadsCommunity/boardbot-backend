@@ -26,6 +26,8 @@ class MessageProcessor:
         self.dynamic_agent = dynamic_agent
 
     async def process_message(self, message: Message, sql_mode: bool = True) -> ResponseMessage:
+        print("🧭 FUNCTION NAME: process_message, FILE_NAME: backend/core/message_processor.py")
+
         # Validate model choice
         if message.model.startswith(("gpt-", "text-")):
             service_type = "openai"
@@ -35,12 +37,16 @@ class MessageProcessor:
             raise ValueError(f"Unsupported model: {message.model}")
 
         if message.architecture_choice == "llm-router":
+            print("✅ - router")
             response = await self.llm_router.run(message, sql_mode=sql_mode)
         elif message.architecture_choice == "semantic-router":
+            print("✅ - semantic-router")
             response = await self.semantic_router.run(message)
         elif message.architecture_choice == "hybrid-router":
+            print("✅ - hybrid-router")
             response = await self.hybrid_router.run(message)
         elif message.architecture_choice == "dynamic-agent":
+            print("✅ - dynamic-agent")
             response = await self.dynamic_agent.run(message)
         else:
             raise ValueError(f"Unknown architecture choice: {message.architecture_choice}")

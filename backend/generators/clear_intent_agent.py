@@ -49,6 +49,7 @@ class ClearIntentAgent:
         self.workflow = self.setup_workflow()
 
     def setup_workflow(self) -> StateGraph:
+        print("🧭 FUNCTION NAME: setup_workflow, FILE_NAME: backend/generators/clear_intent_agent.py")
         workflow = StateGraph(ClearIntentState)
 
         workflow.add_node("query_processing", self.query_processing_node)
@@ -64,6 +65,7 @@ class ClearIntentAgent:
         return workflow.compile()
 
     async def query_processing_node(self, state: ClearIntentState, config: RunnableConfig) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: query_processing_node, FILE_NAME: backend/generators/clear_intent_agent.py")
         start_time = time.time()
         query_result, input_tokens, output_tokens = await self.query_processor.process_query_comprehensive(
             state["current_message"], state["chat_history"], model=state["model_name"]
@@ -79,6 +81,7 @@ class ClearIntentAgent:
         }
 
     async def product_search_node(self, state: ClearIntentState, config: RunnableConfig) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: product_search_node, FILE_NAME: backend/generators/clear_intent_agent.py")
         start_time = time.time()
         limit = state["query_context"].get("num_products_requested", 5)
         filters = state["filters"]
@@ -124,6 +127,7 @@ class ClearIntentAgent:
         }
 
     async def response_generation_node(self, state: ClearIntentState, config: RunnableConfig) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: response_generation_node, FILE_NAME: backend/generators/clear_intent_agent.py")
         start_time = time.time()
 
         relevant_products = json.dumps(
@@ -166,6 +170,7 @@ class ClearIntentAgent:
         }
 
     async def run(self, message: Message, chat_history: List[Message]) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: run, FILE_NAME: backend/generators/clear_intent_agent.py")
         logger.info(f"Running ClearIntentAgent with message: {message}")
 
         initial_state: ClearIntentState = {

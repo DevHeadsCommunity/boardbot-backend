@@ -4,6 +4,7 @@ MAX_QUERY_LENGTH = 400
 
 
 def construct_search_query(features: Dict[str, Any], target_features: List[str]) -> str:
+    print("🧭 FUNCTION NAME: construct_search_query, FILE_NAME: backend/feature_extraction/utils/query_constructor.py")
     name = features.get("name", {}).get("value", "")
     manufacturer = features.get("manufacturer", {}).get("value", "")
     form_factor = features.get("form_factor", {}).get("value", "")

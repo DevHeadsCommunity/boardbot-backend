@@ -11,6 +11,7 @@ class SQLQueryAgent:
         self.agent_executor = None
 
     async def initialize(self):
+        print("🧭 FUNCTION NAME: initialize, FILE_NAME: backend/services/sql_query_agent.py")
         await self.openai_service.initialize()
 
         # Use the adapter instead of ChatOpenAI
@@ -20,6 +21,7 @@ class SQLQueryAgent:
         self.agent_executor = create_sql_agent(llm=llm, toolkit=toolkit, verbose=True, handle_parsing_errors=True)
 
     async def query(self, natural_language: str) -> str:
+        print("🧭 FUNCTION NAME: query, FILE_NAME: backend/services/sql_query_agent.py")
         if self.agent_executor is None:
             await self.initialize()
 

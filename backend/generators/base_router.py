@@ -33,6 +33,7 @@ class BaseRouter:
         self.response_formatter = ResponseFormatter()
 
     def _validate_classification(self, classification: Dict[str, Any]) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: _validate_classification, FILE_NAME: backend/generators/base_router.py")
         """Validate and fix classification response format"""
         if not isinstance(classification, dict):
             logger.warning(f"Classification is not a dict: {type(classification)}")
@@ -58,6 +59,7 @@ class BaseRouter:
         return classification
 
     async def run(self, message: Message, sql_mode: bool = True) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: run, FILE_NAME: backend/generators/base_router.py")
         chat_history = self.session_manager.get_formatted_chat_history(
             message.session_id, message.history_management_choice, "message_only"
         )
@@ -86,6 +88,7 @@ class BaseRouter:
         message: Message,
         chat_history: List[Dict[str, str]],
     ) -> Tuple[Dict[str, Any], int, int, float]:
+        print("🧭 FUNCTION NAME: determine_route, FILE_NAME: backend/generators/base_router.py")
         raise NotImplementedError("Subclasses must implement determine_route method")
 
     async def handle_route(
@@ -98,6 +101,7 @@ class BaseRouter:
             time_taken: float,
             sql_mode: bool = True,
     ) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: handle_route, FILE_NAME: backend/generators/base_router.py")
         # # Validate classification before using it
         classification = self._validate_classification(classification)
 
@@ -135,6 +139,7 @@ class BaseRouter:
         classification: Dict[str, Any],
         base_metadata: Dict[str, Any],
     ) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: handle_low_confidence_query, FILE_NAME: backend/generators/base_router.py")
         start_time = time.time()
         system_message, user_message = self.prompt_manager.get_low_confidence_prompt(message.message, classification)
 
@@ -154,6 +159,7 @@ class BaseRouter:
     async def handle_politics(
         self, message: Message, chat_history: List[Dict[str, str]], base_metadata: Dict[str, Any]
     ) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: handle_politics, FILE_NAME: backend/generators/base_router.py")
         return self.response_formatter.format_response(
             "politics",
             json.dumps(
@@ -168,6 +174,7 @@ class BaseRouter:
     async def handle_chitchat(
         self, message: Message, chat_history: List[Dict[str, str]], base_metadata: Dict[str, Any]
     ) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: handle_chitchat, FILE_NAME: backend/generators/base_router.py")
         start_time = time.time()
         system_message, user_message = self.prompt_manager.get_chitchat_prompt(message.message)
         print("system_message", system_message)
@@ -190,6 +197,7 @@ class BaseRouter:
     async def handle_vague_intent(
         self, message: Message, chat_history: List[Dict[str, str]], base_metadata: Dict[str, Any]
     ) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: handle_vague_intent, FILE_NAME: backend/generators/base_router.py")
         response = await self.vague_intent_agent.run(message, chat_history)
 
         base_metadata["filters"] = response["filters"]
@@ -204,6 +212,7 @@ class BaseRouter:
     async def handle_clear_intent(
         self, message: Message, chat_history: List[Dict[str, str]], base_metadata: Dict[str, Any]
     ) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: handle_clear_intent, FILE_NAME: backend/generators/base_router.py")
         response = await self.clear_intent_agent.run(message, chat_history)
 
         base_metadata["filters"] = response["filters"]
@@ -216,6 +225,7 @@ class BaseRouter:
         )
 
     async def handle_do_not_respond(self, base_metadata: Dict[str, Any]) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: handle_do_not_respond, FILE_NAME: backend/generators/base_router.py")
         return self.response_formatter.format_response(
             "do_not_respond",
             json.dumps(
@@ -228,5 +238,6 @@ class BaseRouter:
         )
 
     async def handle_unknown_route(self, base_metadata: Dict[str, Any]) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: handle_unknown_route, FILE_NAME: backend/generators/base_router.py")
         logger.error(f"Unknown route encountered: {base_metadata['classification_result']['category']}")
         return self.response_formatter.format_error_response("An error occurred while processing your request.")

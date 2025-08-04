@@ -28,6 +28,7 @@ class AgenticFeatureExtractor:
         self.workflow = self.setup_workflow()
 
     def initialize_config(self, config: ConfigSchema) -> ConfigSchema:
+        print("🧭 FUNCTION NAME: initialize_config, FILE_NAME: backend/feature_extraction/agentic_feature_extractor.py")
         defaults = {
             "model_name": "gpt-4o",
             "max_missing_feature_attempts": 3,
@@ -38,9 +39,11 @@ class AgenticFeatureExtractor:
         return ConfigSchema(**{**defaults, **(config or {})})
 
     def update_config(self, new_config: ConfigSchema):
+        print("🧭 FUNCTION NAME: update_config, FILE_NAME: backend/feature_extraction/agentic_feature_extractor.py")
         self.config = self.initialize_config(new_config)
 
     def setup_workflow(self) -> Any:
+        print("🧭 FUNCTION NAME: setup_workflow, FILE_NAME: backend/feature_extraction/agentic_feature_extractor.py")
         workflow = StateGraph(ExtractorState, config_schema=ConfigSchema)
 
         workflow.add_node("store_and_chunk_data", self.store_and_chunk_data_node)
@@ -90,6 +93,7 @@ class AgenticFeatureExtractor:
         return workflow.compile()
 
     async def store_and_chunk_data_node(self, state: Dict[str, Any], config: RunnableConfig) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: store_and_chunk_data_node, FILE_NAME: backend/feature_extraction/agentic_feature_extractor.py")
         logger.info("Storing and chunking raw data.")
         start_time = time.time()
 
@@ -114,6 +118,7 @@ class AgenticFeatureExtractor:
             return {"error": f"Failed to store and chunk data: {str(e)}"}
 
     async def extract_features_node(self, state: Dict[str, Any], config: RunnableConfig) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: extract_features_node, FILE_NAME: backend/feature_extraction/agentic_feature_extractor.py")
         logger.info("Starting feature extraction.")
         start_time = time.time()
 
@@ -182,6 +187,7 @@ class AgenticFeatureExtractor:
             return {"error": f"Failed to extract features: {str(e)}"}
 
     async def search_missing_features_node(self, state: Dict[str, Any], config: RunnableConfig) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: search_missing_features_node, FILE_NAME: backend/feature_extraction/agentic_feature_extractor.py")
         logger.info("Starting search for missing features.")
         start_time = time.time()
 
@@ -242,6 +248,7 @@ class AgenticFeatureExtractor:
             return {"error": f"Failed to search for missing features: {str(e)}"}
 
     async def generate_missing_features_node(self, state: Dict[str, Any], config: RunnableConfig) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: generate_missing_features_node, FILE_NAME: backend/feature_extraction/agentic_feature_extractor.py")
         logger.info("Starting generation of missing features.")
         start_time = time.time()
 
@@ -321,6 +328,7 @@ class AgenticFeatureExtractor:
     async def search_low_confidence_features_node(
         self, state: Dict[str, Any], config: RunnableConfig
     ) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: search_low_confidence_features_node, FILE_NAME: backend/feature_extraction/agentic_feature_extractor.py")
         logger.info("Starting search for low-confidence features.")
         start_time = time.time()
 
@@ -382,6 +390,7 @@ class AgenticFeatureExtractor:
     async def refine_low_confidence_features_node(
         self, state: Dict[str, Any], config: RunnableConfig
     ) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: refine_low_confidence_features_node, FILE_NAME: backend/feature_extraction/agentic_feature_extractor.py")
         logger.info("Starting refinement of low-confidence features.")
         start_time = time.time()
 
@@ -456,6 +465,7 @@ class AgenticFeatureExtractor:
             return {"error": f"Failed to refine low-confidence features: {str(e)}"}
 
     def should_continue(self, state: Dict[str, Any], config: RunnableConfig) -> str:
+        print("🧭 FUNCTION NAME: should_continue, FILE_NAME: backend/feature_extraction/agentic_feature_extractor.py")
         if "error" in state:
             logger.error(f"Workflow ending due to error: {state['error']}")
             return "end"
@@ -503,6 +513,7 @@ class AgenticFeatureExtractor:
             return "end"
 
     async def extract_data(self, text: str, product_id: str) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: extract_data, FILE_NAME: backend/feature_extraction/agentic_feature_extractor.py")
         initial_state = {
             "product_id": product_id,
             "raw_data": text,

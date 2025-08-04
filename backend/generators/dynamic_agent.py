@@ -18,10 +18,12 @@ logger.setLevel(logging.DEBUG)
 
 
 def merge_dict(a: Dict[str, Any], b: Dict[str, Any]) -> Dict[str, Any]:
+    print("🧭 FUNCTION NAME: merge_dict, FILE_NAME: backend/generators/dynamic_agent.py")
     return {**a, **b}
 
 
 def format_log_data(data: Dict[str, Any]) -> str:
+    print("🧭 FUNCTION NAME: format_log_data, FILE_NAME: backend/generators/dynamic_agent.py")
     """Helper to format dictionary data for logging"""
     if data is None:
         return "null"
@@ -29,6 +31,7 @@ def format_log_data(data: Dict[str, Any]) -> str:
 
 
 def format_exception(e: Exception) -> str:
+    print("🧭 FUNCTION NAME: format_exception, FILE_NAME: backend/generators/dynamic_agent.py")
     """Format exception with traceback for logging"""
     return "".join(traceback.format_exception(type(e), e, e.__traceback__))
 
@@ -58,6 +61,7 @@ class LogConfig:
 
 
 def log_node(node_name: str, config: Optional[Union[LogConfig, Dict[str, List[str]]]] = None):
+    print("🧭 FUNCTION NAME: log_node, FILE_NAME: backend/generators/dynamic_agent.py")
     """
     Enhanced decorator for logging node execution with separate before/after state logging
 
@@ -155,6 +159,7 @@ class DynamicAgent:
         self.workflow = self.setup_workflow()
 
     def setup_workflow(self) -> StateGraph:
+        print("🧭 FUNCTION NAME: setup_workflow, FILE_NAME: backend/generators/dynamic_agent.py")
         workflow = StateGraph(DynamicAgentState)
 
         # Core nodes
@@ -193,6 +198,7 @@ class DynamicAgent:
         return workflow.compile()
 
     def route_by_analysis(self, state: DynamicAgentState) -> str:
+        print("🧭 FUNCTION NAME: route_by_analysis, FILE_NAME: backend/generators/dynamic_agent.py")
         """Routes analysis results to appropriate handler"""
         # Check security first
         if state.get("security_flag"):
@@ -221,6 +227,7 @@ class DynamicAgent:
         raise ValueError("No valid routing option found")
 
     async def _get_llm_service(self, model_name: str):
+        print("🧭 FUNCTION NAME: _get_llm_service, FILE_NAME: backend/generators/dynamic_agent.py")
         if model_name.startswith(("gpt-", "text-")):
             return self.openai_service
         elif model_name.startswith("claude-"):
@@ -237,6 +244,7 @@ class DynamicAgent:
         },
     )
     async def initial_analysis_node(self, state: DynamicAgentState) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: initial_analysis_node, FILE_NAME: backend/generators/dynamic_agent.py")
         """Enhanced initial analysis with better context handling and sort extraction"""
         start_time = time.time()
         try:
@@ -276,6 +284,7 @@ class DynamicAgent:
     def _process_query_context(
         self, parsed_response: Dict[str, Any]
     ) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any], int]:
+        print("🧭 FUNCTION NAME: _process_query_context, FILE_NAME: backend/generators/dynamic_agent.py")
         query_context = parsed_response.get("query_context", {})
         sort_context = query_context.get("sort")
         filters = query_context.get("filters")
@@ -284,6 +293,7 @@ class DynamicAgent:
         return sort_context, filters, entities, num_products_requested
 
     def _check_security(self, response: Dict[str, Any]) -> Optional[str]:
+        print("🧭 FUNCTION NAME: _check_security, FILE_NAME: backend/generators/dynamic_agent.py")
         flags = response.get("security_flags", [])
         for flag in ["exploit", "inappropriate", "political"]:
             if flag in flags:
@@ -299,6 +309,7 @@ class DynamicAgent:
         },
     )
     async def sorted_query_node(self, state: DynamicAgentState) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: sorted_query_node, FILE_NAME: backend/generators/dynamic_agent.py")
         """Execute direct database query with sorting for exact product matches."""
         start_time = time.time()
 
@@ -326,6 +337,7 @@ class DynamicAgent:
             return self._generate_error_state(start_time, "sort")
 
     async def security_response_node(self, state: DynamicAgentState) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: security_response_node, FILE_NAME: backend/generators/dynamic_agent.py")
         security_type = state.get("security_flag", "inappropriate")
         return {
             "final_response": self.SECURITY_RESPONSES[security_type],
@@ -337,6 +349,7 @@ class DynamicAgent:
     def construct_semantic_context(
         self, entities: Optional[Dict[str, List[str]]], filters: Optional[Dict[str, Any]]
     ) -> str:
+        print("🧭 FUNCTION NAME: construct_semantic_context, FILE_NAME: backend/generators/dynamic_agent.py")
         """Construct deterministic semantic context"""
         if not entities:
             entities = {}
@@ -367,6 +380,7 @@ class DynamicAgent:
         return ". ".join(context_parts)
 
     def _order_filters(self, filters: Dict[str, Any]) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: _order_filters, FILE_NAME: backend/generators/dynamic_agent.py")
         """Order filters using attribute ordering from schema"""
         ordered_attributes = [
             "name",
@@ -412,6 +426,7 @@ class DynamicAgent:
         },
     )
     async def hybrid_search_node(self, state: DynamicAgentState) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: hybrid_search_node, FILE_NAME: backend/generators/dynamic_agent.py")
         """Perform hybrid search combining filters and semantic similarity"""
         start_time = time.time()
 
@@ -443,6 +458,7 @@ class DynamicAgent:
         },
     )
     async def semantic_search_node(self, state: DynamicAgentState) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: semantic_search_node, FILE_NAME: backend/generators/dynamic_agent.py")
         """Execute semantic search using vector similarity"""
         start_time = time.time()
         try:
@@ -464,6 +480,7 @@ class DynamicAgent:
             return self._generate_error_state(start_time, "search")
 
     async def direct_response_node(self, state: DynamicAgentState) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: direct_response_node, FILE_NAME: backend/generators/dynamic_agent.py")
         """Handle direct responses that don't require product search"""
         start_time = time.time()
         return {
@@ -482,6 +499,7 @@ class DynamicAgent:
         },
     )
     async def response_generation_node(self, state: DynamicAgentState) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: response_generation_node, FILE_NAME: backend/generators/dynamic_agent.py")
         """Enhanced response generation with sort awareness"""
         start_time = time.time()
 
@@ -526,7 +544,7 @@ class DynamicAgent:
         },
     )
     async def run(self, message: Message) -> Dict[str, Any]:
-
+        print("🧭 FUNCTION NAME: run, FILE_NAME: backend/generators/dynamic_agent.py")
         chat_history = self.session_manager.get_formatted_chat_history(
             message.session_id, message.history_management_choice, "message_only"
         )
@@ -554,6 +572,7 @@ class DynamicAgent:
             return self.response_formatter.format_error_response(str(e))
 
     def _prepare_product_data(self, state: DynamicAgentState) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: _prepare_product_data, FILE_NAME: backend/generators/dynamic_agent.py")
         """Prepare product data for response generation"""
         product_data = []
         filters = state.get("filters", {}) or {}
@@ -578,6 +597,7 @@ class DynamicAgent:
         return product_data
 
     def format_final_response(self, final_state: DynamicAgentState) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: format_final_response, FILE_NAME: backend/generators/dynamic_agent.py")
         if not final_state.get("final_response"):
             raise ValueError("No final response generated")
 
@@ -599,6 +619,7 @@ class DynamicAgent:
         )
 
     def _generate_error_state(self, start_time: float, error_type: str = "general") -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: _generate_error_state, FILE_NAME: backend/generators/dynamic_agent.py")
         error_messages = {
             "general": "I encountered an error while processing your request.",
             "search": "I couldn't find any products matching your criteria.",
@@ -617,6 +638,7 @@ class DynamicAgent:
         }
 
     def _prepare_search_params(self, state: DynamicAgentState, search_type: str) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: _prepare_search_params, FILE_NAME: backend/generators/dynamic_agent.py")
         """Prepare consistent search parameters"""
         base_params = {"limit": state["num_products_requested"], "search_type": search_type}
 

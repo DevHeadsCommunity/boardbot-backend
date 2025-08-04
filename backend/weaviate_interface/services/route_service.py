@@ -12,6 +12,7 @@ class RouteService(BaseService):
         super().__init__(client, "Route")
 
     def get_properties(self) -> List[str]:
+        print("🧭 FUNCTION NAME: get_properties, FILE_NAME: backend/weaviate_interface/service/route_service.py")
         return [
             "route",
             "description",

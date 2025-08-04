@@ -12,6 +12,7 @@ class SchemaManager:
         self.schema = schema
 
     async def is_valid(self) -> bool:
+        print("🧭 FUNCTION NAME: is_valid, FILE_NAME: backend/weaviate_interface/schema_manager.py")
         try:
             existing_collections = await self.client.get_schema()
             expected_classes = {cls["class"] for cls in self.schema.get("classes", [])}
@@ -40,6 +41,7 @@ class SchemaManager:
             return False
 
     def _compare_properties(self, existing_props: List[Property], expected_props: List[Property]) -> bool:
+        print("🧭 FUNCTION NAME: _compare_properties, FILE_NAME: backend/weaviate_interface/schema_manager.py")
         if len(existing_props) != len(expected_props):
             return False
 
@@ -56,9 +58,11 @@ class SchemaManager:
         return True
 
     def _compare_vectorizer_config(self, existing_config: Any, expected_config: Any) -> bool:
+        print("🧭 FUNCTION NAME: _compare_vectorizer_config, FILE_NAME: backend/weaviate_interface/schema_manager.py")
         return existing_config.vectorizer == expected_config.vectorizer
 
     async def reset_schema(self) -> None:
+        print("🧭 FUNCTION NAME: reset_schema, FILE_NAME: backend/weaviate_interface/schema_manager.py")
         try:
             await self.client.delete_all_collections()
 
@@ -77,6 +81,7 @@ class SchemaManager:
             raise
 
     async def info(self) -> str:
+        print("🧭 FUNCTION NAME: info, FILE_NAME: backend/weaviate_interface/schema_manager.py")
         try:
             schema = await self.client.get_schema()
             info_lines = ["Weaviate Schema Information:", ""]
@@ -100,6 +105,7 @@ class SchemaManager:
             return f"Error retrieving schema information: {str(e)}"
 
     async def _get_class_count(self, class_name: str) -> int:
+        print("🧭 FUNCTION NAME: _get_class_count, FILE_NAME: backend/weaviate_interface/schema_manager.py")
         try:
             result = await self.client.aggregate(class_name)
             return result.total_count
@@ -108,6 +114,7 @@ class SchemaManager:
             return 0
 
     async def initialize_schema(self) -> None:
+        print("🧭 FUNCTION NAME: initialize_schema, FILE_NAME: backend/weaviate_interface/schema_manager.py")
         try:
             if not await self.is_valid():
                 await self.reset_schema()

@@ -20,10 +20,12 @@ class DataLoader:
         self.data_folder = data_folder
 
     def load_raw_data(self) -> pd.DataFrame:
+        print("🧭 FUNCTION NAME: load_raw_data, FILE_NAME: backend/feature_extraction/local_feature_extractor.py")
         raw_data_path = os.path.join(self.data_folder, "processed_products_df.csv")
         return pd.read_csv(raw_data_path)
 
     def load_existing_data(self) -> pd.DataFrame:
+        print("🧭 FUNCTION NAME: load_existing_data, FILE_NAME: backend/feature_extraction/local_feature_extractor.py")
         existing_files = [f for f in os.listdir(self.data_folder) if f.startswith("result_df_") and f.endswith(".csv")]
         if not existing_files:
             return pd.DataFrame()
@@ -42,6 +44,7 @@ class DataLoader:
         return pd.concat(dfs, ignore_index=True)
 
     def get_unprocessed_data(self, raw_data: pd.DataFrame, existing_data: pd.DataFrame) -> pd.DataFrame:
+        print("🧭 FUNCTION NAME: get_unprocessed_data, FILE_NAME: backend/feature_extraction/local_feature_extractor.py")
         if existing_data.empty:
             return raw_data
         return raw_data[~raw_data["id"].isin(existing_data["id"])]
@@ -52,12 +55,14 @@ class CheckpointManager:
         self.checkpoint_file = checkpoint_file
 
     def load_checkpoint(self) -> Dict[str, int]:
+        print("🧭 FUNCTION NAME: load_checkpoint, FILE_NAME: backend/feature_extraction/local_feature_extractor.py")
         if os.path.exists(self.checkpoint_file):
             with open(self.checkpoint_file, "r") as f:
                 return json.load(f)
         return {"last_processed_index": 0, "total_processed": 0}
 
     def save_checkpoint(self, last_processed_index: int, total_processed: int):
+        print("🧭 FUNCTION NAME: save_checkpoint, FILE_NAME: backend/feature_extraction/local_feature_extractor.py")
         checkpoint = {"last_processed_index": last_processed_index, "total_processed": total_processed}
         with open(self.checkpoint_file, "w") as f:
             json.dump(checkpoint, f)
@@ -71,6 +76,7 @@ class ResultSaver:
         self.data_folder = data_folder
 
     def save_results(self, results: List[Dict[str, Any]]):
+        print("🧭 FUNCTION NAME: save_results, FILE_NAME: backend/feature_extraction/local_feature_extractor.py")
         df = pd.DataFrame(results)
 
         # Convert the new fields to strings for CSV storage
@@ -90,6 +96,7 @@ class BatchProcessor:
         self.prompt_manager = prompt_manager
 
     async def process_batch(self, batch: pd.DataFrame) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: process_batch, FILE_NAME: backend/feature_extraction/local_feature_extractor.py")
         semaphore = asyncio.Semaphore(5)  # Adjust based on your system's capacity
 
         # Create the services outside the semaphore to share them across tasks
@@ -116,6 +123,8 @@ class BatchProcessor:
             )
 
             async def process_row(row):
+                print(
+                    "🧭 FUNCTION NAME: process_row, FILE_NAME: backend/feature_extraction/local_feature_extractor.py")
                 async with semaphore:
                     # Instantiate a new AgenticFeatureExtractor per task
                     agent = AgenticFeatureExtractor(services, self.prompt_manager, config=agent_config)
@@ -151,6 +160,7 @@ class BatchFeatureExtractionService:
         self.batch_processor = BatchProcessor(config, self.prompt_manager)
 
     async def run(self, batch_size: int, max_data_points: int = None):
+        print("🧭 FUNCTION NAME: run, FILE_NAME: backend/feature_extraction/local_feature_extractor.py")
         raw_data = self.data_loader.load_raw_data()
         existing_data = self.data_loader.load_existing_data()
         unprocessed_data = self.data_loader.get_unprocessed_data(raw_data, existing_data)

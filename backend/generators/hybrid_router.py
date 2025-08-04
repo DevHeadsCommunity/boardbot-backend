@@ -15,6 +15,7 @@ class HybridRouter(BaseRouter):
         message: Message,
         chat_history: List[Dict[str, str]],
     ) -> Tuple[Dict[str, Any], int, int, float]:
+        print("🧭 FUNCTION NAME: determine_route, FILE_NAME: backend/generators/hybrid_router.py")
         start_time = time.time()
 
         routes = await self.weaviate_service.search_routes(message.message)

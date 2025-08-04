@@ -30,6 +30,7 @@ class FeatureExtractionService:
         self.weaviate_service = weaviate_service
 
     async def extract_features(self, raw_data: str, product_id: str, config_schema: ConfigSchema) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: extract_features, FILE_NAME: backend/services/feature_extraction_service.py")
         services = {
             "openai_service": self.openai_service,
             "tavily_service": self.tavily_service,
@@ -57,6 +58,7 @@ class FeatureExtractionService:
             return {"id": product_id, "error": str(e)}
 
     async def process_batch(self, batch: List[Dict[str, str]], config_schema: ConfigSchema) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: process_batch, FILE_NAME: backend/services/feature_extraction_service.py")
         semaphore = asyncio.Semaphore(5)  # Adjust based on your system's capacity
 
         async def process_item(item):
@@ -82,4 +84,5 @@ class BatchFeatureExtractionService:
         )
 
     async def process_batch(self, batch: List[Dict[str, str]], config_schema: ConfigSchema) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: process_batch, FILE_NAME: backend/services/feature_extraction_service.py")
         return await self.feature_extraction_service.process_batch(batch, config_schema)

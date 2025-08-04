@@ -11,13 +11,16 @@ class SessionManager:
         self.sessions: Dict[str, List[Message]] = {}
 
     def initialize_session(self, session_id: str) -> None:
+        print("🧭 FUNCTION NAME: initialize_session, FILE_NAME: backend/core/session_manager.py")
         if session_id not in self.sessions:
             self.sessions[session_id] = []
 
     def add_message(self, message: Message) -> None:
+        print("🧭 FUNCTION NAME: add_message, FILE_NAME: backend/core/session_manager.py")
         self.sessions[message.session_id].append(message)
 
     def get_chat_history(self, session_id: str, history_management_choice: str) -> List[Message]:
+        print("🧭 FUNCTION NAME: get_chat_history, FILE_NAME: backend/core/session_manager.py")
         if history_management_choice == "keep-all":
             return self.sessions[session_id]
         elif history_management_choice == "keep-none":
@@ -34,6 +37,7 @@ class SessionManager:
             "message_only", "message_and_product_names", "message_and_product_details"
         ] = "message_only",
     ) -> List[Dict[str, str]]:
+        print("🧭 FUNCTION NAME: format_chat_history, FILE_NAME: backend/core/session_manager.py")
         formatted_history = []
         for msg in chat_history:
             if msg.is_user_message:
@@ -48,6 +52,7 @@ class SessionManager:
         content: str,
         format_type: Literal["message_only", "message_and_product_names", "message_and_product_details"],
     ) -> str:
+        print("🧭 FUNCTION NAME: _format_system_message_content, FILE_NAME: backend/core/session_manager.py")
         try:
             content_dict = json.loads(content)
             message = content_dict.get("message", "")
@@ -79,5 +84,6 @@ class SessionManager:
             "message_only", "message_and_product_names", "message_and_product_details"
         ] = "message_only",
     ) -> List[Dict[str, str]]:
+        print("🧭 FUNCTION NAME: get_formatted_chat_history, FILE_NAME: backend/core/session_manager.py")
         chat_history = self.get_chat_history(session_id, history_management_choice)
         return self.format_chat_history(chat_history, format_type)

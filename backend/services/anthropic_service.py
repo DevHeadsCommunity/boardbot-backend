@@ -14,6 +14,7 @@ class AnthropicService:
         self.client = None
 
     async def initialize(self):
+        print("🧭 FUNCTION NAME: initialize, FILE_NAME: backend/services/anthropic_service.py")
         await self.connect()
 
     async def __aenter__(self):
@@ -24,11 +25,13 @@ class AnthropicService:
         await self.close()
 
     async def connect(self):
+        print("🧭 FUNCTION NAME: connect, FILE_NAME: backend/services/anthropic_service.py")
         if self.client is None:
             self.client = AsyncAnthropic(api_key=self.api_key)
         logger.debug("Anthropic client connected.")
 
     async def close(self):
+        print("🧭 FUNCTION NAME: close, FILE_NAME: backend/services/anthropic_service.py")
         if self.client is not None:
             await self.client.close()
             self.client = None
@@ -43,6 +46,7 @@ class AnthropicService:
         top_p: Optional[float] = None,
         stream: bool = False,
     ) -> Tuple[str, int, int]:
+        print("🧭 FUNCTION NAME: create_chat_completion, FILE_NAME: backend/services/anthropic_service.py")
         if self.client is None:
             await self.connect()
         try:
@@ -91,6 +95,7 @@ class AnthropicService:
         formatted_chat_history: Optional[List[Dict[str, str]]] = None,
         **kwargs,
     ) -> Tuple[str, int, int]:
+        print("🧭 FUNCTION NAME: generate_response, FILE_NAME: backend/services/anthropic_service.py")
         messages = self._prepare_messages(user_message, system_message, formatted_chat_history)
         logger.info(f"\n\n\nMessages: {messages}\n\n\n")
         return await self.create_chat_completion(messages, **kwargs)
@@ -101,6 +106,7 @@ class AnthropicService:
         system_message: Optional[str],
         formatted_chat_history: Optional[List[Dict[str, str]]] = None,
     ) -> List[Dict[str, str]]:
+        print("🧭 FUNCTION NAME: _prepare_messages, FILE_NAME: backend/services/anthropic_service.py")
         messages = []
 
         if system_message:

@@ -4,6 +4,7 @@ from typing import Optional, TypedDict, List, Dict, Any
 
 
 def usage_data_reducer(a: Dict[str, List[Any]], b: Dict[str, List[Any]]) -> Dict[str, List[Any]]:
+    print("🧭 FUNCTION NAME: usage_data_reducer, FILE_NAME: backend/feature_extraction/models/extractor_state.py")
     result = {}
     for key in set(a.keys()).union(b.keys()):
         list_a = a.get(key, [])
@@ -13,6 +14,7 @@ def usage_data_reducer(a: Dict[str, List[Any]], b: Dict[str, List[Any]]) -> Dict
 
 
 def list_appender(a: List[int], b: int) -> List[int]:
+    print("🧭 FUNCTION NAME: list_appender, FILE_NAME: backend/feature_extraction/models/extractor_state.py")
     return a + [b]
 
 

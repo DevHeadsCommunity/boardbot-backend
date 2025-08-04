@@ -30,6 +30,7 @@ class WeaviateClient:
 
     # section 1: connection and setup
     async def connect(self):
+        print("🧭 FUNCTION NAME: connect, FILE_NAME: backend/weaviate_interface/weaviate_client.py")
         try:
             await self.client.connect()
         except Exception as e:
@@ -37,9 +38,11 @@ class WeaviateClient:
             raise
 
     async def close(self):
+        print("🧭 FUNCTION NAME: close, FILE_NAME: backend/weaviate_interface/weaviate_client.py")
         await self.client.close()
 
     async def is_ready(self) -> bool:
+        print("🧭 FUNCTION NAME: is_ready, FILE_NAME: backend/weaviate_interface/weaviate_client.py")
         try:
             return await self.client.is_ready()
         except Exception as e:
@@ -48,6 +51,7 @@ class WeaviateClient:
 
     # section 2: collection management
     async def get_schema(self) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: get_schema, FILE_NAME: backend/weaviate_interface/weaviate_client.py")
         try:
             return await self.client.collections.list_all()
         except Exception as e:
@@ -63,6 +67,7 @@ class WeaviateClient:
         description: Optional[str] = None,
         references: Optional[List[ReferenceProperty]] = None,
     ) -> None:
+        print("🧭 FUNCTION NAME: create_collection, FILE_NAME: backend/weaviate_interface/weaviate_client.py")
         try:
             collection = self.client.collections.create(
                 name=name,
@@ -78,6 +83,7 @@ class WeaviateClient:
             raise
 
     def get_collection(self, name: str):
+        print("🧭 FUNCTION NAME: get_collection, FILE_NAME: backend/weaviate_interface/weaviate_client.py")
         try:
             return self.client.collections.get(name)
         except Exception as e:
@@ -85,6 +91,7 @@ class WeaviateClient:
             raise
 
     async def delete_collection(self, name: str) -> None:
+        print("🧭 FUNCTION NAME: delete_collection, FILE_NAME: backend/weaviate_interface/weaviate_client.py")
         try:
             await self.client.collections.delete(name)
         except Exception as e:
@@ -92,6 +99,7 @@ class WeaviateClient:
             raise
 
     async def delete_all_collections(self) -> None:
+        print("🧭 FUNCTION NAME: delete_all_collections, FILE_NAME: backend/weaviate_interface/weaviate_client.py")
         try:
             collections = await self.client.collections.list_all()
             for collection_name in collections:
@@ -104,6 +112,7 @@ class WeaviateClient:
     async def insert_object(
         self, collection_name: str, data: Dict[str, Any], unique_properties: Optional[List[str]] = None
     ) -> str:
+        print("🧭 FUNCTION NAME: insert_object, FILE_NAME: backend/weaviate_interface/weaviate_client.py")
         try:
             collection = self.get_collection(collection_name)
 
@@ -133,6 +142,7 @@ class WeaviateClient:
         return_properties: Optional[List[str]] = None,
         return_references: Optional[QueryReference] = None,
     ) -> Optional[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: get_object, FILE_NAME: backend/weaviate_interface/weaviate_client.py")
         try:
             collection = self.get_collection(collection_name)
             result = await collection.query.fetch_object_by_id(
@@ -155,6 +165,7 @@ class WeaviateClient:
             return None
 
     async def update_object(self, collection_name: str, uuid: str, data: Dict[str, Any]) -> None:
+        print("🧭 FUNCTION NAME: update_object, FILE_NAME: backend/weaviate_interface/weaviate_client.py")
         try:
             collection = self.get_collection(collection_name)
             await collection.data.update(uuid, data)
@@ -163,6 +174,7 @@ class WeaviateClient:
             raise
 
     async def delete_object(self, collection_name: str, uuid: str) -> None:
+        print("🧭 FUNCTION NAME: delete_object, FILE_NAME: backend/weaviate_interface/weaviate_client.py")
         try:
             collection = self.get_collection(collection_name)
             await collection.data.delete_by_id(uuid)
@@ -182,6 +194,7 @@ class WeaviateClient:
         return_properties: Optional[List[str]] = None,
         include_vector: bool = False,
     ) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: get_objects, FILE_NAME: backend/weaviate_interface/weaviate_client.py")
         try:
             collection = self.get_collection(collection_name)
             results = await collection.query.fetch_objects(
@@ -234,6 +247,7 @@ class WeaviateClient:
         unique_properties: Optional[List[str]] = None,
         batch_size: int = 100,
     ) -> List[str]:
+        print("🧭 FUNCTION NAME: batch_insert_objects, FILE_NAME: backend/weaviate_interface/weaviate_client.py")
         try:
             uuids = []
             logger.info(f"Inserting {len(objects)} objects into collection {collection_name}")
@@ -254,6 +268,7 @@ class WeaviateClient:
     async def batch_delete_objects(
         self, collection_name: str, uuids: List[str], dry_run: bool = False, verbose: bool = False
     ) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: batch_delete_objects, FILE_NAME: backend/weaviate_interface/weaviate_client.py")
         try:
             collection = self.get_collection(collection_name)
             result = await collection.data.delete_many(
@@ -268,6 +283,7 @@ class WeaviateClient:
     async def delete_objects_by_filter(
         self, collection_name: str, filters: Filter, dry_run: bool = False, verbose: bool = False
     ) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: delete_objects_by_filter, FILE_NAME: backend/weaviate_interface/weaviate_client.py")
         try:
             collection = self.get_collection(collection_name)
             result = await collection.data.delete_many(where=filters, dry_run=dry_run, verbose=verbose)
@@ -283,6 +299,7 @@ class WeaviateClient:
         group_by: Optional[List[str]] = None,
         properties: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: aggregate, FILE_NAME: backend/weaviate_interface/weaviate_client.py")
         try:
             collection = self.get_collection(collection_name)
             query = collection.aggregate
@@ -314,6 +331,7 @@ class WeaviateClient:
         return_references: Optional[QueryReference] = None,
         include_vector: bool = False,
     ) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: search, FILE_NAME: backend/weaviate_interface/weaviate_client.py")
         try:
             collection = self.get_collection(collection_name)
             move_to_obj = Move(**move_to) if move_to else None
@@ -353,6 +371,7 @@ class WeaviateClient:
         return_references: Optional[QueryReference] = None,
         include_vector: bool = False,
     ) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: hybrid_search, FILE_NAME: backend/weaviate_interface/weaviate_client.py")
         try:
             collection = self.get_collection(collection_name)
             results = await collection.query.hybrid(
@@ -390,6 +409,7 @@ class WeaviateClient:
         offset: int = 0,
         auto_limit: int = 3,
     ) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: keyword_search, FILE_NAME: backend/weaviate_interface/weaviate_client.py")
         try:
             collection = self.get_collection(collection_name)
             response = await collection.query.bm25(
@@ -424,6 +444,7 @@ class WeaviateClient:
         offset: int = 0,
         auto_limit: int = 3,
     ) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: vector_search, FILE_NAME: backend/weaviate_interface/weaviate_client.py")
         try:
             collection = self.get_collection(collection_name)
             if isinstance(query, str):

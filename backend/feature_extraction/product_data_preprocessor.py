@@ -19,11 +19,13 @@ class ProductDataProcessor:
         )
 
     def tiktoken_len(self, text):
+        print("🧭 FUNCTION NAME: tiktoken_len, FILE_NAME: backend/feature_extraction/product_data_preprocessor.py")
         tokenizer = tiktoken.get_encoding("cl100k_base")
         tokens = tokenizer.encode(text)
         return len(tokens)
 
     def load_and_preprocess_data(self, csv_file_path: str) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: load_and_preprocess_data, FILE_NAME: backend/feature_extraction/product_data_preprocessor.py")
         products = pd.read_csv(csv_file_path)
         logger.info(f"Loaded {len(products)} products from CSV.")
 
@@ -37,6 +39,7 @@ class ProductDataProcessor:
         return processed_data
 
     def preprocess_item(self, item: Dict[str, Any]) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: preprocess_item, FILE_NAME: backend/feature_extraction/product_data_preprocessor.py")
         self._process_list_fields(item)
         self._process_evaluation_or_commercialization(item)
         self._process_processor_core_count(item)
@@ -45,6 +48,7 @@ class ProductDataProcessor:
         return item
 
     def _process_list_fields(self, item: Dict[str, Any]) -> None:
+        print("🧭 FUNCTION NAME: _process_list_fields, FILE_NAME: backend/feature_extraction/product_data_preprocessor.py")
         list_fields = [
             "operating_system_bsp",
             "certifications",
@@ -63,6 +67,7 @@ class ProductDataProcessor:
                 item[key] = None
 
     def _process_evaluation_or_commercialization(self, item: Dict[str, Any]) -> None:
+        print("🧭 FUNCTION NAME: _process_evaluation_or_commercialization, FILE_NAME: backend/feature_extraction/product_data_preprocessor.py")
         if "evaluation_or_commercialization" in item:
             value = item["evaluation_or_commercialization"]
             if isinstance(value, str):
@@ -79,6 +84,7 @@ class ProductDataProcessor:
                 item["evaluation_or_commercialization"] = None
 
     def _process_processor_core_count(self, item: Dict[str, Any]) -> None:
+        print("🧭 FUNCTION NAME: _process_processor_core_count, FILE_NAME: backend/feature_extraction/product_data_preprocessor.py")
         if "processor_core_count" in item:
             value = item["processor_core_count"]
             if not self.is_na(value):
@@ -91,6 +97,7 @@ class ProductDataProcessor:
                 item["processor_core_count"] = None
 
     def _standardize_units(self, item: Dict[str, Any]) -> None:
+        print("🧭 FUNCTION NAME: _standardize_units, FILE_NAME: backend/feature_extraction/product_data_preprocessor.py")
         unit_fields = ["memory", "processor_tdp", "operating_temperature_max", "operating_temperature_min"]
         for key in unit_fields:
             value = item.get(key)
@@ -100,20 +107,24 @@ class ProductDataProcessor:
                 item[key] = None
 
     def _replace_nan_with_none(self, item: Dict[str, Any]) -> None:
+        print("🧭 FUNCTION NAME: _replace_nan_with_none, FILE_NAME: backend/feature_extraction/product_data_preprocessor.py")
         for key, value in item.items():
             if self.is_na(value):
                 item[key] = None
 
     def is_na(self, value):
+        print("🧭 FUNCTION NAME: is_na, FILE_NAME: backend/feature_extraction/product_data_preprocessor.py")
         if pd.api.types.is_scalar(value):
             return pd.isna(value)
         else:
             return pd.isna(value).any()
 
     def standardize_units(self, value: str, field_name: str) -> str:
+        print("🧭 FUNCTION NAME: standardize_units, FILE_NAME: backend/feature_extraction/product_data_preprocessor.py")
         # Implement unit standardization logic based on field_name
         # This is a placeholder implementation
         return value
 
     def create_chunks(self, text: str) -> List[str]:
+        print("🧭 FUNCTION NAME: create_chunks, FILE_NAME: backend/feature_extraction/product_data_preprocessor.py")
         return self.text_splitter.split_text(text)

@@ -23,6 +23,7 @@ class ServiceFactory:
 
     @classmethod
     def register_service(cls, class_name: str, service_class: Type[BaseService]):
+        print("🧭 FUNCTION NAME: register_service, FILE_NAME: backend/weaviate_interface/service/service_factory.py")
         """
         Registers a new service class.
         """
@@ -30,6 +31,7 @@ class ServiceFactory:
 
     @classmethod
     def get_service(cls, class_name: str, client: WeaviateClient) -> BaseService:
+        print("🧭 FUNCTION NAME: get_service, FILE_NAME: backend/weaviate_interface/service/service_factory.py")
         """
         Returns an instance of the appropriate service class for the given class name.
         """

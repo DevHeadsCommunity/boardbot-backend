@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def merge_dict(a: Dict[str, Any], b: Dict[str, Any]) -> Dict[str, Any]:
+    print("🧭 FUNCTION NAME: merge_dict, FILE_NAME: backend/generators/vague_intent_agent.py")
     return {**a, **b}
 
 
@@ -48,6 +49,7 @@ class VagueIntentAgent:
         self.workflow = self.setup_workflow()
 
     def setup_workflow(self) -> StateGraph:
+        print("🧭 FUNCTION NAME: setup_workflow, FILE_NAME: backend/generators/vague_intent_agent.py")
         workflow = StateGraph(VagueIntentState)
 
         workflow.add_node("query_generation", self.query_generation_node)
@@ -63,6 +65,7 @@ class VagueIntentAgent:
         return workflow.compile()
 
     async def query_generation_node(self, state: VagueIntentState, config: RunnableConfig) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: query_generation_node, FILE_NAME: backend/generators/vague_intent_agent.py")
         start_time = time.time()
         result, input_tokens, output_tokens = await self.query_processor.generate_semantic_search_query(
             state["current_message"], state["chat_history"], model=state["model_name"]
@@ -80,6 +83,7 @@ class VagueIntentAgent:
         }
 
     async def product_search_node(self, state: VagueIntentState, config: RunnableConfig) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: product_search_node, FILE_NAME: backend/generators/vague_intent_agent.py")
         start_time = time.time()
         limit = state["product_count"]
         filters = state.get("filters", {})
@@ -147,6 +151,7 @@ class VagueIntentAgent:
         }
 
     async def response_generation_node(self, state: VagueIntentState, config: RunnableConfig) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: response_generation_node, FILE_NAME: backend/generators/vague_intent_agent.py")
         start_time = time.time()
 
         products_with_certainty = [
@@ -183,6 +188,7 @@ class VagueIntentAgent:
         }
 
     async def run(self, message: Message, chat_history: List[Message]) -> Dict[str, Any]:
+        print("🧭 FUNCTION NAME: run, FILE_NAME: backend/generators/vague_intent_agent.py")
         logger.info(f"Running VagueIntentAgent with message: {message}")
 
         initial_state: VagueIntentState = {

@@ -9,6 +9,7 @@ class ProductDataChunkService(BaseService):
         super().__init__(client, "ProductDataChunk")
 
     def get_properties(self) -> List[str]:
+        print("🧭 FUNCTION NAME: get_properties, FILE_NAME: backend/weaviate_interface/service/product_data_chunk_service.py")
         return [
             "product_id",
             "chunk_text",
@@ -17,6 +18,7 @@ class ProductDataChunkService(BaseService):
         ]
 
     async def create_chunks(self, chunks: List[str], product_id: str, source_type: str, source_id: str) -> List[str]:
+        print("🧭 FUNCTION NAME: create_chunks, FILE_NAME: backend/weaviate_interface/service/product_data_chunk_service.py")
         chunk_objects = [
             {
                 "chunk_text": chunk,
@@ -29,6 +31,8 @@ class ProductDataChunkService(BaseService):
         return await self.batch_create_objects(chunk_objects)
 
     async def get_by_product_id(self, product_id: str) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: get_by_product_id, FILE_NAME: backend/weaviate_interface/service/product_data_chunk_service.py")
+
         """
         Retrieve ProductDataChunk objects by product ID.
         """
@@ -36,6 +40,8 @@ class ProductDataChunkService(BaseService):
         return await self.client.get_objects(self.class_name, filters=filter)
 
     async def delete_by_product_id(self, product_id: str) -> None:
+        print("🧭 FUNCTION NAME: delete_by_product_id, FILE_NAME: backend/weaviate_interface/service/product_data_chunk_service.py")
+
         """
         Delete all objects associated with a product ID.
         """
@@ -45,6 +51,7 @@ class ProductDataChunkService(BaseService):
     async def semantic_search(
         self, query: str, product_id: str, limit: int = 5, source_type: Optional[str] = None
     ) -> List[Dict[str, Any]]:
+        print("🧭 FUNCTION NAME: semantic_search, FILE_NAME: backend/weaviate_interface/service/product_data_chunk_service.py")
         """
         Perform a semantic search on ProductDataChunk objects.
         """

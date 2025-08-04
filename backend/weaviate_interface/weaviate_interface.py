@@ -20,6 +20,7 @@ class WeaviateInterface:
         self.product_search_result_service = self.get_service("ProductSearchResult")
 
     def get_service(self, class_name: str) -> BaseService:
+        print("🧭 FUNCTION NAME: get_service, FILE_NAME: backend/weaviate_interface/weaviate_interface.py")
         """
         Returns the appropriate service for the given class name.
         """
