@@ -243,6 +243,13 @@ SCHEMA = {
                     index_searchable=True,
                 ),
                 Property(
+                    name="description",
+                    description="Full product description from your DB",
+                    data_type=DataType.TEXT,
+                    index_filterable=False,
+                    index_searchable=True,
+                ),
+                Property(
                     name="full_product_description",
                     description="An in-depth description including specifications.",
                     data_type=DataType.TEXT,
@@ -262,6 +269,13 @@ SCHEMA = {
                     data_type=DataType.TEXT_ARRAY,
                     index_filterable=True,
                     index_searchable=True,
+                ),
+                Property(
+                    name="image_url",
+                    description="Link to the product image",
+                    data_type=DataType.TEXT,
+                    index_filterable=False,
+                    index_searchable=False,
                 ),
                 Property(
                     name="price",

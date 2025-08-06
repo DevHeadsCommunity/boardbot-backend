@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 import json
 import logging
+import os
 from typing import List, Dict, Any, Optional, Tuple, TypedDict, Union
 from services.utils.enhanced_error_logger import create_error_logger
 from services.utils.filter_parser import QueryBuilder
@@ -9,6 +10,9 @@ from weaviate_interface import WeaviateInterface, route_descriptions
 from feature_extraction.product_data_preprocessor import ProductDataProcessor
 from weaviate.classes.query import Filter
 from weaviate.classes.config import Property, DataType
+import mysql.connector
+
+from config import Config
 
 logger = logging.getLogger(__name__)
 logger.error = create_error_logger(logger)
@@ -77,27 +81,51 @@ class WeaviateService:
             info = await self.wi.schema.info()
             logger.info(f"Weaviate schema is valid: {is_valid}")
             logger.info(f"Weaviate schema info: {info}")
+            
+            if reset or not is_valid:
+                logger.info("Resetting Weaviate schema and loading data…")
+                await self.wi.schema.reset_schema()           # <-- creates all classes from SCHEMA
+                await self._load_product_data()                # <-- upsert your products table
+                await self._load_semantic_routes() 
         except Exception as e:
             logger.error(f"Error initializing Weaviate: {e}", exc_info=True)
             raise
 
     async def _load_product_data(self):
         try:
-            processed_data = self.data_processor.load_and_preprocess_data("data/cleaned_data.csv")
+            db = mysql.connector.connect(
+                host=os.environ["DATABASE_HOST"],
+                user=os.environ["DATABASE_USER"],
+                port=os.environ["DATABASE_PORT"],
+                password=os.environ["DATABASE_PASSWORD"],
+                database=os.environ["DATABASE_NAME"],
+            )
+            cursor = db.cursor(dictionary=True)
+            cursor.execute("""
+                SELECT
+                    id AS product_id,
+                    name,
+                    description,
+                    image_url
+                FROM WordpressProducts
+            """)
+            rows = cursor.fetchall()
 
-            for i in range(0, len(processed_data), 20):
-                batch = processed_data[i : i + 20]
+            batch = []
+            for row in rows:
+                batch.append({
+                    "product_id": str(row["product_id"]),
+                    "name": row["name"],
+                    "description": row["description"],
+                    "image_url": row["image_url"],
+                })
 
-                # Debug: Print out the first item in each batch
-                if batch:
-                    logger.debug(f"First item in batch after preprocessing: {json.dumps(batch[0], indent=2)}")
-
-                try:
-                    await self.wi.product_service.batch_create_objects(batch)
-                    logger.info(f"Inserted batch {i // 20 + 1} of {len(processed_data) // 20 + 1}")
-                except Exception as e:
-                    logger.error(f"Error inserting products at index {i}: {e}", exc_info=True)
-                    continue
+            for i in range(0, len(batch), 50):
+                chunk = batch[i : i + 50]
+                await self.wi.client.batch_insert_objects(
+                    collection_name="Product",
+                    objects=chunk,
+                )
 
         except Exception as e:
             logger.error(f"Error loading initial data: {e}", exc_info=True)
@@ -324,6 +352,17 @@ class WeaviateService:
         except Exception as e:
             logger.error(f"Error in search_products: {str(e)}", exc_info=True)
             raise
+        
+    async def search_products_by_description(self, query: str, limit: int = 5):
+        props = ["name", "description", "image_url"]
+        results = await self.wi.product_service.semantic_search(
+            collection_name="Product",
+            query_text=query,
+            limit=limit,
+            return_properties=props,
+        )
+        # each hit already has .properties with exactly those fields
+        return results
 
     async def _execute_sorted_query(
         self,

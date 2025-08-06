@@ -128,6 +128,19 @@ class BaseRouter:
     async def handle_chitchat(
         self, message: Message, chat_history: List[Dict[str, str]], base_metadata: Dict[str, Any]
     ) -> Dict[str, Any]:
+        if base_metadata.get("sql_mode"):
+            # do a DB/Weaviate lookup instead of openai chat
+            products = await self.weaviate_service.search_products_by_description(
+                query=message.message,
+                limit=100,
+            )
+            # format as a "clear_intent_product" response
+            return self.response_formatter.format_response(
+                "clear_intent_product",
+                json.dumps({"results": products}),
+                base_metadata,
+                products,              # passed in as `search_results`
+            )
         start_time = time.time()
         system_message, user_message = self.prompt_manager.get_chitchat_prompt(message.message)
         print("system_message", system_message)
