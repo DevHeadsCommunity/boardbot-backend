@@ -144,7 +144,6 @@ class WeaviateService:
                 await self.wi.client.batch_insert_objects(
                     collection_name="Product",
                     objects=chunk,
-                    unique_properties=["product_id"],
                 )
 
         except Exception as e:
