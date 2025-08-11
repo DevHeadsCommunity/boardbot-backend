@@ -99,7 +99,7 @@ class VagueIntentAgent:
             for result in hybrid_results:
                 if len(unique_results) >= limit:
                     break
-                unique_results[result["product_id"]] = result
+                unique_results[result["wp_product_id"]] = result
 
             # If not enough results, perform partial hybrid searches
             if len(unique_results) < limit:
@@ -115,8 +115,8 @@ class VagueIntentAgent:
                         }
                     )
                     for result in partial_results:
-                        if result["product_id"] not in unique_results:
-                            unique_results[result["product_id"]] = result
+                        if result["wp_product_id"] not in unique_results:
+                            unique_results[result["wp_product_id"]] = result
                             if len(unique_results) >= limit:
                                 break
 
@@ -131,8 +131,8 @@ class VagueIntentAgent:
             )
 
             for result in semantic_results:
-                if result["product_id"] not in unique_results:
-                    unique_results[result["product_id"]] = result
+                if result["wp_product_id"] not in unique_results:
+                    unique_results[result["wp_product_id"]] = result
                     if len(unique_results) >= limit:
                         break
 
@@ -151,7 +151,7 @@ class VagueIntentAgent:
 
         products_with_certainty = [
             {
-                "product_id": p["product_id"],
+                "wp_product_id": p["wp_product_id"],
                 "name": p["name"],
                 **{attr: p.get(attr, "Not specified") for attr in state["filters"].keys()},
                 "summary": p.get("full_product_description", ""),

@@ -561,7 +561,7 @@ class DynamicAgent:
 
         for p in state.get("search_results", []):
             product = {
-                "product_id": p["product_id"],
+                "wp_product_id": p["product_id"],
                 "name": p["name"],
                 "summary": p.get("full_product_description", ""),
             }

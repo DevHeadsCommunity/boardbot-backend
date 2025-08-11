@@ -8,7 +8,7 @@ from services.utils.filter_parser import QueryBuilder
 from weaviate_interface import WeaviateInterface, route_descriptions
 from feature_extraction.product_data_preprocessor import ProductDataProcessor
 from weaviate.classes.query import Filter
-from weaviate.classes.config import Property, DataType
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 logger.error = create_error_logger(logger)
@@ -67,11 +67,23 @@ class WeaviateService:
             if not self.connected:
                 await self.connect()
 
-            # if not (await self.wi.schema.is_valid()) or reset:
-            #     await self.wi.schema.reset_schema()
-            #     # Optionally load initial data
-            #     await self._load_product_data()
-            #     await self._load_semantic_routes()
+            product_collection = self.wi.client.get_collection("Product")
+            aggregate_result = await product_collection.aggregate.over_all(total_count=True)
+            weaviate_count = aggregate_result.total_count
+            db_count = await self.data_processor.get_db_record_count()
+
+            print("START")
+            print("weaviate_count", weaviate_count, "db_count", db_count)
+            print(bool(weaviate_count != db_count))
+            print(bool(reset))
+            print("END")
+
+            if reset or weaviate_count != db_count:
+                await self.wi.schema.reset_schema()
+                await self._load_product_data()
+                await self._load_semantic_routes()
+            else:
+                logger.info("Data counts match. Skipping data loading.")
 
             is_valid = await self.wi.schema.is_valid()
             info = await self.wi.schema.info()
@@ -81,27 +93,45 @@ class WeaviateService:
             logger.error(f"Error initializing Weaviate: {e}", exc_info=True)
             raise
 
+    def normalize_date(self, date_str: str) -> str:
+        dt = datetime.fromisoformat(date_str)
+        return dt.replace(tzinfo=timezone.utc).isoformat()
+
     async def _load_product_data(self):
-        try:
-            processed_data = self.data_processor.load_and_preprocess_data("data/cleaned_data.csv")
+        raw_data = await self.data_processor.load_and_preprocess_data()
+        CHUNK_SIZE = 20
 
-            for i in range(0, len(processed_data), 20):
-                batch = processed_data[i : i + 20]
+        for i in range(0, len(raw_data), CHUNK_SIZE):
+            batch = raw_data[i: i + CHUNK_SIZE]
 
-                # Debug: Print out the first item in each batch
-                if batch:
-                    logger.debug(f"First item in batch after preprocessing: {json.dumps(batch[0], indent=2)}")
+            converters = {
+                'date_created': lambda v: self.normalize_date(v),
+                'date_modified': lambda v: self.normalize_date(v),
+                'createdAt': lambda v: self.normalize_date(v),
+                'updatedAt': lambda v: self.normalize_date(v),
+                'wp_product_id': lambda v: str(v),
+                'downloadable': lambda v: bool(int(v)),
+                'virtual': lambda v: bool(int(v)),
+                'price': float,
+                'regular_price': float,
+                'sale_price': float,
+                'total_sales': int,
+            }
 
-                try:
-                    await self.wi.product_service.batch_create_objects(batch)
-                    logger.info(f"Inserted batch {i // 20 + 1} of {len(processed_data) // 20 + 1}")
-                except Exception as e:
-                    logger.error(f"Error inserting products at index {i}: {e}", exc_info=True)
-                    continue
+            normalized_batch = []
+            for obj in batch:
+                obj.pop('id', None)
+                # приводимо всі потрібні поля
+                for fld, fn in converters.items():
+                    if fld in obj and obj[fld] is not None:
+                        obj[fld] = fn(obj[fld])
+                normalized_batch.append(obj)
 
-        except Exception as e:
-            logger.error(f"Error loading initial data: {e}", exc_info=True)
-            raise
+            try:
+                await self.wi.product_service.batch_create_objects(normalized_batch)
+                logger.info(f"Inserted batch {i // CHUNK_SIZE + 1}")
+            except Exception as e:
+                logger.error(f"Error inserting batch {i // CHUNK_SIZE + 1}: {e}", exc_info=True)
 
     async def _load_semantic_routes(self):
         try:
@@ -122,7 +152,12 @@ class WeaviateService:
 
     async def get_all_products(self) -> List[Dict[str, Any]]:
         try:
-            return await self.wi.product_service.get_all()
+            props = self.wi.product_service.get_properties()
+            return await self.wi.product_service.get_all(
+                limit=0,
+                filters=None,
+                return_properties=props,
+            )
         except Exception as e:
             logger.error(f"Error getting all products: {e}", exc_info=True)
             raise
@@ -171,8 +206,8 @@ class WeaviateService:
                 weaviate_filter = (
                     Filter.all_of(filter_conditions) if len(filter_conditions) > 1 else filter_conditions[0]
                 )
-
-            products = await self.wi.product_service.get_all(limit=limit, offset=offset, filters=weaviate_filter)
+            props = self.wi.product_service.get_properties()
+            products = await self.wi.product_service.get_all(limit=limit, offset=offset, filters=weaviate_filter, return_properties=props)
             total_count = await self.wi.product_service.count()
             return products, total_count
         except Exception as e:
@@ -183,7 +218,7 @@ class WeaviateService:
         try:
             # Store the raw data
             raw_data_id = await self.wi.raw_product_data_service.create(
-                {"product_id": product_id, "raw_data": raw_data}
+                {"wp_product_id": product_id, "raw_data": raw_data}
             )
 
             # Create and store chunks
@@ -203,7 +238,7 @@ class WeaviateService:
             # Store the search result
             search_result_id = await self.wi.product_search_result_service.create(
                 {
-                    "product_id": product_id,
+                    "wp_product_id": product_id,
                     "search_query": search_query,
                     "search_result": search_result,
                     "data_source": data_source,

@@ -95,7 +95,7 @@ class AgenticFeatureExtractor:
 
         weaviate_service = config["services"]["weaviate_service"]
         raw_data = state["raw_data"]
-        product_id = state["product_id"]
+        product_id = state["wp_product_id"]
 
         try:
             await weaviate_service.store_raw_data(product_id, raw_data)
@@ -122,7 +122,7 @@ class AgenticFeatureExtractor:
         prompt_manager = config["prompt_manager"]
         model_name = config["configurable"]["model_name"]
         confidence_threshold = config["configurable"]["confidence_threshold"]
-        product_id = state["product_id"]
+        product_id = state["wp_product_id"]
 
         query = (
             "name, manufacturer, form factor, specifications processor memory storage operating system certifications"
@@ -190,7 +190,7 @@ class AgenticFeatureExtractor:
 
         extracted_features = state.get("extracted_features", {})
         missing_features = state.get("missing_features", [])
-        product_id = state["product_id"]
+        product_id = state["wp_product_id"]
         exclude_domains = state.get("exclude_domains", [])
 
         if not missing_features:
@@ -504,7 +504,7 @@ class AgenticFeatureExtractor:
 
     async def extract_data(self, text: str, product_id: str) -> Dict[str, Any]:
         initial_state = {
-            "product_id": product_id,
+            "wp_product_id": product_id,
             "raw_data": text,
             "missing_feature_attempts": 0,
             "low_confidence_attempts": 0,

@@ -90,7 +90,7 @@ class OpenAIService:
     ) -> Tuple[str, int, int]:
         if kwargs.pop("sql_mode", False):
         # Avoid circular imports if SQLQueryAgent is defined elsewhere
-            from services.sql_query_agent import SQLQueryAgent
+            from backend.services.sql_query_agent import SQLQueryAgent
 
             db_uri = os.getenv("DATABASE_URI") or self.config.DATABASE_URI
             if not db_uri:

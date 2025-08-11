@@ -18,6 +18,17 @@ services:
       ENABLE_MODULES: "text2vec-openai"
       CLUSTER_HOSTNAME: "node1"
 
+  weaviate-ui:
+    image: naaive/weaviate-ui:latest
+    platform: linux/amd64
+    ports:
+      - "8085:7777"
+    environment:
+      - WEAVIATE_URL=http://weaviate:8080
+      - WEAVIATE_API_KEYS=
+    depends_on:
+      - weaviate
+
   backend:
     build:
       context: .

@@ -10,7 +10,7 @@ class ProductDataChunkService(BaseService):
 
     def get_properties(self) -> List[str]:
         return [
-            "product_id",
+            "wp_product_id",
             "chunk_text",
             "source_type",
             "source_id",
@@ -20,7 +20,7 @@ class ProductDataChunkService(BaseService):
         chunk_objects = [
             {
                 "chunk_text": chunk,
-                "product_id": product_id,
+                "wp_product_id": product_id,
                 "source_type": source_type,
                 "source_id": source_id,
             }
@@ -32,7 +32,7 @@ class ProductDataChunkService(BaseService):
         """
         Retrieve ProductDataChunk objects by product ID.
         """
-        filter = Filter.by_property("product_id").equal(product_id)
+        filter = Filter.by_property("wp_product_id").equal(product_id)
         return await self.client.get_objects(self.class_name, filters=filter)
 
     async def delete_by_product_id(self, product_id: str) -> None:
@@ -40,7 +40,7 @@ class ProductDataChunkService(BaseService):
         Delete all objects associated with a product ID.
         """
         collection = self.client.get_collection(self.class_name)
-        await collection.data.delete_many(where=Filter.by_property("product_id").equal(product_id))
+        await collection.data.delete_many(where=Filter.by_property("wp_product_id").equal(product_id))
 
     async def semantic_search(
         self, query: str, product_id: str, limit: int = 5, source_type: Optional[str] = None

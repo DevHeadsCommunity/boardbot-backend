@@ -1,3 +1,4 @@
+import os
 import re
 import ast
 import logging
@@ -5,6 +6,13 @@ import tiktoken
 import pandas as pd
 from typing import List, Dict, Any
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+from config import config
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
+from decimal import Decimal
+from datetime import date, datetime
 
 
 logger = logging.getLogger(__name__)
@@ -17,23 +25,55 @@ class ProductDataProcessor:
             chunk_overlap=64,
             length_function=self.tiktoken_len,
         )
+        db_url = config.DATABASE_URI
+        if db_url.startswith("mysql://"):
+            db_url = db_url.replace("mysql://", "mysql+aiomysql://")
+        engine = create_async_engine(db_url, echo=False, future=True)
+        self.AsyncSessionLocal = sessionmaker(
+            bind=engine,
+            class_=AsyncSession,
+            expire_on_commit=False,
+        )
+
+    async def get_db_record_count(self) -> int:
+        async with self.AsyncSessionLocal() as session:
+            result = await session.execute(text("SELECT COUNT(*) FROM WordpressProducts"))
+            count = result.scalar_one()
+            logger.info(f"DB record count: {count}")
+            return count
 
     def tiktoken_len(self, text):
         tokenizer = tiktoken.get_encoding("cl100k_base")
         tokens = tokenizer.encode(text)
         return len(tokens)
 
-    def load_and_preprocess_data(self, csv_file_path: str) -> List[Dict[str, Any]]:
-        products = pd.read_csv(csv_file_path)
-        logger.info(f"Loaded {len(products)} products from CSV.")
+    def _normalize_types(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        elif isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        elif isinstance(obj, dict):
+            return {k: self._normalize_types(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self._normalize_types(v) for v in obj]
+        else:
+            return obj
 
-        products_data = products.to_dict(orient="records")
+    async def load_and_preprocess_data(self) -> List[Dict[str, Any]]:
+        async with self.AsyncSessionLocal() as session:  # AsyncSession
+            result = await session.execute(text("SELECT * FROM WordpressProducts"))
+            records = result.mappings().all()
+            logger.info(f"DB returned {len(records)} rows")
+
         processed_data = []
 
-        for item in products_data:
-            processed_item = self.preprocess_item(item)
-            processed_data.append(processed_item)
+        for record in records:
+            item = dict(record)
+            processed = self.preprocess_item(item)
+            processed = self._normalize_types(processed)
+            processed_data.append(processed)
 
+        logger.info(f"Preprocessed into {len(processed_data)} items")
         return processed_data
 
     def preprocess_item(self, item: Dict[str, Any]) -> Dict[str, Any]:

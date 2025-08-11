@@ -48,7 +48,7 @@ class MessageProcessor:
         response_message = ResponseMessage(
             session_id=message.session_id,
             id=f"{message.id}_response",
-            message=json.dumps(response),
+            message=json.dumps(response, default=str),
             is_complete=True,
             model=message.model,
             service_type=service_type,
