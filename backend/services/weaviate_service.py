@@ -17,6 +17,7 @@ from config import Config
 logger = logging.getLogger(__name__)
 logger.error = create_error_logger(logger)
 
+
 class SortOrder(str, Enum):
     ASC = "asc"
     DESC = "desc"
@@ -40,7 +41,12 @@ class SearchParams(TypedDict, total=False):
 
 class WeaviateService:
 
-    def __init__(self, openai_key: str, weaviate_url: str, product_data_preprocessor: ProductDataProcessor):
+    def __init__(
+        self,
+        openai_key: str,
+        weaviate_url: str,
+        product_data_preprocessor: ProductDataProcessor,
+    ):
         self.connected = False
         self.wi = WeaviateInterface(weaviate_url, openai_key)
         self.data_processor = product_data_preprocessor
@@ -81,12 +87,13 @@ class WeaviateService:
             info = await self.wi.schema.info()
             logger.info(f"Weaviate schema is valid: {is_valid}")
             logger.info(f"Weaviate schema info: {info}")
-            
+
             if reset or not is_valid:
                 logger.info("Resetting Weaviate schema and loading data…")
-                await self.wi.schema.reset_schema()           # <-- creates all classes from SCHEMA
-                await self._load_product_data()                # <-- upsert your products table
-                await self._load_semantic_routes() 
+                await self.wi.schema.reset_schema()
+                await self._load_product_data()
+
+                await self._load_semantic_routes()
         except Exception as e:
             logger.error(f"Error initializing Weaviate: {e}", exc_info=True)
             raise
@@ -101,30 +108,43 @@ class WeaviateService:
                 database=os.environ["DATABASE_NAME"],
             )
             cursor = db.cursor(dictionary=True)
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT
                     id AS product_id,
                     name,
+                    manufacturer,
+                    category,
+                    sub_category,
                     description,
-                    image_url
-                FROM WordpressProducts
-            """)
+                    image_url,
+                    permalink
+                FROM products
+            """
+            )
             rows = cursor.fetchall()
 
             batch = []
             for row in rows:
-                batch.append({
-                    "product_id": str(row["product_id"]),
-                    "name": row["name"],
-                    "description": row["description"],
-                    "image_url": row["image_url"],
-                })
+                batch.append(
+                    {
+                        "product_id": str(row["product_id"]),
+                        "name": row["name"],
+                        "manufacturer": row["manufacturer"],
+                        "category": row["category"],
+                        "sub_category": row["sub_category"],
+                        "description": row["description"],
+                        "image_url": row["image_url"],
+                        "permalink": row["permalink"],
+                    }
+                )
 
             for i in range(0, len(batch), 50):
                 chunk = batch[i : i + 50]
                 await self.wi.client.batch_insert_objects(
                     collection_name="Product",
                     objects=chunk,
+                    unique_properties=["product_id"],
                 )
 
         except Exception as e:
@@ -142,7 +162,9 @@ class WeaviateService:
 
     async def search_routes(self, query: str) -> List[Tuple[str, float]]:
         try:
-            routes = await self.wi.route_service.search(query_text=query, return_properties=["route"], limit=1)
+            routes = await self.wi.route_service.search(
+                query_text=query, return_properties=["route"], limit=1
+            )
             return [(route["route"], route["certainty"]) for route in routes]
         except Exception as e:
             logger.error(f"Error searching routes: {e}", exc_info=True)
@@ -188,7 +210,10 @@ class WeaviateService:
             raise
 
     async def get_products(
-        self, limit: int = 10, offset: int = 0, filter_dict: Optional[Dict[str, Any]] = None
+        self,
+        limit: int = 10,
+        offset: int = 0,
+        filter_dict: Optional[Dict[str, Any]] = None,
     ) -> Tuple[List[Dict[str, Any]], int]:
         try:
             weaviate_filter = None
@@ -197,10 +222,14 @@ class WeaviateService:
                 for key, value in filter_dict.items():
                     filter_conditions.append(Filter.by_property(key).equal(value))
                 weaviate_filter = (
-                    Filter.all_of(filter_conditions) if len(filter_conditions) > 1 else filter_conditions[0]
+                    Filter.all_of(filter_conditions)
+                    if len(filter_conditions) > 1
+                    else filter_conditions[0]
                 )
 
-            products = await self.wi.product_service.get_all(limit=limit, offset=offset, filters=weaviate_filter)
+            products = await self.wi.product_service.get_all(
+                limit=limit, offset=offset, filters=weaviate_filter
+            )
             total_count = await self.wi.product_service.count()
             return products, total_count
         except Exception as e:
@@ -221,7 +250,9 @@ class WeaviateService:
 
             return raw_data_id
         except Exception as e:
-            logger.error(f"Error storing raw data for product {product_id}: {e}", exc_info=True)
+            logger.error(
+                f"Error storing raw data for product {product_id}: {e}", exc_info=True
+            )
             raise
 
     async def store_search_results(
@@ -240,43 +271,66 @@ class WeaviateService:
 
             # Create and store chunks
             chunks = self.data_processor.create_chunks(search_result)
-            await self.store_chunks(product_id, chunks, "search_result", search_result_id)
+            await self.store_chunks(
+                product_id, chunks, "search_result", search_result_id
+            )
 
             return search_result_id
         except Exception as e:
-            logger.error(f"Error storing search results for product {product_id}: {e}", exc_info=True)
+            logger.error(
+                f"Error storing search results for product {product_id}: {e}",
+                exc_info=True,
+            )
             raise
 
-    async def store_chunks(self, product_id: str, chunks: List[str], source_type: str, source_id: str) -> List[str]:
+    async def store_chunks(
+        self, product_id: str, chunks: List[str], source_type: str, source_id: str
+    ) -> List[str]:
         try:
-            return await self.wi.product_data_chunk_service.create_chunks(chunks, product_id, source_type, source_id)
+            return await self.wi.product_data_chunk_service.create_chunks(
+                chunks, product_id, source_type, source_id
+            )
         except Exception as e:
-            logger.error(f"Error storing chunks for product {product_id}: {e}", exc_info=True)
+            logger.error(
+                f"Error storing chunks for product {product_id}: {e}", exc_info=True
+            )
             raise
 
     async def get_raw_product_data(self, product_id: str) -> Dict[str, Any]:
         try:
             return await self.wi.raw_product_data_service.get_by_product_id(product_id)
         except Exception as e:
-            logger.error(f"Error getting raw product data for {product_id}: {e}", exc_info=True)
+            logger.error(
+                f"Error getting raw product data for {product_id}: {e}", exc_info=True
+            )
             raise
 
     async def get_search_results(self, product_id: str) -> List[Dict[str, Any]]:
         try:
-            return await self.wi.product_search_result_service.get_by_product_id(product_id)
+            return await self.wi.product_search_result_service.get_by_product_id(
+                product_id
+            )
         except Exception as e:
-            logger.error(f"Error getting search results for {product_id}: {e}", exc_info=True)
+            logger.error(
+                f"Error getting search results for {product_id}: {e}", exc_info=True
+            )
             raise
 
     async def get_relevant_chunks(
-        self, product_id: str, query: str, limit: int = 5, source_type: Optional[str] = None
+        self,
+        product_id: str,
+        query: str,
+        limit: int = 5,
+        source_type: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         try:
             return await self.wi.product_data_chunk_service.semantic_search(
                 query=query, product_id=product_id, limit=limit, source_type=source_type
             )
         except Exception as e:
-            logger.error(f"Error getting relevant chunks for {product_id}: {e}", exc_info=True)
+            logger.error(
+                f"Error getting relevant chunks for {product_id}: {e}", exc_info=True
+            )
             raise
 
     async def delete_product_data(self, product_id: str) -> None:
@@ -285,10 +339,14 @@ class WeaviateService:
             await self.wi.product_search_result_service.delete_by_product_id(product_id)
             await self.wi.product_data_chunk_service.delete_by_product_id(product_id)
         except Exception as e:
-            logger.error(f"Error deleting product data for {product_id}: {e}", exc_info=True)
+            logger.error(
+                f"Error deleting product data for {product_id}: {e}", exc_info=True
+            )
             raise
 
-    async def search_products(self, search_params: SearchParams) -> List[Dict[str, Any]]:
+    async def search_products(
+        self, search_params: SearchParams
+    ) -> List[Dict[str, Any]]:
         """
         Unified search function handling all search scenarios.
         """
@@ -296,8 +354,12 @@ class WeaviateService:
             # Build Weaviate filter from filter dictionary
             weaviate_filter = None
             if search_params.get("filters"):
-                weaviate_filter = self.query_builder.build_weaviate_filter(search_params["filters"])
-                logger.info(f"Built Weaviate filter: {weaviate_filter.__dict__ if weaviate_filter else None}")
+                weaviate_filter = self.query_builder.build_weaviate_filter(
+                    search_params["filters"]
+                )
+                logger.info(
+                    f"Built Weaviate filter: {weaviate_filter.__dict__ if weaviate_filter else None}"
+                )
 
             # Get search parameters
             search_type = search_params.get("search_type", "semantic")
@@ -309,7 +371,9 @@ class WeaviateService:
 
             # If no query is provided for semantic/hybrid search, fall back to filtered
             if not query and search_type in ("semantic", "hybrid"):
-                logger.warning(f"No query provided for {search_type} search, falling back to filtered search")
+                logger.warning(
+                    f"No query provided for {search_type} search, falling back to filtered search"
+                )
                 search_type = "filtered"
 
             # Get properties to return
@@ -318,11 +382,17 @@ class WeaviateService:
             # Execute search based on type
             if search_type == "semantic":
                 results = await self.wi.product_service.semantic_search(
-                    query_text=query, limit=limit, filters=weaviate_filter, return_properties=return_properties
+                    query_text=query,
+                    limit=limit,
+                    filters=weaviate_filter,
+                    return_properties=return_properties,
                 )
             elif search_type == "hybrid":
                 results = await self.wi.product_service.hybrid_search(
-                    query_text=query, limit=limit, filters=weaviate_filter, return_properties=return_properties
+                    query_text=query,
+                    limit=limit,
+                    filters=weaviate_filter,
+                    return_properties=return_properties,
                 )
             else:
                 # Direct filtered query with sorting
@@ -341,7 +411,14 @@ class WeaviateService:
                     "search_type": search_type,
                     "applied_filters": search_params.get("filters", {}),
                     "sort_config": (
-                        [{"field": sc.field, "order": sc.order.value, "weight": sc.weight} for sc in sort_configs]
+                        [
+                            {
+                                "field": sc.field,
+                                "order": sc.order.value,
+                                "weight": sc.weight,
+                            }
+                            for sc in sort_configs
+                        ]
                         if sort_configs
                         else None
                     ),
@@ -352,16 +429,24 @@ class WeaviateService:
         except Exception as e:
             logger.error(f"Error in search_products: {str(e)}", exc_info=True)
             raise
-        
+
     async def search_products_by_description(self, query: str, limit: int = 5):
-        props = ["name", "description", "image_url"]
+        props = [
+            "name",
+            "manufacturer",
+            "category",
+            "sub_category",
+            "description",
+            "image_url",
+        ]
         results = await self.wi.product_service.semantic_search(
             collection_name="Product",
             query_text=query,
             limit=limit,
             return_properties=props,
         )
-        # each hit already has .properties with exactly those fields
+        print(results)
+        logger.info(f"The Products: {json.dumps(results, indent=2)}")
         return results
 
     async def _execute_sorted_query(
@@ -416,7 +501,13 @@ class WeaviateService:
 
         if isinstance(sort_config, dict):
             # Handle legacy format {"field": "...", "order": "..."}
-            return [SortConfig(field=sort_config["field"], order=SortOrder(sort_config["order"].lower()), weight=1.0)]
+            return [
+                SortConfig(
+                    field=sort_config["field"],
+                    order=SortOrder(sort_config["order"].lower()),
+                    weight=1.0,
+                )
+            ]
 
         if isinstance(sort_config, list):
             return [
@@ -424,7 +515,9 @@ class WeaviateService:
                     conf
                     if isinstance(conf, SortConfig)
                     else SortConfig(
-                        field=conf["field"], order=SortOrder(conf["order"].lower()), weight=conf.get("weight", 1.0)
+                        field=conf["field"],
+                        order=SortOrder(conf["order"].lower()),
+                        weight=conf.get("weight", 1.0),
                     )
                 )
                 for conf in sort_config
@@ -459,6 +552,8 @@ class WeaviateService:
 
         # Add sorting metadata to help with response generation
         for result in results:
-            result["_sort_values"] = {config.field: result.get(config.field) for config in sort_configs}
+            result["_sort_values"] = {
+                config.field: result.get(config.field) for config in sort_configs
+            }
 
         return results

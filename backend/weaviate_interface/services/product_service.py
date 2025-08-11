@@ -43,6 +43,10 @@ class ProductService(BaseService):
             "full_product_description",
             "target_applications",
             "duplicate_ids",
+            "image_url",
+            "permalink",
+            "category",
+            "sub_category",
         ]
 
     async def query_products(

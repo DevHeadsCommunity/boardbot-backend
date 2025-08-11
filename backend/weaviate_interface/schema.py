@@ -278,6 +278,27 @@ SCHEMA = {
                     index_searchable=False,
                 ),
                 Property(
+                    name="category",
+                    description="High-level product category",
+                    data_type=DataType.TEXT,
+                    index_filterable=True,
+                    index_searchable=True,
+                ),
+                Property(
+                    name="sub_category",
+                    description="Sub-category under the main category",
+                    data_type=DataType.TEXT,
+                    index_filterable=True,
+                    index_searchable=True,
+                ),
+                Property(
+                    name="permalink",
+                    description="Link to the product page",
+                    data_type=DataType.TEXT,
+                    index_filterable=False,
+                    index_searchable=False,
+                ),
+                Property(
                     name="price",
                     description="The cost of the product.",
                     data_type=DataType.TEXT,

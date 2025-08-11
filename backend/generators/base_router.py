@@ -134,6 +134,7 @@ class BaseRouter:
                 query=message.message,
                 limit=100,
             )
+            
             # format as a "clear_intent_product" response
             return self.response_formatter.format_response(
                 "clear_intent_product",
