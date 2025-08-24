@@ -429,7 +429,7 @@ class WeaviateService:
             logger.error(f"Error in search_products: {str(e)}", exc_info=True)
             raise
 
-    async def search_products_by_description(self, query: str, limit: int = 5):
+    async def search_products_by_description(self, query: str, limit: int):
         props = [
             "name",
             "manufacturer",
@@ -444,8 +444,6 @@ class WeaviateService:
             limit=limit,
             return_properties=props,
         )
-        print(results)
-        logger.info(f"The Products: {json.dumps(results, indent=2)}")
         return results
 
     async def _execute_sorted_query(

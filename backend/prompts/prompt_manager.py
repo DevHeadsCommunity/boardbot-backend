@@ -1,5 +1,6 @@
 import json
 import logging
+import inspect
 from typing import Any, Dict, List, Tuple
 from .templates import (
     DynamicAnalysisPrompt,
@@ -19,6 +20,7 @@ from .templates import (
     LowConfidenceFeatureRefinementPrompt,
 )
 from weaviate_interface.models.product import attribute_descriptions
+import inspect
 
 logger = logging.getLogger(__name__)
 
@@ -82,8 +84,11 @@ class PromptManager:
             raise ValueError(f"Kwargs validation failed for {prompt_type}. " + " ".join(error_msg))
 
     # Helper methods for specific prompt types
-    def get_route_classification_prompt(self, query: str) -> Tuple[str, str]:
-        return self.get_prompt("route_classification", query=query)
+    def get_route_classification_prompt(self, query: str, **kwargs) -> Tuple[str, str]:
+        stack = inspect.stack()
+        caller = stack[2].function if len(stack) > 1 else "unknown"
+        logger.info(f"Generating route classification prompt for query: {query} called from {caller}")
+        return self.get_prompt("route_classification", query=query, **kwargs)
 
     def get_query_processor_prompt(self, query: str, attribute_descriptions: Dict[str, str]) -> Tuple[str, str]:
         return self.get_prompt(

@@ -69,10 +69,11 @@ class VagueIntentAgent:
         )
         logger.info(f"Generated semantic search query: {result['query']}")
         logger.info(f"Generated semantic search filters: {result['filters']}")
+        logger.info(f"RESULTS: {result}")
 
         return {
             "semantic_search_query": result["query"],
-            "product_count": result.get("product_count", 5),
+            "product_count": result.get("product_count", 100),
             "filters": result.get("filters", {}),  # Keep filters in the state
             "input_tokens": {"query_generation": input_tokens},
             "output_tokens": {"query_generation": output_tokens},
@@ -82,10 +83,8 @@ class VagueIntentAgent:
     async def product_search_node(self, state: VagueIntentState, config: RunnableConfig) -> Dict[str, Any]:
         start_time = time.time()
         limit = state["product_count"]
+        logger.info(f"Searching for products with limit: {limit}")
         filters = state.get("filters", {})
-
-        logger.info(f"Filters: {filters}")
-        logger.info(f"Semantic search query: {state['semantic_search_query']}")
 
         unique_results = {}
 
@@ -138,8 +137,8 @@ class VagueIntentAgent:
 
         final_results = list(unique_results.values())[:limit]
 
-        logger.info(f"\n\n===:> Final results: {final_results}\n\n")
         logger.info(f"Number of products found: {len(final_results)}")
+        logger.info(f"Time Taken for product search: {time.time() - start_time:.2f} seconds")
 
         return {
             "search_results": final_results,

@@ -1,13 +1,19 @@
 import logging
 from typing import Dict, Any, List
 from .base import USER_FACING_BASE, PROCESSING_BASE
-from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
+from langchain.prompts import (
+    ChatPromptTemplate,
+    SystemMessagePromptTemplate,
+    HumanMessagePromptTemplate,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class BaseChatPrompt:
-    def __init__(self, system_template: str, human_template: str, input_variables: List[str]):
+    def __init__(
+        self, system_template: str, human_template: str, input_variables: List[str]
+    ):
         self.template = ChatPromptTemplate.from_messages(
             [
                 SystemMessagePromptTemplate.from_template(system_template),
@@ -214,7 +220,9 @@ class QueryProcessorPrompt(BaseChatPrompt):
 
         Response:
         """
-        super().__init__(system_template, human_template, ["query", "attribute_descriptions"])
+        super().__init__(
+            system_template, human_template, ["query", "attribute_descriptions"]
+        )
 
 
 class ProductRerankingPrompt(BaseChatPrompt):
@@ -278,6 +286,56 @@ class ProductRerankingPrompt(BaseChatPrompt):
         )
 
 
+class PreFillPropertiesPrompt(BaseChatPrompt):
+    def __init__(self):
+        system_template = (
+            PROCESSING_BASE
+            + """
+            Your task is to pre-fill missing product properties using the product description.
+            
+            The Properties to be filled are:
+            {property_list}
+            
+            Guidelines:
+            1. Analyze the product description to identify any missing properties.
+            2. Only fill properties that can be directly inferred from the description without making assumptions.
+            3. If a property cannot be confidently filled from the description, leave it as "Not specified".   
+            
+            Respond in the following JSON format:
+            {{
+                "property_name_1": "value or Not specified",
+                "property_name_2": "value or Not specified",
+                ...
+            }}
+            
+            Examples:
+            Product Description: "The SBC-1234 is a compact single board computer featuring an Intel Atom processor, 4GB DDR3 RAM, and 64GB eMMC storage. It supports dual Gigabit Ethernet ports and has an operating temperature range of -20°C to 70°C."
+            Current Properties: {{"processor_manufacturer": "Not specified", "memory": "Not specified", "onboard_storage": "Not specified", "ethernet_ports": "Not specified", "operating_temperature_min": "Not specified", "operating_temperature_max": "Not specified"}}
+            
+            Response:
+            {{
+                "processor_manufacturer": "INTEL",
+                "memory": "4.0GB DDR3",
+                "onboard_storage": "64.0GB EMMC",
+                "ethernet_ports": "2x GIGABIT ETHERNET",
+                "operating_temperature_min": "-20°C",
+                "operating_temperature_max": "70°C"
+            }}
+            """
+        )
+
+        human_template = """
+        Product Description: {product_description}
+        Current Properties: {current_properties}
+        Fill the missing properties:
+        """
+        super().__init__(
+            system_template,
+            human_template,
+            ["product_description", "current_properties", "property_list"],
+        )
+
+
 class SemanticSearchQueryPrompt(BaseChatPrompt):
     def __init__(self):
         system_template = (
@@ -299,6 +357,7 @@ class SemanticSearchQueryPrompt(BaseChatPrompt):
         11. For memory, combine size and type into a single string, when both are specified. (e.g., "8.0GB DDR4").
         12. Include units for measurements (e.g., "W" for TDP, "V" for voltage, "°C" for temperature).
         13. Identify the number of products requested, defaulting to 5 if not specified.
+        14. Make sure that product_count is greater than 10.
 
         Respond in this JSON format:
         {{
@@ -307,7 +366,7 @@ class SemanticSearchQueryPrompt(BaseChatPrompt):
                 // Include only relevant attributes
                 // Omit attributes not mentioned or implied
             }},
-            "product_count": <number>  // Number of products to return, default to 5 if not specified
+            "product_count": <number>  // Number of products to return, default to 100 if not specified
         }}
 
         Examples:
@@ -348,7 +407,9 @@ class SemanticSearchQueryPrompt(BaseChatPrompt):
 
         Generated Search Query and Filters:
         """
-        super().__init__(system_template, human_template, ["query", "attribute_descriptions"])
+        super().__init__(
+            system_template, human_template, ["query", "attribute_descriptions"]
+        )
 
 
 class ChitchatPrompt(BaseChatPrompt):
@@ -427,10 +488,11 @@ class VagueIntentResponsePrompt(BaseChatPrompt):
         Instructions:
         1. Analyze the user's query and the provided product search results.
         2. Generate a response that provides general information related to the query.
-        3. Select exactly {product_count} products that best answer the user's query. Include all {product_count} products, even if some only partially match the query.
+        3. Select all products that best answer the user's query. Include atmost 100 products, even if some only partially match the query.
         4. Sort the products by relevance to the query, with the most relevant products first.
-        5. Provide reasoning for your selection and information.
-        6. Formulate a follow-up question to help the user specify their requirements.
+        5. Fill the missing information about product properties from the product description, if they are available in the description without making assumptions.
+        6. Provide reasoning for your selection and information.
+        7. Formulate a follow-up question to help the user specify their requirements.
 
         Respond in the following JSON format:
         {{
@@ -447,7 +509,7 @@ class VagueIntentResponsePrompt(BaseChatPrompt):
 
         Guidelines:
         - The message should provide an overview of the product category or technology mentioned in the query, along with any relevant general information.
-        - Include exactly {product_count} products in the products list, sorted by relevance to the query.
+        - Include all products in the products list, sorted by relevance to the query.
         - In the reasoning, explain the overall selection and mention if some products only partially match the query.
         - Maintain a helpful and informative tone, providing answers rather than suggestions.
         - Ensure that the response adheres strictly to the specified JSON format.
@@ -457,11 +519,13 @@ class VagueIntentResponsePrompt(BaseChatPrompt):
         human_template = """
         User Query: {query}
         Relevant Products: {products}
-        Number of Products to Return: {product_count}
+        Number of Products to Return: All of the ones which are relevant, upto 100
 
         Response:
         """
-        super().__init__(system_template, human_template, ["query", "products", "product_count"])
+        super().__init__(
+            system_template, human_template, ["query", "products", "product_count"]
+        )
 
 
 class ClearIntentResponsePrompt(BaseChatPrompt):
@@ -476,7 +540,8 @@ class ClearIntentResponsePrompt(BaseChatPrompt):
         2. Generate a response that addresses the user's requirements in a natural, conversational tone.
         3. Include ALL products provided in the search results, sorted by their relevance to the query and filters.
         4. Discuss the products that best match the criteria and those that partially match in a flowing, engaging manner.
-        5. Avoid explicitly categorizing products as "perfect matches" or "partial matches". Instead, weave this information into the conversation naturally.
+        5. Fill the missing information about product properties from the product description, if they are available in the description without making assumptions.
+        6. Avoid explicitly categorizing products as "perfect matches" or "partial matches". Instead, weave this information into the conversation naturally.
 
         Respond in the following JSON format:
         {{
@@ -509,7 +574,9 @@ class ClearIntentResponsePrompt(BaseChatPrompt):
 
         Response:
         """
-        super().__init__(system_template, human_template, ["query", "filters", "products"])
+        super().__init__(
+            system_template, human_template, ["query", "filters", "products"]
+        )
 
 
 class DynamicAgentPrompt(BaseChatPrompt):
@@ -624,7 +691,9 @@ class DataExtractionPrompt(BaseChatPrompt):
         Ensure the extracted information is accurate, well-formatted, and provided in the exact nested JSON structure as shown above, with confidence score for each attribute
         """
         human_template = "Raw product data: {raw_data}"
-        super().__init__(system_template, human_template, ["raw_data", "attribute_descriptions"])
+        super().__init__(
+            system_template, human_template, ["raw_data", "attribute_descriptions"]
+        )
 
 
 class MissingFeatureExtractionPrompt(BaseChatPrompt):
@@ -935,7 +1004,11 @@ class DynamicAnalysisPrompt(BaseChatPrompt):
 
         Response:
         """
-        super().__init__(system_template, human_template, ["query", "chat_history", "attribute_descriptions"])
+        super().__init__(
+            system_template,
+            human_template,
+            ["query", "chat_history", "attribute_descriptions"],
+        )
 
 
 class DynamicResponsePrompt(BaseChatPrompt):
@@ -1043,5 +1116,7 @@ class DynamicResponsePrompt(BaseChatPrompt):
         """
 
         super().__init__(
-            system_template, human_template, ["query", "filters", "sort", "products", "search_method", "entities"]
+            system_template,
+            human_template,
+            ["query", "filters", "sort", "products", "search_method", "entities"],
         )

@@ -35,9 +35,9 @@ def create_error_logger(logger):
             original_error(message, *args, **kwargs)
             
             # Add debug print before sending
-            print("Attempting to send Telegram message...")
-            send_message_to_telegram_group(bot_token, group_id, message)
-            print("Telegram message sent")
+            # print("Attempting to send Telegram message...")
+            # send_message_to_telegram_group(bot_token, group_id, message)
+            # print("Telegram message sent")
             
         except Exception as e:
             original_error(f"Logging enhancement failed: {e}")

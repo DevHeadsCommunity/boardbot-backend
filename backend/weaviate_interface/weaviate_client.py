@@ -119,7 +119,7 @@ class WeaviateClient:
                     return existing_objects[0]["id"]
 
             result = await collection.data.insert(data)
-            logger.info(f"Object inserted with UUID: {result}")
+            # logger.info(f"Object inserted with UUID: {result}")
             return result
         except Exception as e:
             logger.error(f"Error inserting object into collection {collection_name}: {e}", exc_info=True)
@@ -245,7 +245,7 @@ class WeaviateClient:
                 )
                 uuids.extend(results)
 
-            logger.info(f"Batch insert completed. {len(uuids)} objects inserted.")
+            # logger.info(f"Batch insert completed. {len(uuids)} objects inserted.")
             return uuids
         except Exception as e:
             logger.error(f"Error batch inserting objects into collection {collection_name}: {e}", exc_info=True)
