@@ -139,14 +139,15 @@ class BaseRouter:
             system_message += "\n\n You are only going to respond with the products given below. Do not respond with anything else."
             system_message += "\n\n Products: " + json.dumps(products, indent=2)
         
-      
+        now = time.time()
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
             user_message=user_message,
             system_message=system_message,
             formatted_chat_history=chat_history,
             model=message.model,
-            sql_mode=base_metadata["sql_mode"] if "sql_mode" in base_metadata else False,
         )
+        diff = time.time() - now
+        logger.info(f"Time taken for openai_service.generate_response: {diff:.2f} seconds")
 
         base_metadata["input_token_usage"]["generate"] = input_tokens
         base_metadata["output_token_usage"]["generate"] = output_tokens
@@ -157,8 +158,10 @@ class BaseRouter:
     async def handle_vague_intent(
         self, message: Message, chat_history: List[Dict[str, str]], base_metadata: Dict[str, Any]
     ) -> Dict[str, Any]:
+        now = time.time()
         response = await self.vague_intent_agent.run(message, chat_history)
-
+        diff = time.time() - now
+        logger.info(f"Time taken for vague_intent_agent.run: {diff:.2f} seconds")
         base_metadata["filters"] = response["filters"]
         base_metadata["input_token_usage"].update(response["input_tokens"])
         base_metadata["output_token_usage"].update(response["output_tokens"])
@@ -171,7 +174,10 @@ class BaseRouter:
     async def handle_clear_intent(
         self, message: Message, chat_history: List[Dict[str, str]], base_metadata: Dict[str, Any]
     ) -> Dict[str, Any]:
+        now = time.time()
         response = await self.clear_intent_agent.run(message, chat_history)
+        diff = time.time() - now
+        logger.info(f"Time taken for clear_intent_agent.run: {diff:.2f} seconds")
 
         base_metadata["filters"] = response["filters"]
         base_metadata["input_token_usage"].update(response["input_tokens"])
