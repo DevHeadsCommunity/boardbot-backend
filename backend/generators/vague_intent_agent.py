@@ -156,7 +156,7 @@ class VagueIntentAgent:
                 "summary": p.get("full_product_description", ""),
                 "certainty": p.get("certainty", 0),
             }
-            for p in state["search_results"]
+            for p in state["search_results"][:5]
         ]
 
         system_message, user_message = self.prompt_manager.get_vague_intent_response_prompt(
