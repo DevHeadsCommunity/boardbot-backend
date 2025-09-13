@@ -289,78 +289,142 @@ class FeatureValues:
         return cls._format_numeric_values(valid_values)
 
 
+def _needs_boundary(tok: str) -> bool:
+    """
+    Decide which tokens require strict boundaries.
+    Use a broad rule: alnum-only tokens (e.g., 5G, DDR4, USB, RJ45) are ambiguous.
+    """
+    return bool(re.fullmatch(r"[A-Z0-9]+", tok))
 
-UNIT_SYNONYMS = {
-    "GB": {"GB","G","GIGABYTE","GIGABYTES"},
-    "MHZ": {"MHZ"},
-    "GHZ": {"GHZ"},
-    "W": {"W","WATT","WATTS"},
+def _boundary_or_groups_for_token(tok: str) -> List[List[str]]:
+    """
+    Build two OR-groups:
+      - preGroup: token appears after an allowed pre-boundary
+      - postGroup: token appears before an allowed post-boundary
+    We combine them later with AND to force both sides.
+    """
+    return [f"* {tok} *", f"*({tok})*", f"*[{tok}]*"]
+
+FAMILY_PATTERNS = [
+    ("CPU",        re.compile(r"(processor|cpu|core_count|architecture|tdp|manufacturer)", re.I)),
+    ("MEMORY",     re.compile(r"(memory|ram|ddr\d?)", re.I)),
+    ("STORAGE",    re.compile(r"(onboard_storage|storage|disk|drive|ssd|hdd|nvme|emmc|flash)", re.I)),
+    ("IO",         re.compile(r"(io_count|usb|hdmi|ethernet|gpio|uart|i2c|spi|m\.?2)", re.I)),
+    ("POWER",      re.compile(r"(input_voltage|voltage|vdc|vin|watt|power|tdp)", re.I)),
+    ("THERMAL",    re.compile(r"(operating_temperature|min|max|°c|celsius|ambient|thermal)", re.I)),
+    ("WIRELESS",   re.compile(r"(wireless|wifi|wi-?fi|bt|bluetooth|lte|5g)", re.I)),
+    ("OS",         re.compile(r"(operating_system|bsp|os|linux|windows|yocto|ubuntu|rtos)", re.I)),
+    ("CERT",       re.compile(r"(certifications?|ce|fcc|ul|rohs|reach|emc)", re.I)),
+    ("COMMERCIAL", re.compile(r"(price|stock|availability|lead_time|moq)", re.I)),
+    ("FORM",       re.compile(r"(form_factor|mini-?itx|atx|micro-?atx|nano-?itx|sodimm)", re.I)),
+]
+
+FAMILY_ANCHORS = {
+    "CPU":        {"CPU","PROCESSOR","CORE","ARCHITECTURE","TDP","INTEL","AMD","NVIDIA","ARM"},
+    "MEMORY":     {"RAM","MEMORY","DRAM","DDR3","DDR4","DDR5","LPDDR4","LPDDR5"},
+    "STORAGE":    {"STORAGE","SSD","HDD","NVME","EMMC","FLASH","SATA","M.2"},
+    "IO":         {"USB","HDMI","ETHERNET","GPIO","UART","I2C","SPI","PCIE","DISPLAYPORT"},
+    "POWER":      {"VOLTAGE","V","WATT","W","POWER","INPUT"},
+    "THERMAL":    {"OPERATING","TEMPERATURE","°C","CELSIUS","MIN","MAX"},
+    "WIRELESS":   {"WIFI","WI-FI","BLUETOOTH","BT","LTE","5G","WIRELESS"},
+    "OS":         {"OS","OPERATING","LINUX","YOCTO","UBUNTU","WINDOWS","BSP"},
+    "CERT":       {"CE","FCC","UL","ROHS","REACH","CERTIFIED","CERTIFICATION"},
+    "COMMERCIAL": {"PRICE","STOCK","AVAILABILITY","LEAD","TIME"},
+    "FORM":       {"FORM","FACTOR","ITX","ATX","SODIMM","COM-EXPRESS"},
 }
 
-def _normalize_units(token: str) -> str:
-    t = token.upper()
-    for canon, alts in UNIT_SYNONYMS.items():
-        if t in alts:
-            return canon
-    return t
+def _family_for_attr(attr: str) -> Optional[str]:
+    for fam, pat in FAMILY_PATTERNS:
+        if pat.search(attr):
+            return fam
+    return None
 
-def _tokenize(value: str) -> List[str]:
-    # split into alnum tokens (keeps decimals); normalize units
-    raw = re.findall(r"[A-Z0-9]+(?:\.[0-9]+)?", value.upper())
-    return [_normalize_units(t) for t in raw]
+# --- Tokenization & pattern helpers ------------------------------------------
+def _toks_upper(val: str) -> List[str]:
+    return re.findall(r"[A-Z0-9]+(?:\.[0-9]+)?", val.upper())
 
-def _alternatives_for_number(tok: str) -> List[str]:
-    # 32.0 -> ["32.0","32"]; 32 -> ["32"]
-    alts = {tok}
+def _num_alts(tok: str) -> List[str]:
+    # 32.0 -> ["32.0","32"]
     if re.fullmatch(r"\d+\.\d+", tok):
-        alts.add(tok[:-2])  # strip ".0"
-    return list(alts)
+        return [tok, tok[:-2]]
+    return [tok]
 
-def _split_slash_groups(text: str) -> List[List[str]]:
-    """
-    Return OR-groups from patterns like 'DDR3/4' or 'LGA1151/1200'.
-    Each group is a list of alt tokens, e.g. ["DDR3","DDR4"].
-    """
-    groups: List[List[str]] = []
-    for m in re.finditer(r"\b([A-Z]+)(\d+)\s*/\s*(?:\1)?(\d+)\b", text.upper()):
-        prefix, a, b = m.group(1), m.group(2), m.group(3)
-        groups.append([f"{prefix}{a}", f"{prefix}{b}"])
-    return groups
+UNIT_NORMALIZATION = {
+    "G": "GB", "GB": "GB", "GIGABYTE": "GB", "GIGABYTES": "GB",
+    "T": "TB", "TB": "TB", "TERABYTE": "TB", "TERABYTES": "TB",
+    "MHZ": "MHZ", "GHZ": "GHZ",
+    "W": "W", "WATT": "W", "WATTS": "W",
+    "V": "V", "VDC": "V",
+}
 
-def _expand_to_like_groups_generic(value: str) -> List[List[str]]:
-    """
-    Convert arbitrary text (e.g., '32.0GB DDR3/4, Intel') into OR-groups of LIKE patterns.
-    AND across groups, OR within a group.
-    """
-    groups: List[List[str]] = []
+def _norm_unit(tok: str) -> str:
+    return UNIT_NORMALIZATION.get(tok.upper(), tok.upper())
 
-    slash_groups = _split_slash_groups(value)
-    for g in slash_groups:
-        groups.append([f"*{t}*" for t in g])
-
-    tokens = _tokenize(value)
+def _capacity_or_group(tokens: List[str]) -> Optional[List[str]]:
     for i, tok in enumerate(tokens):
-        if tok in {"GB","MHZ","GHZ","W"} and i > 0:
+        u = _norm_unit(tok)
+        if u in {"GB","TB","MHZ","GHZ","W","V"} and i > 0 and re.fullmatch(r"\d+(?:\.\d+)?", tokens[i-1]):
             num = tokens[i-1]
-            group = tokens[i+1]
-            if re.fullmatch(r"\d+(?:\.\d+)?", num):
-                num_alts = _alternatives_for_number(num)
-                cap_alts = set()
-                for n in num_alts:
-                    cap_alts.update({f"*{n}{tok} {group}*"})
-                groups.append(list(cap_alts))
-            return groups
+            alts = set()
+            for n in _num_alts(num):
+                alts.update({f"*{n}{u}*", f"*{n}*{u}*"})
+                if u in {"GB","TB"}:  # permit “G/T” variants
+                    short = "G" if u == "GB" else "T"
+                    alts.update({f"*{n}{short}*", f"*{n}*{short}*"})
+            return list(alts)
+    return None
 
-    covered = set([t.strip("*") for g in groups for t in g])
-    for tok in tokens:
-        if tok in covered: 
-            continue
-        # number: also add int form if .0
-        alts = set(_alternatives_for_number(tok)) if re.fullmatch(r"\d+(?:\.\d+)?", tok) else {tok}
-        groups.append([f"*{a}*" for a in alts])
-
+def _slash_or_groups(text: str) -> List[List[str]]:
+    groups = []
+    U = text.upper()
+    for m in re.finditer(r"\b([A-Z]+)(\d+)\s*/\s*(?:\1)?(\d+)\b", U):
+        pre, a, b = m.group(1), m.group(2), m.group(3)
+        groups.append([f"*{pre}{a}*", f"*{pre}{b}*"])
     return groups
 
+def _fallback_groups(tokens: List[str]) -> List[List[str]]:
+    groups: List[List[str]] = []
+    for tok in tokens:
+        if len(tok) == 1:
+            continue
+        if _needs_boundary(tok):
+            grps = _boundary_or_groups_for_token(tok)
+            groups.append(grps)
+        else:
+            groups.append([f"*{alt}*" for alt in _num_alts(tok)])
+    return groups
+
+def _anchor_group_from_family(family: Optional[str]) -> Optional[List[str]]:
+    if not family: 
+        return None
+    return [f"*{a}*" for a in FAMILY_ANCHORS.get(family, set())]
+
+
+def get_groups_from_val(key: str, value: str):
+    fam = _family_for_attr(key)
+    tokens = _toks_upper(value)
+
+    groups: List[List[str]] = []
+
+    # quantities like 32GB / 65W / 12V
+    cap = _capacity_or_group(tokens)
+    if cap:
+        groups.append(cap)
+
+    # variants like DDR3/4
+    groups.extend(_slash_or_groups(value))
+
+    # family anchors (generic, not per-attribute)
+    if cap is not None and len(tokens) <= 2:
+        fam_anchors = _anchor_group_from_family(fam)
+        if fam_anchors:
+            groups.append(fam_anchors)
+
+    # if nothing structured, fall back to tokens
+    if not groups:
+        groups = _fallback_groups(tokens)
+        
+    return groups
 
 class QueryBuilder:
     def __init__(self):
@@ -378,20 +442,28 @@ class QueryBuilder:
         description_conditions = []
 
         for key, value in filters.items():
-            if isinstance(value, str):
-                if key not in ["manufacturer", "category", "form_factor"]:
-                    groups = _expand_to_like_groups_generic(str(value))
-                    if groups:
-                        description_conditions.append(
-                            Filter.all_of([
-                                Filter.any_of([
-                                    Filter.by_property("description").like(p)
-                                    for p in group
-                                ])
-                                for group in groups
-                            ])
-                        )
+            if key not in ["name", "manufacturer", "category", "form_factor"]:
+                groups = []
+                if isinstance(value, str):
+                    groups += get_groups_from_val(key, value)
+                elif isinstance(value, list):
+                    _grps = [get_groups_from_val(key, v) for v in value]
+                    for g in _grps:
+                        groups += g
                 else:
+                    filter_conditions.append(Filter.by_property(key).equal(str(value)))
+                if len(groups) > 0:
+                    description_conditions.append(
+                        Filter.all_of([
+                            Filter.any_of([
+                                Filter.by_property("description").like(p)
+                                for p in group
+                            ])
+                            for group in groups
+                        ])
+                    )
+            else:
+                if isinstance(value, str):
                     if value.startswith(">=") or value.startswith("<="):
                         # Extract unit if present
                         numeric_part, unit = self._split_value_and_unit(value[2:])
@@ -407,13 +479,13 @@ class QueryBuilder:
                         filter_conditions.append(Filter.by_property(key).contains_any([value.upper()]))
                         if key == "form_factor":
                             filter_conditions.append(Filter.by_property("category").contains_any([value.upper()]))
-            elif isinstance(value, list):
-                # For array fields
-                upper_values = [v.upper() for v in value]
-                filter_conditions.append(Filter.by_property(key).contains_any(upper_values))
-            else:
-                # For any other types of values
-                filter_conditions.append(Filter.by_property(key).equal(str(value)))
+                elif isinstance(value, list):
+                    # For array fields
+                    upper_values = [v.upper() for v in value]
+                    filter_conditions.append(Filter.by_property(key).contains_any(upper_values))
+                else:
+                    # For any other types of values
+                    filter_conditions.append(Filter.by_property(key).equal(str(value)))
         if description_conditions.__len__() > 0:
             filter_conditions.append(Filter.all_of(description_conditions))
 
