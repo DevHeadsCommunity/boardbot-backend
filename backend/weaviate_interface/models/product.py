@@ -69,6 +69,7 @@ attribute_descriptions = {
     "price": "The cost of the product.",
     "stock_availability": "Current stock status (e.g., In Stock, Out of Stock).",
     "lead_time": "Time required to fulfill an order.",
+    "categories": "Category it belongs to"
     # "short_summary": "A concise description highlighting key features.",
     # "full_summary": "A detailed overview of the product's capabilities.",
     # "full_product_description": "An in-depth description including specifications.",

@@ -246,7 +246,7 @@ SCHEMA = {
                     name="description",
                     description="Full product description from your DB",
                     data_type=DataType.TEXT,
-                    index_filterable=False,
+                    index_filterable=True,
                     index_searchable=True,
                 ),
                 Property(

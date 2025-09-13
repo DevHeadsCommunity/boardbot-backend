@@ -124,7 +124,7 @@ class QueryProcessorPrompt(BaseChatPrompt):
         Response:
         {{
             "filters": {{
-                "form_factor": "COM EXPRESS",
+                "category": "COM EXPRESS",
                 "processor_manufacturer": "INTEL",
                 "processor_architecture": "X86-64",
                 "memory": "16.0GB-64.0GB DDR4"

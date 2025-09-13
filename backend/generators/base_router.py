@@ -130,14 +130,6 @@ class BaseRouter:
     ) -> Dict[str, Any]:
         start_time = time.time()
         system_message, user_message = self.prompt_manager.get_chitchat_prompt(message.message)
-        if base_metadata.get("sql_mode"):
-            # do a DB/Weaviate lookup instead of openai chat
-            products = await self.weaviate_service.search_products_by_description(
-                query=message.message,
-                limit=100,
-            )
-            system_message += "\n\n You are only going to respond with the products given below. Do not respond with anything else."
-            system_message += "\n\n Products: " + json.dumps(products, indent=2)
         
         now = time.time()
         response, input_tokens, output_tokens = await self.openai_service.generate_response(
@@ -188,7 +180,7 @@ class BaseRouter:
             "clear_intent_product", response["output"], base_metadata, response["search_results"]
         )
 
-    async def handle_do_not_respond(self, base_metadata: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle_do_not_respond(self,_msg, _chat_history, base_metadata: Dict[str, Any]) -> Dict[str, Any]:
         return self.response_formatter.format_response(
             "do_not_respond",
             json.dumps(

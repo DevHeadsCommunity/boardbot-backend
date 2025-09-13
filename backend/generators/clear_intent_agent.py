@@ -83,8 +83,6 @@ class ClearIntentAgent:
         limit = state["query_context"].get("num_products_requested", 5)
         filters = state["filters"]
 
-        logger.info(f"Filters: {filters}")
-
         # Construct query for hybrid search based on filters
         filter_query = " ".join([f"{key}:{value}" for key, value in filters.items()])
 

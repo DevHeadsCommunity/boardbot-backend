@@ -39,6 +39,7 @@ class QueryProcessor:
         # Validate filters
 
         processed_response["filters"] = self.post_process_filters(processed_response.get("filters", {}))
+        
         logger.info(f"\n\nValidated filters: {processed_response['filters']}\n\n")
 
         return processed_response, input_tokens, output_tokens
@@ -68,6 +69,8 @@ class QueryProcessor:
             "price",
             "stock_availability",
             "lead_time",
+            "description",
+            "category",
         ]
         return {k: filters[k] for k in ordered_attributes if k in filters}
 

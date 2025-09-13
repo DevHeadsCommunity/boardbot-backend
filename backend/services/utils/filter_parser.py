@@ -289,6 +289,79 @@ class FeatureValues:
         return cls._format_numeric_values(valid_values)
 
 
+
+UNIT_SYNONYMS = {
+    "GB": {"GB","G","GIGABYTE","GIGABYTES"},
+    "MHZ": {"MHZ"},
+    "GHZ": {"GHZ"},
+    "W": {"W","WATT","WATTS"},
+}
+
+def _normalize_units(token: str) -> str:
+    t = token.upper()
+    for canon, alts in UNIT_SYNONYMS.items():
+        if t in alts:
+            return canon
+    return t
+
+def _tokenize(value: str) -> List[str]:
+    # split into alnum tokens (keeps decimals); normalize units
+    raw = re.findall(r"[A-Z0-9]+(?:\.[0-9]+)?", value.upper())
+    return [_normalize_units(t) for t in raw]
+
+def _alternatives_for_number(tok: str) -> List[str]:
+    # 32.0 -> ["32.0","32"]; 32 -> ["32"]
+    alts = {tok}
+    if re.fullmatch(r"\d+\.\d+", tok):
+        alts.add(tok[:-2])  # strip ".0"
+    return list(alts)
+
+def _split_slash_groups(text: str) -> List[List[str]]:
+    """
+    Return OR-groups from patterns like 'DDR3/4' or 'LGA1151/1200'.
+    Each group is a list of alt tokens, e.g. ["DDR3","DDR4"].
+    """
+    groups: List[List[str]] = []
+    for m in re.finditer(r"\b([A-Z]+)(\d+)\s*/\s*(?:\1)?(\d+)\b", text.upper()):
+        prefix, a, b = m.group(1), m.group(2), m.group(3)
+        groups.append([f"{prefix}{a}", f"{prefix}{b}"])
+    return groups
+
+def _expand_to_like_groups_generic(value: str) -> List[List[str]]:
+    """
+    Convert arbitrary text (e.g., '32.0GB DDR3/4, Intel') into OR-groups of LIKE patterns.
+    AND across groups, OR within a group.
+    """
+    groups: List[List[str]] = []
+
+    slash_groups = _split_slash_groups(value)
+    for g in slash_groups:
+        groups.append([f"*{t}*" for t in g])
+
+    tokens = _tokenize(value)
+    for i, tok in enumerate(tokens):
+        if tok in {"GB","MHZ","GHZ","W"} and i > 0:
+            num = tokens[i-1]
+            group = tokens[i+1]
+            if re.fullmatch(r"\d+(?:\.\d+)?", num):
+                num_alts = _alternatives_for_number(num)
+                cap_alts = set()
+                for n in num_alts:
+                    cap_alts.update({f"*{n}{tok} {group}*"})
+                groups.append(list(cap_alts))
+            return groups
+
+    covered = set([t.strip("*") for g in groups for t in g])
+    for tok in tokens:
+        if tok in covered: 
+            continue
+        # number: also add int form if .0
+        alts = set(_alternatives_for_number(tok)) if re.fullmatch(r"\d+(?:\.\d+)?", tok) else {tok}
+        groups.append([f"*{a}*" for a in alts])
+
+    return groups
+
+
 class QueryBuilder:
     def __init__(self):
         # Cache for parsed values from attribute descriptions
@@ -302,22 +375,38 @@ class QueryBuilder:
             return None
 
         filter_conditions = []
+        description_conditions = []
 
         for key, value in filters.items():
             if isinstance(value, str):
-                if value.startswith(">=") or value.startswith("<="):
-                    # Extract unit if present
-                    numeric_part, unit = self._split_value_and_unit(value[2:])
-                    if numeric_part:
-                        # Get possible numeric values based on field examples
-                        numeric_values = self._create_numeric_values(key, f"{value[:2]}{numeric_part}")
-                        if numeric_values:
-                            # Add back the unit to each value if it exists
-                            possible_values = [f"{v}{unit}" for v in numeric_values] if unit else numeric_values
-                            filter_conditions.append(Filter.by_property(key).contains_any(possible_values))
+                if key not in ["manufacturer", "category", "form_factor"]:
+                    groups = _expand_to_like_groups_generic(str(value))
+                    if groups:
+                        description_conditions.append(
+                            Filter.all_of([
+                                Filter.any_of([
+                                    Filter.by_property("description").like(p)
+                                    for p in group
+                                ])
+                                for group in groups
+                            ])
+                        )
                 else:
-                    # Handle string values
-                    filter_conditions.append(Filter.by_property(key).contains_any([value.upper()]))
+                    if value.startswith(">=") or value.startswith("<="):
+                        # Extract unit if present
+                        numeric_part, unit = self._split_value_and_unit(value[2:])
+                        if numeric_part:
+                            # Get possible numeric values based on field examples
+                            numeric_values = self._create_numeric_values(key, f"{value[:2]}{numeric_part}")
+                            if numeric_values:
+                                # Add back the unit to each value if it exists
+                                possible_values = [f"{v}{unit}" for v in numeric_values] if unit else numeric_values
+                                filter_conditions.append(Filter.by_property(key).contains_any(possible_values))
+                    else:
+                        # Handle string values
+                        filter_conditions.append(Filter.by_property(key).contains_any([value.upper()]))
+                        if key == "form_factor":
+                            filter_conditions.append(Filter.by_property("category").contains_any([value.upper()]))
             elif isinstance(value, list):
                 # For array fields
                 upper_values = [v.upper() for v in value]
@@ -325,6 +414,8 @@ class QueryBuilder:
             else:
                 # For any other types of values
                 filter_conditions.append(Filter.by_property(key).equal(str(value)))
+        if description_conditions.__len__() > 0:
+            filter_conditions.append(Filter.all_of(description_conditions))
 
         return Filter.all_of(filter_conditions) if len(filter_conditions) > 1 else filter_conditions[0]
 
