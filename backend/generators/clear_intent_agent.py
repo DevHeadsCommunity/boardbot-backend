@@ -106,6 +106,7 @@ class ClearIntentAgent:
                 )
                 for result in partial_results:
                     if result["product_id"] not in unique_results:
+                        result["is_relevant"] = True
                         unique_results[result["product_id"]] = result
                         if len(unique_results) >= limit:
                             break
