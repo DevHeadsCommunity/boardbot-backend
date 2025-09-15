@@ -34,6 +34,7 @@ class FeatureExtractionService:
             "openai_service": self.openai_service,
             "tavily_service": self.tavily_service,
             "weaviate_service": self.weaviate_service,
+            "prompt_manager": self.prompt_manager,
         }
 
         agent = AgenticFeatureExtractor(services, self.prompt_manager, config=config_schema)
@@ -78,7 +79,7 @@ class BatchFeatureExtractionService:
         weaviate_service: WeaviateService,
     ):
         self.feature_extraction_service = FeatureExtractionService(
-            prompt_manager, openai_service, tavily_service, weaviate_service, config
+           config, prompt_manager, openai_service, tavily_service, weaviate_service
         )
 
     async def process_batch(self, batch: List[Dict[str, str]], config_schema: ConfigSchema) -> List[Dict[str, Any]]:

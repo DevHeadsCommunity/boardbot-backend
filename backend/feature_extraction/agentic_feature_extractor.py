@@ -93,12 +93,12 @@ class AgenticFeatureExtractor:
         logger.info("Storing and chunking raw data.")
         start_time = time.time()
 
-        weaviate_service = config["services"]["weaviate_service"]
+        weaviate_service = self.services["weaviate_service"]
         raw_data = state["raw_data"]
         product_id = state["product_id"]
 
         try:
-            await weaviate_service.store_raw_data(product_id, raw_data)
+            added_product_id = await weaviate_service.store_raw_data(product_id, raw_data)
             usage = {
                 "store_and_chunk_data": [
                     {
@@ -108,7 +108,7 @@ class AgenticFeatureExtractor:
                     }
                 ]
             }
-            return {"usage_data": usage}
+            return {"usage_data": usage, "weaviate_product_id": added_product_id}
         except Exception as e:
             logger.error(f"Error during storing and chunking data: {e}")
             return {"error": f"Failed to store and chunk data: {str(e)}"}
@@ -117,20 +117,18 @@ class AgenticFeatureExtractor:
         logger.info("Starting feature extraction.")
         start_time = time.time()
 
-        openai_service = config["services"]["openai_service"]
-        weaviate_service = config["services"]["weaviate_service"]
-        prompt_manager = config["prompt_manager"]
+        openai_service = self.services["openai_service"]
+        prompt_manager = self.services["prompt_manager"]
         model_name = config["configurable"]["model_name"]
         confidence_threshold = config["configurable"]["confidence_threshold"]
-        product_id = state["product_id"]
 
         query = (
             "name, manufacturer, form factor, specifications processor memory storage operating system certifications"
         )
         try:
-            chunks = await weaviate_service.get_relevant_chunks(product_id, query, limit=7)
-            logger.info(f"Retrieved {len(chunks)} relevant chunks")
-            context = "\n".join(chunk["chunk_text"] for chunk in chunks)
+            context = state["raw_data"]
+            # logger.info(f"Retrieved {len(chunks)} relevant chunks")
+            # context = "\n".join(chunk["chunk_text"] for chunk in chunks)
 
             system_message, user_message = prompt_manager.get_data_extraction_prompt(context)
 
@@ -154,7 +152,7 @@ class AgenticFeatureExtractor:
             low_confidence_features = get_low_confidence_features(extracted_features, confidence_threshold)
 
             # Check for missing critical features
-            critical_features = ["name", "manufacturer", "form_factor"]
+            critical_features = ["name", "manufacturer"]
             missing_critical_features = [feature for feature in critical_features if feature in missing_features]
             if missing_critical_features:
                 error_message = f"Critical features missing: {', '.join(missing_critical_features)}"
@@ -185,8 +183,8 @@ class AgenticFeatureExtractor:
         logger.info("Starting search for missing features.")
         start_time = time.time()
 
-        tavily_service = config["services"]["tavily_service"]
-        weaviate_service = config["services"]["weaviate_service"]
+        tavily_service = self.services["tavily_service"]
+        weaviate_service = self.services["weaviate_service"]
 
         extracted_features = state.get("extracted_features", {})
         missing_features = state.get("missing_features", [])
@@ -245,9 +243,9 @@ class AgenticFeatureExtractor:
         logger.info("Starting generation of missing features.")
         start_time = time.time()
 
-        openai_service = config["services"]["openai_service"]
-        weaviate_service = config["services"]["weaviate_service"]
-        prompt_manager = config["prompt_manager"]
+        openai_service = self.services["openai_service"]
+        weaviate_service = self.services["weaviate_service"]
+        prompt_manager = self.services["prompt_manger"]
         model_name = config["configurable"]["model_name"]
         confidence_threshold = config["configurable"]["confidence_threshold"]
 
@@ -324,8 +322,8 @@ class AgenticFeatureExtractor:
         logger.info("Starting search for low-confidence features.")
         start_time = time.time()
 
-        tavily_service = config["services"]["tavily_service"]
-        weaviate_service = config["services"]["weaviate_service"]
+        tavily_service = self.services["tavily_service"]
+        weaviate_service = self.services["weaviate_service"]
 
         extracted_features = state.get("extracted_features", {})
         low_confidence_features = state.get("low_confidence_features", [])
@@ -385,9 +383,9 @@ class AgenticFeatureExtractor:
         logger.info("Starting refinement of low-confidence features.")
         start_time = time.time()
 
-        openai_service = config["services"]["openai_service"]
-        weaviate_service = config["services"]["weaviate_service"]
-        prompt_manager = config["prompt_manager"]
+        openai_service = self.services["openai_service"]
+        weaviate_service = self.services["weaviate_service"]
+        prompt_manager = self.services["prompt_manger"]
         model_name = config["configurable"]["model_name"]
         confidence_threshold = config["configurable"]["confidence_threshold"]
 

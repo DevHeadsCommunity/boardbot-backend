@@ -58,9 +58,12 @@ def filter_features_by_confidence(features: Dict[str, Any], confidence_threshold
             if isinstance(value, dict):
                 if "value" in value and "confidence" in value:
                     if value["confidence"] >= confidence_threshold:
-                        filtered[key] = value["value"]
-                    else:
-                        filtered[key] = "Not Available"
+                        if type(value["value"]) == bool:
+                            filtered[key] = str(value["value"])
+                        else:
+                            filtered[key] = value["value"]
+                    # else:
+                    #     filtered[key] = "Not Available"
                 else:
                     filtered[key] = {}
                     recurse(value, filtered[key])

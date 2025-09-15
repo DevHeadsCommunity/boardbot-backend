@@ -77,11 +77,10 @@ class WeaviateService:
             if not self.connected:
                 await self.connect()
 
-            # if not (await self.wi.schema.is_valid()) or reset:
-            #     await self.wi.schema.reset_schema()
-            #     # Optionally load initial data
-            #     await self._load_product_data()
-            #     await self._load_semantic_routes()
+            if not (await self.wi.schema.is_valid()) or reset:
+                await self.wi.schema.reset_schema()
+                # Optionally load initial data
+                await self._load_semantic_routes()
 
             is_valid = await self.wi.schema.is_valid()
             info = await self.wi.schema.info()
@@ -91,7 +90,6 @@ class WeaviateService:
             if reset or not is_valid:
                 logger.info("Resetting Weaviate schema and loading data…")
                 await self.wi.schema.reset_schema()
-                await self._load_product_data()
 
                 await self._load_semantic_routes()
         except Exception as e:
@@ -210,7 +208,7 @@ class WeaviateService:
 
     async def get_products(
         self,
-        limit: int = 10,
+        limit: int = 5,
         offset: int = 0,
         filter_dict: Optional[Dict[str, Any]] = None,
     ) -> Tuple[List[Dict[str, Any]], int]:

@@ -184,7 +184,7 @@ async def add_products_batch_raw(
 
             try:
                 new_product = NewProduct(**product)
-                id = await weaviate_service.add_product(new_product.dict())
+                id = await weaviate_service.add_product(new_product.model_dump())
                 product_ids.append({"id": id})
             except ValidationError as ve:
                 logger.error(f"Validation error for product {extracted_data['id']}: {str(ve)}")

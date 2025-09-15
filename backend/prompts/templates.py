@@ -103,8 +103,9 @@ class QueryProcessorPrompt(BaseChatPrompt):
             - **"Computer on Module" → "COM"**
             - **"COM Express" → "COM EXPRESS"**
             - **"Single Board Computer" or "SBC" → "SBC"**
-        17. **If a term does not match any standardized value and mapping is unclear, omit the attribute. Do not guess or infer.**
-        18. **Do not include comments in the JSON response.**
+        17. **If the query has an explicitly implied filter that is not present in the provided attribute list, add it to the description filter with the separtor `|`**
+        18. **If a term does not match any standardized value and mapping is unclear, omit the attribute. Do not guess or infer.**
+        19. **Do not include comments in the JSON response.**
 
         Respond in this JSON format:
         {{
@@ -676,14 +677,16 @@ class DataExtractionPrompt(BaseChatPrompt):
         3. Ensure consistency across all features - avoid contradictions.
         4. For names, like product name, or manufacturer name, ensure it is in clear, capital case, singular, without special characters. (Only the official name, dont include Code Name, or any other variant)
         5. The following attributes should always be single values, not lists: name, manufacturer, form_factor, processor_architecture, processor_manufacturer, input_voltage, operating_temperature_max, operating_temperature_min.
-        6. If information for an attribute is not available or not applicable, use 'Not available' with a confidence score of 0.
-        7. For each attribute, provide:
+        6. If form_factor will be the same as category.
+        7. If information for an attribute is not available or not applicable, use 'Not available' with a confidence score of 0.
+        8. For each attribute, provide:
            - "value": the extracted information.
            - "confidence": a score between 0 and 1 indicating confidence in the extraction.
-        8. For list-type attributes:
+        9. For **list-type** attributes:
            - If data is available, provide items as a JSON array.
-           - If data is not available, use 'Not available' (as a string).
-        9. Use the exact attribute names as provided in the JSON structure below.
+           - If data is not available, use an empty JSON array.
+        10. Use the exact attribute names as provided in the JSON structure below.
+        11. Set the text as description as well
 
         Extract the following attributes:
         {attribute_descriptions}

@@ -442,50 +442,32 @@ class QueryBuilder:
         description_conditions = []
 
         for key, value in filters.items():
-            if key not in ["name", "manufacturer", "category", "form_factor"]:
-                groups = []
-                if isinstance(value, str):
-                    groups += get_groups_from_val(key, value)
-                elif isinstance(value, list):
-                    _grps = [get_groups_from_val(key, v) for v in value]
-                    for g in _grps:
-                        groups += g
+            if isinstance(value, str):
+                if value.startswith(">=") or value.startswith("<="):
+                    # Extract unit if present
+                    numeric_part, unit = self._split_value_and_unit(value[2:])
+                    if numeric_part:
+                        # Get possible numeric values based on field examples
+                        numeric_values = self._create_numeric_values(key, f"{value[:2]}{numeric_part}")
+                        if numeric_values:
+                            # Add back the unit to each value if it exists
+                            possible_values = [f"{v}{unit}" for v in numeric_values] if unit else numeric_values
+                            filter_conditions.append(Filter.by_property(key).contains_any(possible_values))
                 else:
-                    filter_conditions.append(Filter.by_property(key).equal(str(value)))
-                if len(groups) > 0:
-                    description_conditions.append(
-                        Filter.all_of([
-                            Filter.any_of([
-                                Filter.by_property("description").like(p)
-                                for p in group
-                            ])
-                            for group in groups
-                        ])
-                    )
-            else:
-                if isinstance(value, str):
-                    if value.startswith(">=") or value.startswith("<="):
-                        # Extract unit if present
-                        numeric_part, unit = self._split_value_and_unit(value[2:])
-                        if numeric_part:
-                            # Get possible numeric values based on field examples
-                            numeric_values = self._create_numeric_values(key, f"{value[:2]}{numeric_part}")
-                            if numeric_values:
-                                # Add back the unit to each value if it exists
-                                possible_values = [f"{v}{unit}" for v in numeric_values] if unit else numeric_values
-                                filter_conditions.append(Filter.by_property(key).contains_any(possible_values))
+                    # Handle string values
+                    if key == "description":
+                        filter_conditions.append(Filter.by_property(key).like(f"*{value}*"))
                     else:
-                        # Handle string values
                         filter_conditions.append(Filter.by_property(key).contains_any([value.upper()]))
                         if key == "form_factor":
                             filter_conditions.append(Filter.by_property("category").contains_any([value.upper()]))
-                elif isinstance(value, list):
-                    # For array fields
-                    upper_values = [v.upper() for v in value]
-                    filter_conditions.append(Filter.by_property(key).contains_any(upper_values))
-                else:
-                    # For any other types of values
-                    filter_conditions.append(Filter.by_property(key).equal(str(value)))
+            elif isinstance(value, list):
+                # For array fields
+                upper_values = [v.upper() for v in value]
+                filter_conditions.append(Filter.by_property(key).contains_any(upper_values))
+            else:
+                # For any other types of values
+                filter_conditions.append(Filter.by_property(key).equal(str(value)))
         if description_conditions.__len__() > 0:
             filter_conditions.append(Filter.all_of(description_conditions))
 
