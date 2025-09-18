@@ -1,6 +1,6 @@
 import json
 import logging
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, field_validator
 from typing import Optional, List
 from feature_extraction import ConfigSchema
 from services.weaviate_service import WeaviateService
@@ -12,7 +12,7 @@ from dependencies import (
     get_feature_extraction_service,
     get_batch_feature_extraction_service,
 )
-
+from email_validator import validate_email
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -193,4 +193,77 @@ async def add_products_batch_raw(
         return {"products": product_ids}
     except Exception as e:
         logger.error(f"Error adding products batch: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    
+    
+class FeedbackPayload(BaseModel):
+    email: str
+    message: str
+
+    @field_validator("email")
+    @classmethod
+    def validate(cls, val):
+        try:
+            validate_email(val)
+        except:
+            raise ValueError("Invalid email format.")
+        return val
+    
+@api_router.post("/feedback")
+async def log_feedback_to_wp(
+    data: FeedbackPayload
+):
+    import os, requests
+    from requests.auth import HTTPBasicAuth
+    try:
+        CONTACT_FORM_ID = os.environ.get("CONTACT_FORM_ID")
+        WP_USERNAME = os.environ.get("WP_EMAIL")
+        WP_PASS = os.environ.get("WP_PASS")
+        WP_URL = os.environ.get("WP_URL")
+        if CONTACT_FORM_ID is None or WP_USERNAME is None or WP_PASS is None or WP_URL is None:
+            raise Exception("Cannot log responses at the moment.")
+        form_data = {
+            "your-email": data.email,
+            "your-message": data.message,
+            "_wpcf7_unit_tag": f"wpcf7-f{CONTACT_FORM_ID}-o1"
+        }
+        url = f"{WP_URL}/wp-json/contact-form-7/v1/contact-forms/{CONTACT_FORM_ID}/feedback"
+        auth = HTTPBasicAuth(WP_USERNAME, WP_PASS)
+    
+        resp = requests.post(url, data=form_data,auth=auth, timeout=(5,15))
+        
+        try:
+            data = resp.json()
+        except Exception:
+            data = resp.text
+        
+        if resp.status_code == 200 and isinstance(data, dict) and data.get("status"):
+            ok = data.get("status") == "mail_sent"
+            if ok:
+                return {
+                    "ok": True,
+                    "cf7_status": data.get("status"),
+                    "cf7_message": data.get("message"),
+                    "cf7_into": data.get("into"),
+                }
+            # Validation or spam etc.
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "ok": False,
+                    "cf7_status": data.get("status"),
+                    "cf7_message": data.get("message"),
+                    "cf7_invalid_fields": data.get("invalidFields"),
+                },
+            )
+        if resp.status_code in (400, 404):
+            code = None
+            if isinstance(data, dict):
+                code = data.get("code") or data.get("data", {}).get("code")
+            if code in ("rest_no_route",):
+                raise HTTPException(status_code=500, detail="Failed to log response")
+        
+    except Exception as e:
+        logger.error(f"Error adding feedback: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

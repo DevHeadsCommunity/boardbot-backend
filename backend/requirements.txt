@@ -29,3 +29,4 @@ pytest
 tqdm
 anthropic
 requests
+email-validator
