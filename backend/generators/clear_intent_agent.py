@@ -80,7 +80,7 @@ class ClearIntentAgent:
 
     async def product_search_node(self, state: ClearIntentState, config: RunnableConfig) -> Dict[str, Any]:
         start_time = time.time()
-        limit = state["query_context"].get("num_products_requested", 5)
+        limit = state["query_context"].get("num_products_requested", 15)
         filters = state["filters"]
 
         # Construct query for hybrid search based on filters

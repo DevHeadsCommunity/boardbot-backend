@@ -73,7 +73,7 @@ class VagueIntentAgent:
 
         return {
             "semantic_search_query": result["query"],
-            "product_count": result.get("product_count", 100),
+            "product_count": result.get("product_count", 15),
             "filters": result.get("filters", {}),  # Keep filters in the state
             "input_tokens": {"query_generation": input_tokens},
             "output_tokens": {"query_generation": output_tokens},
@@ -82,7 +82,7 @@ class VagueIntentAgent:
 
     async def product_search_node(self, state: VagueIntentState, config: RunnableConfig) -> Dict[str, Any]:
         start_time = time.time()
-        limit = state["product_count"]
+        limit = state.get("product_count", 15)
         logger.info(f"Searching for products with limit: {limit}")
         filters = state.get("filters", {})
 
