@@ -15,8 +15,8 @@ class ResponseFormatter:
     ) -> Dict[str, Any]:
 
         llm_response = ResponseFormatter._clean_response(llm_output)
-        product_details = ResponseFormatter._extract_product_details(llm_response, products)
-
+        # product_details = ResponseFormatter._extract_product_details(llm_response, products)
+        product_details = products if products is not None else []
         formatted_response = {
             "type": response_type,
             "response": llm_response.get("message", ""),
